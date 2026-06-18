@@ -109,7 +109,7 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   };
 
   const handleSelectPersona = async (personaId: string) => {
@@ -142,7 +142,7 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
     fetchActivePersona();
     const interval = setInterval(fetchActivePersona, 3000);
     return () => clearInterval(interval);
-  }, [activePersona]);
+  }, []); // Remove activePersona from deps to avoid re-triggering interval on state change
 
   const triggerInteractionDateCheck = () => {
     try {
@@ -259,9 +259,9 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let width = (canvas.width = 180);
-    let height = (canvas.height = 180);
-    let particles: { angle: number; radius: number; size: number; speed: number; phase: number }[] = [];
+    const width = (canvas.width = 180);
+    const height = (canvas.height = 180);
+    const particles: { angle: number; radius: number; size: number; speed: number; phase: number }[] = [];
 
     // Initialize 80 particles in circular tracks
     for (let i = 0; i < 90; i++) {
@@ -662,7 +662,7 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
             const isJarvis = msg.sender === "JARVIS";
             // Clean XML command nodes for rendering beautiful buttons or logs in dialogue instead of clutter
             const commandMatches = msg.text.match(/<command[^>]*\/>/g);
-            let displayContent = msg.text.replace(/<command[^>]*\/>/g, "").trim();
+            const displayContent = msg.text.replace(/<command[^>]*\/>/g, "").trim();
 
             return (
               <div key={index} className={`flex gap-3 ${isJarvis ? "justify-start" : "justify-end"}`}>

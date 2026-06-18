@@ -110,7 +110,6 @@ export default function App() {
   const [systemState, setSystemState] = useState<any>(null);
   const [hardwareStats, setHardwareStats] = useState<any>(null);
   const [timeStr, setTimeStr] = useState("");
-  const [copiedScript, setCopiedScript] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState("Modo Trabalho");
 
   // Motor de Auto-Atualização sem perda de dados
@@ -149,7 +148,7 @@ export default function App() {
       ) {
         return saved as any;
       }
-    } catch {}
+    } catch { /* ignore */ }
     return "violet";
   });
 
@@ -166,7 +165,7 @@ export default function App() {
     setCurrentTheme(theme);
     try {
       localStorage.setItem("jarvis_holo_theme", theme);
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   };
 
   // Health check loop polling every 10 seconds
@@ -216,7 +215,7 @@ export default function App() {
       if (res.ok) {
         setUpdateState(await res.json());
       }
-    } catch (err) {}
+    } catch (err) { /* ignore */ }
   };
 
   const fetchHardwareStats = async () => {
@@ -225,7 +224,7 @@ export default function App() {
       if (res.ok) {
         setHardwareStats(await res.json());
       }
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   };
 
   useEffect(() => {
@@ -552,7 +551,7 @@ export default function App() {
         description: "",
       });
       fetchSystemState();
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const handleGoalSubmit = async (e: React.FormEvent) => {
@@ -569,7 +568,7 @@ export default function App() {
       });
       setGoalForm({ limit: "", reason: "" });
       fetchSystemState();
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const handleExportPDF = async () => {
@@ -609,7 +608,7 @@ export default function App() {
         notes: "",
       });
       fetchSystemState();
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const handleFileUpload = async (
@@ -622,15 +621,6 @@ export default function App() {
       );
     }
   };
-
-  // Colors for charts matching holographic style
-  const CHART_COLORS = [
-    HOLO_THEMES[currentTheme].light,
-    "#7C4DFF",
-    "#FF80AB",
-    "#00E676",
-    "#FFD700",
-  ];
 
   const activeHoloTheme = HOLO_THEMES[currentTheme];
   const themeStyles = {

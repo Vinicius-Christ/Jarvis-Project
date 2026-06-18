@@ -60,14 +60,14 @@ export default function CUDATelemetryHUD() {
       try {
         const res = await fetch(getServerUrl() + "/api/system/hardware");
         if (res.ok) serverData = await res.json();
-      } catch(e) {}
+      } catch(e) { /* error ignored */ }
       
       // 2. Fetch Local Stats (if Electron)
       let lStats = null;
       if (window.electronAPI) {
         try {
           lStats = await window.electronAPI.getLocalHardware();
-        } catch(e) {}
+        } catch(e) { /* error ignored */ }
       }
 
       if (serverData) setStats(serverData);

@@ -57,7 +57,7 @@ export default function LogsDocker() {
           setContainerStatuses(data.containers);
         }
       }
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   };
 
   const fetchLogs = async () => {

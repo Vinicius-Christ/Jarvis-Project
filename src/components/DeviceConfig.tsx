@@ -1,6 +1,6 @@
 import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect } from "react";
-import { Sliders, Plus, Link, Wifi, Save, ArrowUpRight, Cpu, HelpCircle, HardDrive, ShieldCheck, CheckCircle, Palette } from "lucide-react";
+import { Plus, Wifi, Save, ArrowUpRight, Cpu, ShieldCheck, Palette } from "lucide-react";
 
 interface DeviceConfigProps {
   devices: any[];
@@ -132,10 +132,6 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // States for generating README/Docs
-  const [generatingDocs, setGeneratingDocs] = useState(false);
-  const [docsSuccess, setDocsSuccess] = useState<string | null>(null);
-
   // States for testing Ollama connection
   const [ollamaStatus, setOllamaStatus] = useState<"idle" | "testing" | "online">("online");
   const [ollamaUrl, setOllamaUrl] = useState(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:11434`);
@@ -168,12 +164,6 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
     "Local REST API / Webhook trigger",
     "ESPHome Auto-Discovery"
   ];
-
-  const handleDocGeneration = async () => {
-    // Deprecated: O servidor agora não sobrescreve os documentos via string harcoded por medidas de segurança.
-    setDocsSuccess("A funcionalidade de reconstrução automática de documentação foi removida a seu pedido, para preservar a integridade do repositório.");
-    setTimeout(() => setDocsSuccess(null), 5000);
-  };
 
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -374,14 +364,9 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-zinc-500 block text-[9px] uppercase mb-1">Servidor IP / Local Host</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: 192.168.15.8"
-                    value={haIp}
-                    onChange={(e) => setHaIp(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 font-mono text-xs px-2 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)]"
-                  />
+                  <div className="w-full bg-zinc-950/80 border border-zinc-800 text-zinc-400 font-mono text-xs px-2 py-1.5 rounded select-none cursor-not-allowed">
+                    {haIp || "Auto-detected"}
+                  </div>
                 </div>
                 <div>
                   <label className="text-zinc-500 block text-[9px] uppercase mb-1">Status de Conectividade</label>
@@ -435,12 +420,9 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
             <div>
               <label className="text-zinc-500 block text-[10px] uppercase mb-1">Endereço da API Local (Ollama Endpoint)</label>
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={ollamaUrl}
-                  onChange={(e) => setOllamaUrl(e.target.value)}
-                  className="flex-1 bg-zinc-950 border border-zinc-800 text-zinc-300 font-mono text-xs px-2.5 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)]"
-                />
+                <div className="flex-1 bg-zinc-950/80 border border-zinc-800 text-zinc-400 font-mono text-xs px-2.5 py-1.5 rounded select-none cursor-not-allowed">
+                  {ollamaUrl || "Auto-detected"}
+                </div>
                 <button
                   onClick={testOllamaConnection}
                   className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 font-bold rounded cursor-pointer transition text-[11px]"
@@ -603,14 +585,9 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
                 </div>
                 <div>
                   <label className="text-zinc-500 block text-[10px] uppercase mb-1">URL de Configuração do Docker/HA</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: http://192.168.1.104:8123"
-                    value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)] text-xs"
-                  />
+                  <div className="w-full bg-zinc-950/80 border border-zinc-800 text-zinc-400 font-mono text-xs px-2.5 py-1.5 rounded select-none cursor-not-allowed">
+                    {targetUrl || "Auto-detected"}
+                  </div>
                 </div>
               </div>
 

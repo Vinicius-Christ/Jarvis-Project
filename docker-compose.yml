@@ -1,0 +1,95 @@
+# docker-compose.yml
+# Configuração Multi-Container Docker para a Stack Local do JARVIS v5.0
+# Execute este arquivo com o comando: docker compose up -d
+
+version: "3.8"
+
+services:
+  # ChromaDB - Banco de Dados Vetorial para armazenar os embeddings (RAG) do Obsidian
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: jarvis_chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/data
+    environment:
+      - ALLOW_RESET=TRUE
+    networks:
+      - jarvis_network
+    restart: unless-stopped
+
+  # n8n - Motor de Automações, Workflows e Conexão de Nós para Orquestrar a IA
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: jarvis_n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./jarvis-vault:/data/vault:ro # Mount Obsidian vault (Apenas Leitura para Segurança)
+    depends_on:
+      - db
+    networks:
+      - jarvis_network
+    restart: unless-stopped
+
+  # Home Assistant - Hub unificado para internet das coisas (IoT) e automação de lâmpadas/ar
+  homeassistant:
+    image: lscr.io/linuxserver/homeassistant:latest
+    container_name: jarvis_homeassistant
+    ports:
+      - "8123:8123"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+    volumes:
+      - ha_config:/config
+    networks:
+      - jarvis_network
+    restart: unless-stopped
+    depends_on:
+      - db
+
+  # PostgreSQL - Banco de Dados para armazenar Financeiros, Agenda e Históricos do App
+  db:
+    image: postgres:15-alpine
+    container_name: jarvis_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=jarvis
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-jarvis_secure_pass}
+      - POSTGRES_DB=jarvis_core
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - jarvis_network
+    restart: unless-stopped
+
+  # Redis - Cache em memória ultra-rápido para fila de comandos de Voz do Microfone
+  redis:
+    image: redis:alpine
+    container_name: jarvis_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - jarvis_network
+    restart: unless-stopped
+
+networks:
+  jarvis_network:
+    driver: bridge
+
+volumes:
+  chroma_data:
+  n8n_data:
+  ha_config:
+  pg_data:

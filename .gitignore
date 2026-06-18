@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+yarn.lock
+package-lock.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.docker
+!.env.example
+
+# Build output
+dist/
+dist-electron/
+build/
+release/
+*.tsbuildinfo
+.next/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Database & Data
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Vault
+jarvis-vault/
+.obsidian/
+
+# Docker
+.dockerignore
+Dockerfile.backend*
+
+# Electron
+out/
+electron-builder/

@@ -176,13 +176,16 @@ export default function App() {
         const res = await fetch(getServerUrl() + "/api/system/health");
         const duration = Math.round(performance.now() - start);
         if (res.ok) {
-          const data = await res.json();
-          setHealthStatus({
-            docker: data.docker || { status: "online", latency: 7 },
-            ollama: data.ollama || { status: "online", latency: 42 },
-            network: { status: "online", latency: duration },
-            lastUpdated: new Date().toLocaleTimeString("pt-BR"),
-          });
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await res.json();
+            setHealthStatus({
+              docker: data.docker || { status: "online", latency: 7 },
+              ollama: data.ollama || { status: "online", latency: 42 },
+              network: { status: "online", latency: duration },
+              lastUpdated: new Date().toLocaleTimeString("pt-BR"),
+            });
+          }
         }
       } catch (err: any) {
         if (err.message !== "Failed to fetch") {
@@ -201,8 +204,11 @@ export default function App() {
     try {
       const res = await fetch(getServerUrl() + "/api/db");
       if (res.ok) {
-        const data = await res.json();
-        setSystemState(data);
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          setSystemState(data);
+        }
       }
     } catch (err) {
       // Ignorar erros transientes
@@ -213,7 +219,10 @@ export default function App() {
     try {
       const res = await fetch(getServerUrl() + "/api/system/update/status");
       if (res.ok) {
-        setUpdateState(await res.json());
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          setUpdateState(await res.json());
+        }
       }
     } catch (err) { /* ignore */ }
   };
@@ -222,7 +231,10 @@ export default function App() {
     try {
       const res = await fetch(getServerUrl() + "/api/system/hardware");
       if (res.ok) {
-        setHardwareStats(await res.json());
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          setHardwareStats(await res.json());
+        }
       }
     } catch (e) { /* ignore */ }
   };
@@ -278,7 +290,13 @@ export default function App() {
           model: model || "llama3.2",
         }),
       });
-      const data = await res.json();
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        throw new Error("Invalid content-type from /api/chat");
+      }
 
       // If there is an XML command embedded, synchronize it in backend
       if (data.text) {

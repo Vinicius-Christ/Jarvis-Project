@@ -961,7 +961,7 @@ export default function App() {
                 </span>
                 <div className="flex gap-4 mt-2">
                   <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800">
-                    12GB VRAM (CUDA)
+                    4GB VRAM (CUDA)
                   </span>
                   <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800">
                     Docker Subnet
@@ -2330,7 +2330,7 @@ export default function App() {
                         {hardwareStats?.gpus?.[0]?.vram
                           ? Math.round(hardwareStats.gpus[0].vram / 1024) +
                             "GB VRAM"
-                          : "12GB VRAM"}
+                          : "4GB VRAM"}
                         )
                       </strong>
                       . Isso possibilita rodar o modelo Llama 3.2 com tempo

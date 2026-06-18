@@ -117,8 +117,8 @@ Write-Status "✅ Obsidian Vault criado e semeado" $SuccessColor
 Write-Status "Iniciando Ollama em background..." $InfoColor
 Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden
 Start-Sleep -Seconds 5
-Write-Status "Puxando modelo gemma4:e4b..." $InfoColor
-ollama pull gemma4:e4b | Out-Null
+Write-Status "Puxando modelo llama3.2..." $InfoColor
+ollama pull llama3.2 | Out-Null
 Write-Status "Puxando modelo nomic-embed-text..." $InfoColor
 ollama pull nomic-embed-text | Out-Null
 

@@ -48,7 +48,7 @@ export default function SSHDiagnostics() {
     },
     {
       id: "purge_vram",
-      name: "Esvaziar VRAM da RTX",
+      name: "Esvaziar VRAM da GPU",
       description: "Executa pytorch empty_cache e expurga caches CUDA inativos.",
       icon: Terminal,
       color: "border-rose-800 text-rose-400 bg-rose-950/20 hover:border-rose-500"

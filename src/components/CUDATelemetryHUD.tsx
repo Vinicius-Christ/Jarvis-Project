@@ -167,7 +167,7 @@ export default function CUDATelemetryHUD() {
           </div>
         </div>
 
-        {/* Warning panel if RTX approaches memory limit or high temperatures */}
+        {/* Warning panel if GPU approaches memory limit or high temperatures */}
         {gpuTemp > 78 || vramPercentage > 88 ? (
           <div className="p-4 border border-rose-900 bg-rose-950/15 rounded-xl text-rose-400 text-xs font-bold flex items-start gap-2.5 mb-6">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-500" />

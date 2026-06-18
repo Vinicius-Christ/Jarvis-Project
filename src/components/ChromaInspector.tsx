@@ -381,7 +381,7 @@ export default function ChromaInspector() {
             Como funciona a Calibração de Memória Local?
           </h4>
           <p>
-            No modelo do JARVIS, as memórias do ChromaDB operam em um pipeline de **Retrieval-Augmented Generation (RAG)** de curtíssima latência. Durante qualquer orquestração ou pergunta ordinária do senhor, o sistema intercepta os dados e preenche os blocos de prompt da RTX local com os fatos que mostram maior similaridade de cosseno com sua frase atual.
+            No modelo do JARVIS, as memórias do ChromaDB operam em um pipeline de **Retrieval-Augmented Generation (RAG)** de curtíssima latência. Durante qualquer orquestração ou pergunta ordinária do senhor, o sistema intercepta os dados e preenche os blocos de prompt da GPU local com os fatos que mostram maior similaridade de cosseno com sua frase atual.
           </p>
         </div>
       </div>

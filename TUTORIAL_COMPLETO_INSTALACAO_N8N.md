@@ -75,7 +75,7 @@ Criamos um script atualizado e super inteligente que faz **TODOS** os passos des
 * Configura as dependências do Node.js de produção v20 e as compila.
 * Detecta placas NVIDIA dedicadas e vincula o NVIDIA Container Toolkit (para super aceleração gráfica IA).
 * Instala o Ollama nativo de forma global no Linux Mint e o configura (`systemd`) para aceitar conexões remotas do seu PC Windows (`OLLAMA_HOST=0.0.0.0:11434`).
-* Sincroniza e faz o download automático dos modelos `llama3.1` (8B) e `nomic-embed-text` (embeddings) na sua máquina.
+* Sincroniza e faz o download automático dos modelos `llama3.2` (8B) e `nomic-embed-text` (embeddings) na sua máquina.
 * Cria os repositórios estruturados do seu "Cérebro" Obsidian Vault (`jarvis-vault`).
 * **Sobe de forma totalmente automática as ferramentas de background** (PostgreSQL, Redis, ChromaDB, n8n, Home Assistant) usando imagens prontas oficiais da nuvem, sem necessitar de build local lento ou falhas de compilação!
 
@@ -200,7 +200,7 @@ Para importar qualquer um deles no n8n:
 3. Desative as opções (se tiver) e apenas cole o código JSON copiado.
 
 ### 🤖 Fluxo 1: Automatizador de Respostas de I.A. (Chatbot Local Webhook)
-Este fluxo escuta webhooks externos do seu frontend JARVIS e responde utilizando a inteligência Gemma 4 no seu próprio notebook.
+Este fluxo escuta webhooks externos do seu frontend JARVIS e responde utilizando a inteligência Llama 3.2 no seu próprio notebook.
 
 ```json
 {
@@ -219,7 +219,7 @@ Este fluxo escuta webhooks externos do seu frontend JARVIS e responde utilizando
     },
     {
       "parameters": {
-        "model": "gemma4:e4b",
+        "model": "llama3.2",
         "prompt": "={{ $json.body.message }}",
         "options": {
           "temperature": 0.7
@@ -378,7 +378,7 @@ Permite que você mande mensagens para o seu JARVIS de fora de casa pelo celular
     },
     {
       "parameters": {
-        "model": "gemma4:e4b",
+        "model": "llama3.2",
         "prompt": "={{ $json.message.text }}",
         "options": {}
       },
@@ -460,7 +460,7 @@ No App do Windows ou pela própria interface Web do Jarvis em `http://192.168.1.
 **Tokens Opcionais e para que servem:**
 * **TELEGRAM_BOT_TOKEN:** Necessário APENAS se você ativou o "Fluxo 3" (O bot de celular). Obtido com o `@BotFather` no aplicativo do Telegram.
 * **HOME_ASSISTANT_TOKEN:** Necessário APENAS se você for conectar painéis ou tomadas inteligentes da sua casa ao cérebro do Jarvis.
-* **OPENAI_API_KEY / GROQ_API_KEY:** Necessários APENAS caso você queira substituir temporariamente sua Placa de Vídeo por uma API externa na nuvem super rápida. Mas como o seu ecossistema roda local no `gemma4:e4b` no Ollama, você pode deixá-las em branco por padrão.
+* **OPENAI_API_KEY / GROQ_API_KEY:** Necessários APENAS caso você queira substituir temporariamente sua Placa de Vídeo por uma API externa na nuvem super rápida. Mas como o seu ecossistema roda local no `llama3.2` no Ollama, você pode deixá-las em branco por padrão.
 
 ---
 

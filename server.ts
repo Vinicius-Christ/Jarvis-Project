@@ -894,7 +894,7 @@ app.get("/api/system/hardware", async (_req, res) => {
     const finalGpuModel = realGpuName || staticHardware.gpus?.[0]?.model || "Gráficos Integrados";
     const finalGpuVramTotal = realGpuVramTotal !== null ? realGpuVramTotal : (staticHardware.gpus?.[0]?.vram || 4096);
 
-    // Rich simulated-real physical feedback parameters for GPU, RTX and CUDA elements (Simulated se falhar, Real se der certo)
+    // Rich simulated-real physical feedback parameters for GPU, GTX and CUDA elements (Simulated se falhar, Real se der certo)
     cachedHardware = {
       cpu: staticHardware.cpu,
       cpuUsage: Math.min(100, Math.max(0, Math.floor(baseUsage + (Math.sin(now / 3000) * 8) + Math.random() * 5))),

@@ -148,8 +148,8 @@ log_success "Ollama configurado de forma soberana para ouvir em todo o Wi-Fi dom
 # ============================================
 # 6. BAIXAR OS MODELOS DA IA
 # ============================================
-log_status "Puxando modelo lógico gemma4:e4b (Aguarde o download)..."
-ollama pull gemma4:e4b
+log_status "Puxando modelo lógico llama3.2 (Aguarde o download)..."
+ollama pull llama3.2
 log_status "Puxando modelo de embeddings nomic-embed-text..."
 ollama pull nomic-embed-text
 log_success "Modelos de IA sincronizados na máquina servidor!"

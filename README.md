@@ -8,7 +8,7 @@ O software atua como a interface central do usuário (app de desktop) onde se ma
 
 ## 🛠️ Detalhes de Implementação Técnica
 
-O JARVIS é focado em processar todas as regras em hardware de VRAM dedicada (idealmente com uma placa RTX 4070 Ti de 12GB ou superior).
+O JARVIS é focado em processar todas as regras em hardware de VRAM dedicada em seu Notebook Servidor (idealmente com uma placa GTX 1650 de 4GB e 16GB de RAM).
 
 ### 🦾 Arquitetura Modular
 

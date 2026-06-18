@@ -123,21 +123,7 @@ export default function TokensManager() {
               </div>
             </div>
 
-            <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl">
-              <label className="block text-[11px] uppercase font-bold text-zinc-300 font-mono mb-1.5">IP do Servidor Backend Linux</label>
-              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Endereço do notebook Linux rodando o motor. Se não preenchido, tenta conectar via localhost.</p>
-              <input
-                type="text"
-                name="serverIp"
-                value={localStorage.getItem("JARVIS_SERVER_URL") || ""}
-                onChange={(e) => {
-                  localStorage.setItem("JARVIS_SERVER_URL", e.target.value);
-                  setTimeout(() => window.location.reload(), 300);
-                }}
-                placeholder="Ex: http://192.168.1.50:3000"
-                className="w-full bg-black/60 border border-zinc-800 text-amber-500 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-500 transition-colors"
-              />
-            </div>
+
 
             <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl">
               <label className="block text-[11px] uppercase font-bold text-zinc-300 font-mono mb-1.5">GitHub Auth Token</label>

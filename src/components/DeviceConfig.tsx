@@ -109,7 +109,7 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
         .then(r => r.json())
         .then(data => {
           if (data.homeAssistant) {
-            setHaIp(data.homeAssistant.ip || "");
+            setHaIp(data.homeAssistant.ip || (typeof window !== 'undefined' ? window.location.hostname : ""));
             setHaToken(data.homeAssistant.token || "");
             setHaWsStatus(data.homeAssistant.wsStatus || "disconnected");
           }
@@ -127,7 +127,7 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
   const [brand, setBrand] = useState("Positivo Casa Inteligente");
   const [integration, setIntegration] = useState("Tuya Local Integration");
   const [status, setStatus] = useState("Sincronizado via LocalTuya");
-  const [targetUrl, setTargetUrl] = useState("http://192.168.1.104:8123");
+  const [targetUrl, setTargetUrl] = useState(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8123`);
   
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -138,7 +138,7 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
 
   // States for testing Ollama connection
   const [ollamaStatus, setOllamaStatus] = useState<"idle" | "testing" | "online">("online");
-  const [ollamaUrl, setOllamaUrl] = useState("http://192.168.1.104:11434");
+  const [ollamaUrl, setOllamaUrl] = useState(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:11434`);
 
   const deviceTypes = [
     "Lâmpada Inteligente (RGB/Dimmer)",
@@ -678,7 +678,7 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
                         </button>
 
                         <a
-                          href={device.targetUrl || "http://192.168.1.104:8123"}
+                          href={device.targetUrl || `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8123`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-2.5 py-1.5 bg-zinc-950 hover:bg-[var(--brand-dark)] border border-zinc-805 text-[10px] font-mono text-[var(--brand-light)] hover:text-white transition rounded flex items-center gap-1 cursor-pointer"

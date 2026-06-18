@@ -830,7 +830,7 @@ export default function App() {
                 <Home className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[var(--brand-light)]" />
               </a>
               <a
-                href={`${getServerUrl() || "http://localhost:3000"}/api-docs`}
+                href="/api-docs"
                 target="_blank"
                 rel="noreferrer"
                 className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${
@@ -1384,7 +1384,7 @@ export default function App() {
                     <div className="bg-zinc-950/80 p-3 rounded-lg border border-zinc-900 font-mono text-[10px] text-zinc-500 space-y-1">
                       <div className="flex justify-between">
                         <span>IP do Servidor</span>
-                        <span className="text-zinc-300">{getServerUrl().replace(/^https?:\/\//, '').split(':')[0] || "localhost"}</span>
+                        <span className="text-zinc-300">{typeof window !== 'undefined' ? window.location.hostname : "localhost"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Status de Conexão</span>

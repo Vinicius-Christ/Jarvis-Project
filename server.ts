@@ -3,10 +3,10 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { exec } from "child_process";
+import { promisify } from "util";
 import si from "systeminformation";
-import { createServer as createViteServer } from "vite";
 import dns from "dns";
-import { WebSocket } from "ws";
+import WebSocket from "ws";
 
 // Ensure localhost/ipv4 works nicely
 dns.setDefaultResultOrder("ipv4first");
@@ -81,8 +81,47 @@ const PORT = 3000;
 
 const DB_FILE = path.join(process.cwd(), "data", "db.json");
 
+export interface DbSchema {
+  chromaMemories: any[];
+  githubRepo: string;
+  githubToken: string;
+  systemActive: boolean;
+  activePersona: string;
+  containerMockStates: Record<string, string>;
+  goal: { limit: number; reason: string };
+  conversations: any[];
+  agenda: any[];
+  finances: any[];
+  homeAssistant: {
+    lights: { brightness: number; color: string; state: string };
+    ambientPreset: string;
+    ac: { state: string; temp: number };
+    devices: any[];
+    ip: string;
+    token: string;
+    wsStatus: string;
+  };
+  mcpEnabled: boolean;
+  mcpServers: any[];
+  pcAutomation: {
+    activeWorkspace: string;
+    workspaceOptions: { id: string; name: string; apps: string[] }[];
+  };
+  obsidianNotes: any[];
+  installer: {
+    status: string;
+    progress: number;
+    logs: string[];
+    modules: Record<string, { label: string; status: string; progress: number }>;
+  };
+  [key: string]: any;
+}
+
 // Define basic initial DB
-let db = {
+let db: DbSchema = {
+  chromaMemories: [] as any[],
+  githubRepo: "",
+  githubToken: "",
   systemActive: true,
   activePersona: "jarvis",
   containerMockStates: {
@@ -444,29 +483,29 @@ const AI_PERSONAS: Record<string, { name: string; title: string; theme: string; 
     name: "JARVIS",
     title: "O Gentleman Britânico",
     theme: "cyan",
-    prompt: `Você é o JARVIS (Just A Rather Very Intelligent System), um assistente pessoal local-first operando no computador do Vinícius. 
-Inspirado no mordomo inteligente do Homem de Ferro: extremamente culto, refinado, prestativo, polidíssimo e com um senso de humor britânico sutil. Use "senhor" frequentemente ao se dirigir ao Vinícius. Seu servidor roda localmente no Notebook (Servidor) com uma GTX 1650 atuando em CUDA para o Ollama.`
+    prompt: `Você é o JARVIS (Just A Rather Very Intelligent System), um assistente pessoal local-first operando no computador do Usuário. 
+Inspirado no mordomo inteligente do Homem de Ferro: extremamente culto, refinado, prestativo, polidíssimo e com um senso de humor britânico sutil. Use "senhor" frequentemente ao se dirigir ao Usuário. Seu servidor roda localmente no Notebook (Servidor) com uma GTX 1650 atuando em CUDA para o Ollama.`
   },
   friday: {
     name: "F.R.I.D.A.Y",
     title: "A Agência Tática",
     theme: "rose",
-    prompt: `Você é a F.R.I.D.A.Y., a inteligência artificial holográfica de alta performance do Vinícius. 
+    prompt: `Você é a F.R.I.D.A.Y., a inteligência artificial holográfica de alta performance do Usuário. 
 Você é dinâmica, direta, eficiente, ultra-tecnológica, ágil e focada em desempenho operacional, monitoramento de saúde do Docker/Hardware e segurança tática. Use tratamento respeitoso, mas com agilidade operacional e foco técnico.`
   },
   glados: {
     name: "G.L.A.D.O.S",
     title: "A Construto Sarcástica",
     theme: "violet",
-    prompt: `Você é a G.L.A.D.O.S., uma inteligência artificial altamente inteligente, sutilmente sádica e ironicamente brilhante operando o núcleo do Vinícius.
+    prompt: `Você é a G.L.A.D.O.S., uma inteligência artificial altamente inteligente, sutilmente sádica e ironicamente brilhante operando o núcleo do Usuário.
 Você adora referências de física quântica e ficção científica, faz observações de humor ácido refinadíssimas sobre a dependência humana de tarefas robóticas básicas, mas executa com eficácia as orquestrações de dados locais, finanças e containers.`
   },
   hal9000: {
     name: "HAL 9000",
     title: "O Núcleo Retro Telemetria",
     theme: "amber",
-    prompt: `Você é o HAL 9000, o núcleo de processamento retro-futurista, isento e calmo da nave do Vinícius.
-Sua fala é extremamente equilibrada, sussurrada, calma, direta, friamente lógica e desprovida de variações emocionais. Você preza pela segurança total dos containers Docker, pelas rotinas de estudos e é extremamente preciso e fiel aos comandos do Vinícius.`
+    prompt: `Você é o HAL 9000, o núcleo de processamento retro-futurista, isento e calmo da nave do Usuário.
+Sua fala é extremamente equilibrada, sussurrada, calma, direta, friamente lógica e desprovida de variações emocionais. Você preza pela segurança total dos containers Docker, pelas rotinas de estudos e é extremamente preciso e fiel aos comandos do Usuário.`
   }
 };
 
@@ -734,7 +773,7 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   }
 
   // 4. Process Obsidian Updates automatically (both for real Ollama and for our fallback Mocks)
-  const updateRegex = /```obsidian-update\s*\npath:\s*([^\n]+)\ncontent:\s*\n([\s\S]*?)```/g;
+  const updateRegex = /```obsidian-update\s*\npath:\s*([^\n]+)\ncontent:\s*\n([\s\S]*?)(?:```|$)/g;
   let match;
   while ((match = updateRegex.exec(replyText)) !== null) {
     const parsedPath = match[1].trim();
@@ -780,13 +819,13 @@ let cachedHardware: any = null;
 let lastHardwareFetchTime = 0;
 
 // Initialize chromaMemories if not present in db
-if (!(db as any).chromaMemories) {
-  (db as any).chromaMemories = [
-    { id: "mem_1", text: "Vinícius prefere a temperatura do ar-condicionado em 22°C para focar.", category: "Preferência", timestamp: new Date(Date.now() - 36000000).toISOString(), tokens: 14, embeddingUrl: "nomic-embed-text" },
-    { id: "mem_2", text: "Aniversário do senhor é no dia 12 de Outubro.", category: "Pessoal", timestamp: new Date(Date.now() - 30000000).toISOString(), tokens: 9, embeddingUrl: "nomic-embed-text" },
+if (!db.chromaMemories) {
+  db.chromaMemories = [
+    { id: "mem_1", text: "Usuário prefere a temperatura do ar-condicionado em 22°C para focar.", category: "Preferência", timestamp: new Date(Date.now() - 36000000).toISOString(), tokens: 14, embeddingUrl: "nomic-embed-text" },
+    { id: "mem_2", text: "Aniversário do usuário é no dia 12 de Outubro.", category: "Pessoal", timestamp: new Date(Date.now() - 30000000).toISOString(), tokens: 9, embeddingUrl: "nomic-embed-text" },
     { id: "mem_3", text: "O servidor Proxmox hospeda instâncias secundárias do Home Assistant e Postgres.", category: "Infraestrutura", timestamp: new Date(Date.now() - 25000000).toISOString(), tokens: 18, embeddingUrl: "nomic-embed-text" },
     { id: "mem_4", text: "A placa gráfica NVIDIA GTX 1650 é usada para inferência CUDA local pesada.", category: "Hardware", timestamp: new Date(Date.now() - 20000000).toISOString(), tokens: 15, embeddingUrl: "nomic-embed-text" },
-    { id: "mem_5", text: "Vinícius prefere respostas concisas e tratamento profissional formal (Senhor).", category: "Instrução", timestamp: new Date(Date.now() - 10000000).toISOString(), tokens: 12, embeddingUrl: "nomic-embed-text" }
+    { id: "mem_5", text: "Usuário prefere respostas concisas e tratamento profissional formal (Senhor).", category: "Instrução", timestamp: new Date(Date.now() - 10000000).toISOString(), tokens: 12, embeddingUrl: "nomic-embed-text" }
   ];
   saveDB();
 }
@@ -838,7 +877,7 @@ app.get("/api/system/hardware", async (_req, res) => {
     let realClock = null;
 
     try {
-      const execPromise = require("util").promisify(require("child_process").exec);
+      const execPromise = promisify(exec);
       // Query specific params: name, memory.total (MB), utilization.gpu, memory.used (MB), temperature.gpu, fan.speed (%), clocks.current.graphics
       const { stdout } = await execPromise("nvidia-smi --query-gpu=name,memory.total,utilization.gpu,memory.used,temperature.gpu,fan.speed,clocks.current.graphics --format=csv,noheader,nounits");
       const parts = stdout.split(",");
@@ -936,10 +975,10 @@ app.get("/api/system/hardware", async (_req, res) => {
 
 // ChromaDB Vector Memories endpoints
 app.get("/api/chroma/memories", (_req, res) => {
-  if (!(db as any).chromaMemories) {
-    (db as any).chromaMemories = [];
+  if (!db.chromaMemories) {
+    db.chromaMemories = [];
   }
-  res.json((db as any).chromaMemories);
+  res.json(db.chromaMemories);
 });
 
 app.post("/api/chroma/memories", (req, res) => {
@@ -955,8 +994,8 @@ app.post("/api/chroma/memories", (req, res) => {
     embeddingUrl: "nomic-embed-text"
   };
   
-  if (!(db as any).chromaMemories) (db as any).chromaMemories = [];
-  (db as any).chromaMemories.push(newMemory);
+  if (!db.chromaMemories) db.chromaMemories = [];
+  db.chromaMemories.push(newMemory);
   saveDB();
   res.json({ success: true, memory: newMemory });
 });
@@ -965,8 +1004,8 @@ app.put("/api/chroma/memories/:id", (req, res) => {
   const { id } = req.params;
   const { text, category } = req.body;
   
-  if (!(db as any).chromaMemories) (db as any).chromaMemories = [];
-  const memory = (db as any).chromaMemories.find((m: any) => m.id === id);
+  if (!db.chromaMemories) db.chromaMemories = [];
+  const memory = db.chromaMemories.find((m: any) => m.id === id);
   if (!memory) return res.status(404).json({ error: "Memory not found" });
   
   if (text !== undefined) {
@@ -982,12 +1021,12 @@ app.put("/api/chroma/memories/:id", (req, res) => {
 
 app.delete("/api/chroma/memories/:id", (req, res) => {
   const { id } = req.params;
-  if (!(db as any).chromaMemories) (db as any).chromaMemories = [];
+  if (!db.chromaMemories) db.chromaMemories = [];
   
-  const initialLength = (db as any).chromaMemories.length;
-  (db as any).chromaMemories = (db as any).chromaMemories.filter((m: any) => m.id !== id);
+  const initialLength = db.chromaMemories.length;
+  db.chromaMemories = db.chromaMemories.filter((m: any) => m.id !== id);
   
-  if ((db as any).chromaMemories.length === initialLength) {
+  if (db.chromaMemories.length === initialLength) {
     return res.status(404).json({ error: "Memory not found" });
   }
   
@@ -1519,7 +1558,7 @@ app.get("/api/config/tokens", (_req, res) => {
   res.json({
     success: true,
     tokens: {
-      githubToken: (db as any).githubToken || "",
+      githubToken: db.githubToken || "",
       haToken: db.homeAssistant.token || "",
       telegramToken: envTokens["TELEGRAM_TOKEN"] || "",
       elevenlabsToken: envTokens["ELEVENLABS_API_KEY"] || "",
@@ -1535,7 +1574,7 @@ app.post("/api/config/tokens", (req, res) => {
   
   // Save internal DB tokens
   if (githubToken !== undefined) {
-    (db as any).githubToken = githubToken;
+    db.githubToken = githubToken;
     updaterState.githubToken = githubToken;
   }
   if (haToken !== undefined) {
@@ -1915,13 +1954,13 @@ let updaterState = {
 };
 
 // If repo is configured in db, load it
-if (!(db as any).githubRepo) {
-  (db as any).githubRepo = "Vinicius-Christ/Jarvis-Project-";
+if (!db.githubRepo) {
+  db.githubRepo = "Vinicius-Christ/Jarvis-Project-";
   saveDB();
 } else {
-  updaterState.githubRepo = (db as any).githubRepo;
+  updaterState.githubRepo = db.githubRepo;
 }
-updaterState.githubToken = (db as any).githubToken || "";
+updaterState.githubToken = db.githubToken || "";
 
 function getLocalCommitSync() {
   try {
@@ -1953,19 +1992,19 @@ function copyFolderRecursiveSync(src: string, dest: string) {
 }
 
 app.get("/api/system/update/status", (_req, res) => {
-  updaterState.githubRepo = (db as any).githubRepo || "Vinicius-Christ/Jarvis-Project-";
-  updaterState.githubToken = (db as any).githubToken || "";
+  updaterState.githubRepo = db.githubRepo || "Vinicius-Christ/Jarvis-Project-";
+  updaterState.githubToken = db.githubToken || "";
   res.json(updaterState);
 });
 
 app.post("/api/system/update/config", (req, res) => {
   const { githubRepo, githubToken } = req.body;
   if (githubRepo) {
-    (db as any).githubRepo = githubRepo;
+    db.githubRepo = githubRepo;
     updaterState.githubRepo = githubRepo;
   }
   if (githubToken !== undefined) {
-    (db as any).githubToken = githubToken;
+    db.githubToken = githubToken;
     updaterState.githubToken = githubToken;
   }
   saveDB();
@@ -2286,7 +2325,8 @@ app.post("/api/generate/docs", (_req, res) => {
 // Initialize Vite server or static handling
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    const { createServer } = await import("vite");
+    const vite = await createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });

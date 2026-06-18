@@ -115,15 +115,66 @@ Como o JARVIS roda localmente sob protocolo HTTP pelo IP (ex: `http://192.168.1.
 4. Um botão azul **"Relaunch" / "Reiniciar"** aparecerá na parte inferior da tela. Clique nele.
 5. Acesse seu JARVIS novamente pelo navegador. O Chrome agora tratará a rede local como segura, liberando instantaneamente o acesso ao microfone e câmera!
 
-### 4. Cloudflare Tunnels (A melhor forma de ter um Domínio)
-Se você quer entrar no site completo do JARVIS (para ver a Dashboard, relatórios e Obsidian) fora de casa, a forma mais moderna e segura não é abrir portas no seu roteador (o que seria perigoso). A melhor prática no mercado hoje é usar o Cloudflare Tunnels:
+### 4. Cloudflare Tunnels (A melhor forma de ter um Domínio e Acesso de Qualquer Lugar do Mundo)
+Vamos usar a "Mágica do Cloudflare". É como criar um túnel invisível da sua casa direto pro seu celular. Não importa onde você esteja, você clica e entra na sua casa de forma super segura! Veja como fazer passo a passo, beeeeem fácil:
 
-1. Você compra um domínio (ex: *vinicius.com.br*).
-2. Instala um pequeno agente (arquivo) no seu Linux Mint (configurado na plataforma Zero Trust da Cloudflare).
-3. O Cloudflare cria um "Túnel" criptografado seguro que mapeia o seu domínio público direto para a porta local `3000` do seu Linux.
-4. Você acessará `https://jarvis.vinicius.com.br` (ou o subdomínio que preferir) e o sistema abrirá lindamente, já com cadeado verde (SSL/HTTPS automático). 
+#### Fase 1: Criando a sua Conta (O Terreno)
+1. Pelo seu computador da casa, entre no site [dash.cloudflare.com](https://dash.cloudflare.com).
+2. Clique em **"Sign Up"** (que significa "Cadastrar") para criar uma conta com seu e-mail e uma senha.
+3. Depois que criar, você precisa avisar pro site qual será o seu "endereço mágico" (por exemplo, `meunome.com`). Se precisar, assista um vídeo rápido no YouTube ensinando "como ter um domínio na Cloudflare" ou "Freenom e Cloudflare" para ter o seu facilmente!
 
-> **Dica:** Isso também resolve definitivamente o problema de permissão de microfone mencionado acima sem mexer em *flags*, porque o uso de HTTPS já é tratado como um site 100% seguro pelo Google Chrome e Apple Safari!
+#### Fase 2: Cavando o Túnel (Zero Trust)
+1. Dentro do Cloudflare, procure pela palavra **Zero Trust** no lado esquerdo da tela (tem o desenho de um escudinho azul) e clique nela.
+2. Escolha o plano **Free** (Grátis), se ele perguntar.
+3. Na nova tela, à esquerda, clique na palavra **Networks** (Redes) e depois clique ali embaixo em **Tunnels** (Túneis).
+4. Clique no Botão Azulão no meio da tela chamado **"Create a tunnel"**.
+5. Marque a primeira bolinha chamada **"Cloudflared"** e clique em *Next*.
+6. Ele vai pedir um nome. Escreva `MeuJarvis` e clique em **"Save tunnel"**.
+
+#### Fase 3: Ligando o Túnel no seu Computador (Linux Mint)
+1. O site agora te mostra um código grandão, cheio de letras. Olhe as caixinhas de sistema no alto. Como o seu servidor é o Linux Mint, primeiro clique na caixinha **Debian / Ubuntu**.
+2. No quadradinho cinza mais embaixo que vai aparecer, olhe pro lado direito dele e **clique no desenho de 2 folhinhas**. Isso vai "Copiar" esse código grande para a memória ("Copy to clipboard").
+3. Vá no **Terminal** do seu Linux Mint (`Ctrl + Alt + T`).
+4. Clique com o Botão Direito do mouse na janela de terminal preta, cole as letras, e aperte a tecla **"ENTER"** no seu teclado. Talvez ele peça sua senha do Linux, pode digitar (ela não aparece enquanto digita) e aperte Enter.
+5. Espere baixar e terminar. Volte lá no site da Cloudflare: se lá embaixo da página estiver escrito que está **Connected** (Conectado) e verdinho, sorria! Você conseguiu fazer o túnel! Clique em **Next**.
+
+#### Fase 4: Ensinando o Caminho Pro Seu Celular
+Agora é a hora de criar as faixas de pista para o JARVIS e para os irmãos dele (n8n e Casa) passarem por dentro desse túnel até você!
+
+**Passo 1: A Rota do JARVIS!**
+1. Na tela, ele pergunta o "Subdomain". Escreva: **jarvis**
+2. No "Domain", selecione o seu site que você cadastrou lá na Fase 1.
+3. No "Service Type", escolha do menu: **HTTP**
+4. No "URL", digite exatamente: **localhost:3000**
+5. E clique no botão azul lá embaixo **"Save hostname"**. Pronto! O Jarvis já está na internet com a sua carinha (ex: `jarvis.seunome.com`)!
+
+**Passo 2: A Rota do n8n (As Mãos)**
+1. Clique em cima do túnel ("MeuJarvis") que você acabou de criar e vá em Configurar (Configure).
+2. Lá em cima na tela, clique na aba **Public Hostnames**.
+3. Clique no botão azul gigante **Add a public hostname**.
+4. Em Subdomain escreva **n8n** (o "Domain" continua o seu site mesmo).
+5. Service Type: **HTTP**
+6. URL: **localhost:5678**
+7. Clique em **Save**.
+
+**Passo 3: A Rota do Home Assistant (A Casa)**
+1. Clique novamente no botão azul de **Add a public hostname**.
+2. Em Subdomain escreva **casa**
+3. Service Type: **HTTP**
+4. URL: **localhost:8123**
+5. Salve! A magia está completa! Tudo certinho e conectado! Tente abrir do celular!
+
+#### Fase 5: Atualização Automática Pelo Celular (E o Git?!)
+**Mas e se eu clicar em Atualizar o Repositório do JARVIS no celular enquanto eu viajo? Funciona? O computador vai reiniciar direitinho?**
+
+**A resposta é um grande SIM!**
+Seu celular entra pelo túnel secreto da Cloudflare. Quando você viaja, acessa o JARVIS pelo navegador e clica naquele botão azul lindo "Atualizar do Git", acontece isso:
+1. O clique voa seguro pela internet, entra no túnel Cloudflare do site e sai direto no seu Linux Mint do quarto!
+2. O servidor Linux Mint avisa o sistema "O chefinho mandou atualizar as coisas!".
+3. O código que roda no seu Linux chama automaticamente o GitHub na nuvem, faz o "Git Pull" escondido dos arquivos novos e sobrescreve tudo certinho.
+4. E melhor ainda: o servidor reinicia o Jarvis de forma invisível. Em alguns instantes, você vai apertar "Atualizar Página" no seu celular e verá a versão nova rodando! Você nunca mais vai precisar mexer no computador pessoalmente.
+
+> **Dica Legal:** Fazer esse mágico túnel Cloudflare resolve definitivamente aquele problema chato de "permissão de microfone bloquado" mencionado no Passo 3. Seus navegadores de celular vão ver que o site vem da Cloudflare com o "cadeadinho fechado de site seguro (HTTPS)" e já vão liberar o controle de voz para o JARVIS de primeira!
 
 ---
 

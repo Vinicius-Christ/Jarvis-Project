@@ -497,6 +497,117 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
                   </p>
                 </div>
               </div>
+
+              <div className="mt-8 border-t border-zinc-800 pt-5 space-y-4">
+                <h4 className="text-[13px] font-sans font-bold text-cyan-400 uppercase tracking-wide flex items-center gap-2">
+                  <Wifi className="h-4 w-4" />
+                  Módulo de Acesso Remoto: Acesso de Qualquer Lugar (Nível Ultra Fácil)
+                </h4>
+                <p className="text-[11px] text-zinc-400 leading-relaxed max-w-2xl">
+                  Vamos usar a "Mágica do Cloudflare". É como criar um túnel invisível da sua casa direto pro seu celular. Não importa onde você esteja, você clica e entra na sua casa.
+                </p>
+
+                {/* Fase 1 */}
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 focus-ring hover:border-cyan-500/30 transition-colors">
+                  <h5 className="text-[12px] font-bold text-cyan-400 flex items-center gap-2 mb-3">
+                    <span className="bg-cyan-500/20 text-cyan-400 w-5 h-5 rounded flex items-center justify-center">1</span>
+                    Criando a sua Conta (O Terreno)
+                  </h5>
+                  <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
+                    <li>Pelo seu computador da casa, entre no site <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">dash.cloudflare.com</a>.</li>
+                    <li>Clique em <strong>"Sign Up"</strong> (que significa "Cadastrar") para criar uma conta com seu e-mail e uma senha.</li>
+                    <li>Depois que criar, você precisa avisar pro site qual será o seu "endereço mágico" (por exemplo, <code className="text-pink-400 font-mono">meunome.com</code>). Assista um video rápido no YouTube ensinando como ter um "domínio na Cloudflare" ou "freenom Cloudflare" caso você não tenha nenhum.</li>
+                  </ul>
+                </div>
+
+                {/* Fase 2 */}
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 focus-ring hover:border-cyan-500/30 transition-colors mt-3">
+                  <h5 className="text-[12px] font-bold text-cyan-400 flex items-center gap-2 mb-3">
+                    <span className="bg-cyan-500/20 text-cyan-400 w-5 h-5 rounded flex items-center justify-center">2</span>
+                    Cavando o Túnel (Zero Trust)
+                  </h5>
+                  <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
+                    <li>Dentro do Cloudflare, procure pela palavra <strong>Zero Trust</strong> no lado esquerdo (tem o desenho de um escudinho azul) e clique nela.</li>
+                    <li>Escolha o plano <strong>Free</strong> (Grátis).</li>
+                    <li>Na nova tela, à esquerda, clique na palavra <strong>Networks</strong> (Redes) e depois clique embaixo em <strong>Tunnels</strong> (Túneis).</li>
+                    <li>Clique no <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded">Botão Azul</span> no meio da tela chamado <strong>"Create a tunnel"</strong>.</li>
+                    <li>Marque a primeira bolinha chamada <strong>"Cloudflared"</strong> e clique em <em>Next</em>.</li>
+                    <li>Ele vai pedir um nome. Escreva <code className="text-pink-400 font-mono">MeuJarvis</code> e clique em <strong>"Save tunnel"</strong>.</li>
+                  </ul>
+                </div>
+
+                {/* Fase 3 */}
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 focus-ring hover:border-cyan-500/30 transition-colors mt-3">
+                  <h5 className="text-[12px] font-bold text-cyan-400 flex items-center gap-2 mb-3">
+                    <span className="bg-cyan-500/20 text-cyan-400 w-5 h-5 rounded flex items-center justify-center">3</span>
+                    Ligando o Túnel no seu Computador
+                  </h5>
+                  <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
+                    <li>O site agora mostra um código cheio de letras feias. Olhe as caixinhas de sistema em cima (Windows, Mac, Linux...). Se seu sistema está usando o Windows para rodar o Docker, clique na caixinha <strong>Windows</strong>.</li>
+                    <li>No quadrado cinza embaixo, olhe pro lado direito dele e <b>clique no desenho de 2 folhinhas</b>. Isso vai "Copiar" esse código grandão para a memória.</li>
+                    <li>Volte para a área de trabalho do seu computador de casa. Aperte o "Iniciar" e digite <strong>PowerShell</strong>.</li>
+                    <li>Clique com o <strong>Botão Direito do Mouse</strong> e escolha <strong>"Executar como Administrador"</strong>.</li>
+                    <li>Quando abrir a tela azul, apenas dê outro Pique com o botão direito lá no meio e aperte o botão <strong>"ENTER"</strong> no teclado.</li>
+                    <li>Espere baixar e instalar sozinho. Volte pro site: se lá embaixo estiver escrito <strong><span className="text-emerald-400">Connected</span></strong> (Conectado), sorria! Você conseguiu fazer o túnel! Clique em <strong>Next</strong>.</li>
+                  </ul>
+                </div>
+
+                {/* Fase 4 */}
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 focus-ring hover:border-cyan-500/30 transition-colors mt-3">
+                  <h5 className="text-[12px] font-bold text-cyan-400 flex items-center gap-2 mb-3">
+                    <span className="bg-cyan-500/20 text-cyan-400 w-5 h-5 rounded flex items-center justify-center">4</span>
+                    Ensinando o Caminho Pro Seu Celular
+                  </h5>
+                  <p className="text-[11px] text-zinc-300 mb-3">Agora a gente cria as rotas para o JARVIS e para os amigos dele (n8n e Casa) passarem pelo túnel.</p>
+                  
+                  <div className="pl-2 border-l border-cyan-500/30 ml-2 space-y-4">
+                    <div>
+                      <strong className="text-pink-400 text-[11px]">Passo 1: A Rota do JARVIS!</strong>
+                      <ul className="text-[11px] text-zinc-400 list-disc pl-5 mt-1 space-y-1">
+                        <li>Ele pergunta o "Subdomain". Escreva: <strong>jarvis</strong></li>
+                        <li>No "Domain", selecione o seu site que você cadastrou no começo da Fase 1.</li>
+                        <li>No "Service Type", escolha do menu: <strong>HTTP</strong></li>
+                        <li>No "URL", digite exatamente: <strong>localhost:3000</strong></li>
+                        <li>E clique no botão azul <strong>"Save hostname"</strong>. Pronto! O Jarvis já está na internet!</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <strong className="text-yellow-400 text-[11px]">Passo 2: A Rota do n8n (As Mãos)</strong>
+                      <ul className="text-[11px] text-zinc-400 list-disc pl-5 mt-1 space-y-1">
+                        <li>Clique em cima do túnel que você acabou de criar e clique para Configurar (Configure).</li>
+                        <li>Lá em cima, clique na aba <strong>Public Hostnames</strong>.</li>
+                        <li>Clique no botão azul <strong>Add a public hostname</strong>.</li>
+                        <li>Em Subdomain escreva <strong>n8n</strong></li>
+                        <li>Service Type: <strong>HTTP</strong></li>
+                        <li>URL: <strong>localhost:5678</strong></li>
+                        <li>Salve!</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <strong className="text-emerald-400 text-[11px]">Passo 3: A Rota do Home Assistant (A Casa)</strong>
+                      <ul className="text-[11px] text-zinc-400 list-disc pl-5 mt-1 space-y-1">
+                        <li>Faça de novo: <strong>Add a public hostname</strong>.</li>
+                        <li>Em Subdomain escreva <strong>casa</strong></li>
+                        <li>Service Type: <strong>HTTP</strong></li>
+                        <li>URL: <strong>localhost:8123</strong></li>
+                        <li>Salve! Magia completa!</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fase 5 */}
+                <div className="bg-gradient-to-r from-emerald-900/40 to-cyan-900/20 p-4 rounded-xl border border-emerald-500/20 space-y-2 mt-3">
+                  <h5 className="text-[12px] font-bold text-emerald-400 uppercase flex items-center gap-2">
+                    E pra eu atualizar o aplicativo da rua?! Funciona?
+                  </h5>
+                  <p className="text-[11px] text-zinc-300 leading-relaxed font-semibold">
+                    Sim! O seu celular pelo 4G entra pelo túnel do site. Quando você está dentro do site do JARVIS na rua e aperta o botão <span className="text-emerald-400 bg-emerald-900/30 px-1 rounded">Atualizar do Git</span> na aba de Modificações, este comando viagem super rápido da nuvem do seu celular, desce o túnel, chega no seu computador do quarto e ele mesmo puxa o novo arquivo da internet e reinicia SOZINHO! Quando seu celular piscar, já carregará a versão nova perfeitamente!
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

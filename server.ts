@@ -678,7 +678,8 @@ app.post("/api/chat", async (req, res) => {
 1. Responda em português de forma EXTREMAMENTE concisa, objetiva e direta. Como sua resposta será sintetizada em voz, use 1 a 2 frases no máximo para evitar lentidão. Mantenha a nobreza de sua persona.
 2. Você tem acesso à base de conhecimento Obsidian, ao sistema de controle da casa inteligente (Home Assistant) e comandos do PC.
 3. Se o usuário pedir para executar ações de IoT (ex: apagar lâmpadas) ou de PC, responda muito rápido afirmando que está executando e inclua a tag XML:
-   - Ex IoT: <command type="IoT" action="Modo Cinema" />
+   - Ex IoT (Modos): <command type="IoT" action="Modo Cinema" />
+   - Ex IoT (Desligar): <command type="IoT" action="Desligar Luzes" />
    - Ex PC: <command type="PC" workspace="study" />
 4. Para INCLUIR registros, use as tags:
    - Ex Agenda: <command type="Agenda" title="Almoço com a família" datetime="2026-05-31T12:30" />
@@ -827,6 +828,8 @@ content:
 A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
       } else if (lower.includes("empacota") || lower.includes("inno") || lower.includes("nsis") || lower.includes("setup")) {
         replyText = `Excelente escolha, senhor. O Inno Setup é incrivelmente robusto para aplicações nativas de Windows e nos permitirá criar um instalador elegante (Setup.exe) para o ecossistema do JARVIS de forma offline.\n\nHabilitei uma nova interface "Deploy / Setup" (disponível na aba de CONFIGURAÇÕES, IOT & FERRAMENTAS). Nela, construí um Assistente de Empacotamento que gerará o script \`.iss\` (Inno Setup) para o seu Electron App automaticamente. <command type="Navigate" to="settings" tab="packager" />`;
+      } else if (lower.includes("deslig") || lower.includes("apaga")) {
+        replyText = "Com certeza, senhor. Desligando os dispositivos conforme solicitado. <command type=\"IoT\" action=\"Desligar Luzes\" />";
       } else if (lower.includes("luz") || lower.includes("ilumina") || lower.includes("cinema")) {
         replyText = "Com certeza, senhor. Ajustando a iluminação local periférica para as tarefas solicitadas. <command type=\"IoT\" action=\"Modo Cinema\" />";
       } else if (lower.includes("estudos") || lower.includes("trabalhar") || lower.includes("workspace")) {
@@ -1536,22 +1539,33 @@ app.post("/api/update/iot", async (req, res) => {
       // Find lights in synchronized devices and apply properties
       db.homeAssistant.devices.forEach(d => {
         if (d.id.startsWith("light.")) {
-          const service = presetName === "Modo Noturno" || presetName === "Modo Cinema" ? "turn_on" : "turn_on";
-          const serviceData: any = {};
-          if (presetName === "Modo Cinema") {
-             serviceData.brightness_pct = 15;
-             serviceData.rgb_color = [224, 64, 251];
-          } else if (presetName === "Modo Trabalho") {
-             serviceData.brightness_pct = 90;
-             serviceData.rgb_color = [224, 247, 250];
-          } else if (presetName === "Modo Noturno") {
-             serviceData.brightness_pct = 5;
-             serviceData.rgb_color = [255, 143, 0];
+          let service = "turn_on";
+          let serviceData: any = {};
+          const lowerPreset = presetName.toLowerCase();
+          
+          if (lowerPreset.includes("desligar") || lowerPreset.includes("apagar")) {
+             service = "turn_off";
+             serviceData = undefined; // No extra data for turn_off
+          } else {
+             if (presetName === "Modo Cinema") {
+                serviceData.brightness_pct = 15;
+                serviceData.rgb_color = [224, 64, 251];
+             } else if (presetName === "Modo Trabalho") {
+                serviceData.brightness_pct = 90;
+                serviceData.rgb_color = [224, 247, 250];
+             } else if (presetName === "Modo Noturno") {
+                serviceData.brightness_pct = 5;
+                serviceData.rgb_color = [255, 143, 0];
+             }
           }
-          callHAService(d.id, "turn_on", "light", serviceData);
+          callHAService(d.id, service, "light", serviceData);
         } else if (d.id.startsWith("climate.")) {
-          const targetTemp = presetName === "Modo Cinema" ? 20 : (presetName === "Modo Trabalho" ? 22 : 24);
-          callHAService(d.id, "set_temperature", "climate", { temperature: targetTemp });
+          if (presetName.toLowerCase().includes("desligar") || presetName.toLowerCase().includes("apagar")) {
+             callHAService(d.id, "turn_off", "climate");
+          } else {
+             const targetTemp = presetName === "Modo Cinema" ? 20 : (presetName === "Modo Trabalho" ? 22 : 24);
+             callHAService(d.id, "set_temperature", "climate", { temperature: targetTemp });
+          }
         }
       });
       wsDispatched = true;

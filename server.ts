@@ -712,7 +712,7 @@ app.post("/api/chat", async (req, res) => {
         },
         signal: AbortSignal.timeout(30000), // very fast timeout
         body: JSON.stringify({
-          model: "llama3-8b-8192",
+          model: "llama-3.1-8b-instant",
           messages: [
             { role: "system", content: "Responda como JARVIS. Execute os comandos se solicitados usando as tags XML do manual na mensagem anterior." },
             { role: "user", content: contextPrompt }

@@ -56,7 +56,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
   const [voiceVolume, setVoiceVolume] = useState(1.0);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const [systemVoices, setSystemVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [engineType, setEngineType] = useState("local_system_tts");
+  const [engineType, setEngineType] = useState("premium_api");
   const [noiseGate, setNoiseGate] = useState(-45);
   const [lastMeasureLatency, setLastMeasureLatency] = useState({ stt: 14, llm: 215, tts: 28 });
   const [activePersona, setActivePersona] = useState("jarvis");
@@ -227,7 +227,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           }
 
           const startLlm = Date.now();
-          const reply = await onSendMessageRef.current(transcript, undefined, "llama3.2");
+          const reply = await onSendMessageRef.current(transcript, undefined, "llama-3.3-70b-versatile");
           const endLlm = Date.now();
 
           const sttLatency = Math.floor(Math.random() * 15) + 10; // 10-25ms
@@ -523,7 +523,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
     }
 
     const startLlm = Date.now();
-    const res = await onSendMessage(query, fileToSend || undefined, "llama3.2");
+    const res = await onSendMessage(query, fileToSend || undefined, "llama3.3");
     const endLlm = Date.now();
 
     const sttLatency = 0; // Text input has no speech recording cost
@@ -553,7 +553,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
               ? "bg-zinc-950/60 border-zinc-800 text-[var(--brand-primary)]" 
               : "bg-zinc-50 border-zinc-200 text-[var(--brand-primary)] font-bold"
           }`}>
-            Llama 3.2 Local
+            Llama 3.3 Local
           </div>
         </div>
 
@@ -668,7 +668,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
               ? "text-zinc-400 bg-zinc-950 border-zinc-800" 
               : "text-zinc-650 bg-white border-zinc-200"
           }`}>
-            "LOCAL_MODEL=Llama 3.2-Mini"
+            "LOCAL_MODEL=Llama 3.3-Mini"
           </span>
         </div>
 
@@ -967,7 +967,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                 <button
                   type="button"
                   onClick={() => setEngineType("premium_api")}
-                  className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center ${
+                  className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center flex flex-col justify-center items-center ${
                     engineType === "premium_api"
                       ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold shadow-[0_2px_8px_var(--brand-glow)]"
                       : isDarkMode
@@ -975,7 +975,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                         : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
                   }`}
                 >
-                  ElevenLabs / OpenAI (Premium)
+                  <span>Microsoft Edge TTS </span>
+                  <span className="opacity-70 text-[8px] font-sans">(ou ElevenLabs/OpenAI)</span>
                 </button>
               </div>
 

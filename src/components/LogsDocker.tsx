@@ -43,7 +43,7 @@ export default React.memo(function LogsDocker() {
   });
 
   const workerNodesList = [
-    { id: "agent_coder", name: "Agente SSH (Coder)", desc: "Worker rodando Llama 3.2 isolado focado em comandos SSH no host.", limit: "3.5GB VRAM" },
+    { id: "agent_coder", name: "Agente SSH (Coder)", desc: "Worker rodando Llama 3.3 isolado focado em comandos SSH no host.", limit: "3.5GB VRAM" },
     { id: "agent_obsidian", name: "Agente Leitor (Vault)", desc: "Worker lendo arquivos .md do Obsidian via integração n8n.", limit: "1.5GB VRAM" },
     { id: "agent_research", name: "Agente Deep Research", desc: "Varredura DuckDuckGo via CLI.", limit: "2.5GB VRAM" }
   ];
@@ -523,7 +523,7 @@ export default React.memo(function LogsDocker() {
       <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div className="flex items-center gap-2.5 text-xs text-zinc-400">
           <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-          <span>Monitorando subnet interna do docker do desktop na rede pessoal Windows WSL2 host bridge.</span>
+          <span>Monitorando subnet interna do docker do desktop na interface linux host bridge.</span>
         </div>
         <span className="text-[10px] font-mono text-zinc-500">
           Docker Subnet: 172.18.0.0/16

@@ -177,7 +177,7 @@ export default function TokensManager() {
 
             <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl">
               <label className="block text-[11px] uppercase font-bold text-rose-400 font-mono mb-1.5">ElevenLabs API Key (Opcional - Vozes Naturais)</label>
-              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Deixa as respostas e leituras de notificações do sistema e da assistente em PT-BR extremamente realistas. A voz sintética do Windows será o fallback.</p>
+              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Deixa as respostas e leituras de notificações do sistema e da assistente em PT-BR extremamente realistas. A voz offline ou Node Edge TTS servirão como fallback.</p>
               <input
                 type="password"
                 name="elevenlabsToken"
@@ -190,7 +190,7 @@ export default function TokensManager() {
 
             <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl lg:col-span-2">
               <label className="block text-[11px] uppercase font-bold text-emerald-400 font-mono mb-1.5">OpenAI API Key (Opcional - Alternativa Voz TTS)</label>
-              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Opcionalmente, pode-se utilizar a infraestrutura TTS da OpenAI em vez da sintética do Windows (se o ElevenLabs não estiver configurado).</p>
+              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Opcionalmente, pode-se utilizar a infraestrutura TTS da OpenAI em vez da sintética offline (se o ElevenLabs não estiver configurado).</p>
               <input
                 type="password"
                 name="openaiToken"

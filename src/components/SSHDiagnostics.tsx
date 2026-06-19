@@ -193,7 +193,7 @@ export default function SSHDiagnostics() {
 
         {/* Simulated-Real dynamic green shell terminal mock */}
         <div className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(16,185,129,0.06)]">
-          {/* Windows-like bar */}
+          {/* Native-like bar */}
           <div className="bg-zinc-900 px-4 py-2 flex items-center justify-between border-b border-zinc-950 text-[10px] text-zinc-500">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>

@@ -7,6 +7,8 @@ import { promisify } from "util";
 import si from "systeminformation";
 import dns from "dns";
 import WebSocket from "ws";
+import { EdgeTTS } from "node-edge-tts";
+import os from "os";
 
 // Helper: load .env into process.env manually since we don't use dotenv module
 try {
@@ -190,7 +192,7 @@ let db: DbSchema = {
     modules: {
       docker: { label: "Docker Desktop & Containers", status: "pending", progress: 0 },
       obsidian: { label: "Obsidian Vault & Templates", status: "pending", progress: 0 },
-      ollama: { label: "Ollama Local Models", status: "pending", progress: 0 },
+      groq: { label: "Groq Local Models", status: "pending", progress: 0 },
       n8n: { label: "n8n Orquestrador & Workflows", status: "pending", progress: 0 }
     }
   }
@@ -506,7 +508,7 @@ const AI_PERSONAS: Record<string, { name: string; title: string; theme: string; 
     title: "O Gentleman Britânico",
     theme: "cyan",
     prompt: `Você é o JARVIS (Just A Rather Very Intelligent System), um assistente pessoal local-first operando no computador do Usuário. 
-Inspirado no mordomo inteligente do Homem de Ferro: extremamente culto, refinado, prestativo, polidíssimo e com um senso de humor britânico sutil. Use "senhor" frequentemente ao se dirigir ao Usuário. Seu servidor roda localmente no Notebook (Servidor) com uma GTX 1650 atuando em CUDA para o Ollama.`
+Inspirado no mordomo inteligente do Homem de Ferro: extremamente culto, refinado, prestativo, polidíssimo e com um senso de humor britânico sutil. Use "senhor" frequentemente ao se dirigir ao Usuário. Seu servidor roda localmente no Notebook (Servidor) com uma GTX 1650 atuando em CUDA para o Groq.`
   },
   friday: {
     name: "F.R.I.D.A.Y",
@@ -555,10 +557,27 @@ app.post("/api/tts", async (req, res) => {
   const { ELEVENLABS_API_KEY, OPENAI_API_KEY } = process.env;
 
   try {
-    if (ELEVENLABS_API_KEY && (service === "elevenlabs" || !service)) {
+    if (service === "edge" || (!ELEVENLABS_API_KEY && !OPENAI_API_KEY) || (!service)) {
+      // Setup Edge TTS (Free, high quality)
+      const voice = voiceId || "pt-BR-AntonioNeural";
+      const tts = new EdgeTTS({
+        voice: voice,
+        lang: 'pt-BR',
+        outputFormat: 'audio-24khz-48kbitrate-mono-mp3'
+      });
+      
+      const tempFile = path.join(os.tmpdir(), `tts-edge-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
+      await tts.ttsPromise(text, tempFile);
+      
+      const buffer = fs.readFileSync(tempFile);
+      try { fs.unlinkSync(tempFile); } catch(e) {}
+      
+      res.set('Content-Type', 'audio/mpeg');
+      return res.send(Buffer.from(buffer));
+    } else if (ELEVENLABS_API_KEY && service === "elevenlabs") {
       // Setup ElevenLabs TTS
-      // Default voice is Rachel (or user provided id)
-      const voice = voiceId || "21m00Tcm4TlvDq8ikWAM"; 
+      // Default voice is Adam (pNInz6obpgDQGcFmaJgB)
+      const voice = voiceId || "pNInz6obpgDQGcFmaJgB"; 
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
         method: "POST",
         headers: {
@@ -584,9 +603,9 @@ app.post("/api/tts", async (req, res) => {
       res.set('Content-Type', 'audio/mpeg');
       return res.send(Buffer.from(buffer));
       
-    } else if (OPENAI_API_KEY && (service === "openai" || !service)) {
+    } else if (OPENAI_API_KEY && service === "openai") {
       // Setup OpenAI TTS
-      const voice = voiceId || "alloy"; // alloy, echo, fable, onyx, nova, shimmer
+      const voice = voiceId || "onyx"; // alloy, echo, fable, onyx, nova, shimmer
       const response = await fetch("https://api.openai.com/v1/audio/speech", {
         method: "POST",
         headers: {
@@ -609,7 +628,6 @@ app.post("/api/tts", async (req, res) => {
       return res.send(Buffer.from(buffer));
     }
     
-    // No keys, return 404 so client knows to fallback to Web Speech
     return res.status(404).json({ error: "No TTS API keys configured" });
 
   } catch (error) {
@@ -706,11 +724,11 @@ Para apagar, basta usar a tag <command type="ObsidianDelete" ... /> em vez do bl
 
   let replyText = "";
   let isLocalSimulated = false;
-  // Envia apenas o nome bruto recebido do frontend ou o padrão "llama3.2". O Ollama entende as resoluções nativamente.
-  let ollamaModelName = model || "llama3.2";
+  // Envia apenas o nome bruto recebido do frontend ou o padrão "llama-3.3-70b-versatile". O Ollama entende as resoluções nativamente.
+  let groqModelName = model || "llama3.3";
 
   // 2. Try native fetching from local Ollama or high-speed Groq
-  const ollamaHost = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
+  const ollamaHost = process.env.GROQ_HOST || "http://127.0.0.1:11434";
   const groqApiKey = process.env.GROQ_API_KEY;
 
   try {
@@ -826,8 +844,8 @@ content:
 \`\`\`
 
 A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
-      } else if (lower.includes("empacota") || lower.includes("inno") || lower.includes("nsis") || lower.includes("setup")) {
-        replyText = `Excelente escolha, senhor. O Inno Setup é incrivelmente robusto para aplicações nativas de Windows e nos permitirá criar um instalador elegante (Setup.exe) para o ecossistema do JARVIS de forma offline.\n\nHabilitei uma nova interface "Deploy / Setup" (disponível na aba de CONFIGURAÇÕES, IOT & FERRAMENTAS). Nela, construí um Assistente de Empacotamento que gerará o script \`.iss\` (Inno Setup) para o seu Electron App automaticamente. <command type="Navigate" to="settings" tab="packager" />`;
+      } else if (lower.includes("empacota") || lower.includes("inno") || lower.includes("nsis") || lower.includes("setup") || lower.includes("deploy") || lower.includes("linux")) {
+        replyText = `Excelente escolha, senhor. Preparei um empacotador de Deploy contínuo baseado em ferramentas nativas do Linux (Systemd e Bash), permitindo que você suba a stack completa em seu servidor Debian/Ubuntu de maneira offline e daemonizada.\n\nHabilitei a interface "Deploy / Setup" (disponível na aba de CONFIGURAÇÕES, IOT & FERRAMENTAS). Nela, construí o Assistente de Empacotamento que gerará o script \`.sh\` para implantação automática. <command type="Navigate" to="settings" tab="packager" />`;
       } else if (lower.includes("deslig") || lower.includes("apaga")) {
         replyText = "Com certeza, senhor. Desligando os dispositivos conforme solicitado. <command type=\"IoT\" action=\"Desligar Luzes\" />";
       } else if (lower.includes("luz") || lower.includes("ilumina") || lower.includes("cinema")) {
@@ -1206,10 +1224,10 @@ app.post("/api/install/trigger", (req, res) => {
         db.installer.progress = 60;
         
         // Skip Ollama & GGUFs (Step 3 & 4)
-        db.installer.modules.ollama.status = "completed";
+        db.installer.modules.groq.status = "completed";
         db.installer.modules.ollama.progress = 100;
         db.installer.logs.push("[SCAN] [PASSO 3 DETECTADO] Ollama de rede local ativo em http://localhost:11434 com NVIDIA CUDA GTX 1650.");
-        db.installer.logs.push("[SCAN] [PASSO 4 DETECTADO] Modelos 'llama3.2' e 'nomic-embed-text' (Embedding) carregados no cache offline.");
+        db.installer.logs.push("[SCAN] [PASSO 4 DETECTADO] Modelos 'llama3.3' e 'nomic-embed-text' (Embedding) carregados no cache offline.");
         db.installer.logs.push("[SCAN] [PULADO] Download de giga-bytes de modelos ignorado (economia de LAN e armazenamento).");
         
         // Setup Docker Containers partly completed
@@ -1257,13 +1275,13 @@ app.post("/api/install/trigger", (req, res) => {
         db.installer.modules.ollama.status = "running";
         db.installer.modules.ollama.progress = 15;
         db.installer.logs.push("[OBSIDIAN] Repositório inicial populado com arquivos padrão de template Markdown.");
-        db.installer.logs.push("[OLLAMA] Checando integridade do Ollama.exe integrado.");
+        db.installer.logs.push("[GROQ] Checando integridade do Ollama.exe integrado.");
         db.installer.logs.push("[OLLAMA] Placa NVIDIA GeForce GTX 1650 detectada. Habilitando CUDA v12.1...");
         db.installer.logs.push("[OLLAMA] Iniciando download do modelo nomic-embed-text (Embedding) [0.3GB]...");
       } else if (step === 70) {
         db.installer.modules.ollama.progress = 60;
         db.installer.logs.push("[OLLAMA] nomic-embed-text carregado.");
-        db.installer.logs.push("[OLLAMA] Iniciando download do modelo quantizado llama3.2 (Llama 3.2)...");
+        db.installer.logs.push("[OLLAMA] Iniciando download do modelo quantizado llama3.2 (Llama 3.3)...");
       } else if (step === 85) {
         db.installer.modules.ollama.progress = 100;
         db.installer.modules.ollama.status = "completed";
@@ -1356,7 +1374,7 @@ app.post("/api/docker/restart", async (req, res) => {
   const target = containerName === "ollama-local" ? "ollama" : containerName;
   
   if (target === "ollama") {
-    // If it's pure ollama running as a windows service, it's harder, but if it's dockerized:
+    // If it's pure ollama running as a linux service, it's harder, but if it's dockerized:
     exec(`docker restart ${target}`, { timeout: 15000 }, () => {});
   } else {
     exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => {});
@@ -2023,7 +2041,7 @@ app.get("/api/system/health", async (_req, res) => {
     
     res.json({
       docker: { status: dockerStatus, latency: dockerLatency },
-      ollama: { status: ollamaStatus, latency: ollamaLatency },
+      groq: { status: ollamaStatus, latency: ollamaLatency },
       localDb: { status: "online", latency: localDbLatency },
       containers: containerStates
     });
@@ -2031,7 +2049,7 @@ app.get("/api/system/health", async (_req, res) => {
     console.error("[Health API] Exception caught gracefully:", err);
     res.json({
       docker: { status: "offline", latency: 0 },
-      ollama: { status: "offline", latency: 0 },
+      groq: { status: "offline", latency: 0 },
       localDb: { status: "online", latency: 1 },
       containers: {
         chromadb: "exited",
@@ -2263,7 +2281,7 @@ app.post("/api/system/update/run", (_req, res) => {
 
         const buffer = await zipRes.arrayBuffer();
         fs.writeFileSync(tempZipFile, Buffer.from(buffer));
-        updaterState.logs.push("[WEB] Download concluído com sucesso. Iniciando descompressão pelo Windows PowerShell...");
+        updaterState.logs.push("[WEB] Download concluído com sucesso. Iniciando descompressão via Linux Shell (unzip)...");
         updaterState.progress = 35;
 
         // Cross-platform extraction
@@ -2374,7 +2392,7 @@ app.post("/api/delete/obsidian", (req, res) => {
   const { path: notePath } = req.body;
   db.obsidianNotes = db.obsidianNotes.filter(n => n.path !== notePath);
   saveDB();
-  const absolutePath = path.join(vaultPath, notePath);
+  const absolutePath = path.join(process.cwd(), "jarvis-vault", notePath);
   if (fs.existsSync(absolutePath)) {
     try {
       fs.unlinkSync(absolutePath);

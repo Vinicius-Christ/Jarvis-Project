@@ -222,7 +222,7 @@ export default React.memo(function CUDATelemetryHUD() {
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 font-sans block">
-                  Dedicado (Llama 3.2 / IA)
+                  Dedicado (Llama 3.3 / IA)
                 </span>
                 <div className="flex items-baseline gap-1 mt-2">
                   <span className="text-2xl font-bold text-emerald-400">{(vramUsed / 1024).toFixed(2)}</span>

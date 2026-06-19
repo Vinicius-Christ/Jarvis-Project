@@ -41,7 +41,7 @@ echo ""
 # Verificar se está rodando como ROOT/SUDO
 if [ "$EUID" -ne 0 ]; then
   log_error "Por favor, execute o script utilizando sudo:"
-  echo -e "👉 ${YELLOW}sudo ./AutoInstaller.sh${NC}"
+  echo -e "👉 ${YELLOW}sudo ./deploy_jarvis.sh${NC}"
   echo ""
   exit 1
 fi

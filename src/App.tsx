@@ -22,6 +22,7 @@ import {
   Settings,
   Workflow,
   Code,
+  Trash2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -154,7 +155,7 @@ export default function App() {
 
   const [healthStatus, setHealthStatus] = useState({
     docker: { status: "online", latency: 8 },
-    ollama: { status: "online", latency: 45 },
+    groq: { status: "online", latency: 45 },
     network: { status: "online", latency: 12 },
     lastUpdated: new Date().toLocaleTimeString("pt-BR"),
   });
@@ -181,7 +182,7 @@ export default function App() {
             const data = await res.json();
             setHealthStatus({
               docker: data.docker || { status: "online", latency: 7 },
-              ollama: data.ollama || { status: "online", latency: 42 },
+              groq: data.groq || { status: "online", latency: 42 },
               network: { status: "online", latency: duration },
               lastUpdated: new Date().toLocaleTimeString("pt-BR"),
             });
@@ -289,7 +290,7 @@ export default function App() {
         body: JSON.stringify({
           message: text,
           file,
-          model: model || "llama3.2",
+          model: model || "llama-3.3-70b-versatile",
         }),
       });
       let data;
@@ -1045,7 +1046,7 @@ export default function App() {
                 Sistema Hibernado
               </h2>
               <p className="text-zinc-600 font-mono text-xs mt-2 max-w-sm text-center">
-                Todos os containers, modelos Ollama e processos de IA foram
+                Todos os containers, modelos Groq e processos de IA foram
                 pausados com sucesso para economizar processamento e memória RAM
                 no host.
               </p>
@@ -1190,7 +1191,7 @@ export default function App() {
 
                 {/* Column 3: Telemetry, Pipeline preview, CPU graphics (HUD style sidebar) */}
                 <div className="space-y-6">
-                  {/* MONITOR DE SAÚDE DO SISTEMA (DOCKER, OLLAMA, REDE) */}
+                  {/* MONITOR DE SAÚDE DO SISTEMA (DOCKER, GROQ, REDE) */}
                   <div className="holographic-card p-4 space-y-4 shadow-[0_0_15px_var(--brand-glow)]">
                     <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
                       <h3 className="text-xs font-mono font-bold tracking-widest text-[var(--brand-light)] uppercase flex items-center gap-1.5">
@@ -1224,22 +1225,22 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Ollama Latency */}
+                      {/* Groq Latency */}
                       <div>
                         <div className="flex justify-between items-center text-[11px] mb-1">
                           <span className="text-zinc-400 flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Latência do Ollama API
+                            Latência do Groq API
                           </span>
                           <span className="font-bold text-[var(--brand-light)]">
-                            {healthStatus.ollama.latency} ms
+                            {healthStatus.groq.latency} ms
                           </span>
                         </div>
                         <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden">
                           <div
                             className="bg-[var(--brand-primary)] h-full transition-all duration-500"
                             style={{
-                              width: `${Math.min(100, Math.max(5, (healthStatus.ollama.latency / 120) * 100))}%`,
+                              width: `${Math.min(100, Math.max(5, (healthStatus.groq.latency / 120) * 100))}%`,
                             }}
                           ></div>
                         </div>
@@ -1337,7 +1338,7 @@ export default function App() {
 
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-zinc-400">
-                          3. Modelos Llama 3.2
+                          3. Modelos Llama 3.3
                         </span>
                         <span
                           className={
@@ -1389,7 +1390,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Hardware Spec monitors (simulating Windows child monitoring threads) */}
+                  {/* Hardware Spec monitors (simulating Native child monitoring threads) */}
                   <div className="holographic-card p-4 space-y-4">
                     <div className="flex justify-between items-center border-l border-[var(--brand-primary)] pl-2">
                       <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase">
@@ -2409,51 +2410,51 @@ export default function App() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 font-sans leading-relaxed text-zinc-300">
                 {/* Quick specifications left menu */}
                 <div className="holographic-card p-5 space-y-4">
-                  <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase border-l border-[var(--brand-primary)] pl-2">
-                    Guia de Utilização do Instalador
+                  <h3 className="text-xs font-mono font-bold tracking-wider text-[var(--brand-light)] uppercase border-l border-[var(--brand-primary)] pl-2">
+                    Guia Definitivo: Deploy Completo (Linux)
                   </h3>
 
-                  <div className="font-mono text-xs space-y-3.5">
+                  <div className="font-sans text-[11px] space-y-4">
                     <div>
-                      <strong className="text-white block mb-1">
-                        Passo 1: Orquestração Automatizada
+                      <strong className="text-white block mb-1 text-xs">
+                        1. Deploy Inicial no Servidor (Linux/WSL)
                       </strong>
-                      <p className="text-[11px] text-zinc-500 mb-2">
-                        O JARVIS automatiza toda sua estrutura Docker. No Windows, o script <code className="bg-zinc-950 px-1 rounded text-[var(--brand-light)] text-[10px]">AutoInstaller.ps1</code> gerencia dependências pesadas. No Linux, instale o toolkit NVIDIA, NodeJS e execute <code className="bg-zinc-950 px-1 rounded text-[var(--brand-light)] text-[10px]">docker compose up -d</code>.
+                      <p className="text-zinc-500 mb-2 leading-relaxed">
+                        Abra o terminal do seu servidor. Atualize o repositório com <code className="bg-zinc-950 px-1 py-0.5 rounded text-white font-mono">git pull</code>. Em seguida, na aba lateral "Implantação/Setup", clique em "Baixar .SH Script". Envie este script para a raiz do projeto no servidor e execute: <br/>
+                        <code className="bg-zinc-950 px-1 py-0.5 rounded text-[var(--brand-light)] font-mono">sudo bash deploy_jarvis.sh</code><br/>
+                        Isso instalará as dependências do Node, o Docker e iniciará o backend. Acesse a porta <strong>3000</strong> no navegador.
                       </p>
                     </div>
                     <div>
-                      <strong className="text-white block mb-1">
-                        Passo 2: Inferência Local
+                      <strong className="text-emerald-400 block mb-1 text-xs">
+                        2. Banco de Dados e Containers
                       </strong>
-                      <p className="text-[11px] text-zinc-500 mb-2">
-                        Os modelos são alocados via Ollama de forma automática. Caso faça deploy offline manualmente:
-                        <br />
-                        <code className="bg-zinc-950 px-1 rounded text-[var(--brand-light)] text-[10px]">
-                          ollama pull llama3.2
-                        </code>{" "}
-                        (Cérebro principal para Cognição)
-                        <br />
-                        <code className="bg-zinc-950 px-1 rounded text-[var(--brand-light)] text-[10px]">
-                          ollama pull nomic-embed-text
-                        </code>{" "}
-                        (Embeddings RAG e Vetorização de Arquivos)
+                      <p className="text-zinc-500 mb-2 leading-relaxed">
+                        O script <code className="text-zinc-400 font-mono">.sh</code> roda o comando <code className="text-[10px] text-zinc-400 bg-zinc-950 px-1">docker compose up -d</code> que "levanta" as bases de dados nos bastidores. O banco de dados PostgreSQL guardará suas memórias de longo prazo nativamente e o servidor Vector ChromaDB processará a linguagem em RAG - tudo já orquestrado internamente para não haver necessidade de configuração manual.
                       </p>
                     </div>
                     <div>
-                      <strong className="text-white block mb-1">
-                        Passo 3: Back-End Principal
+                      <strong className="text-[var(--brand-light)] block mb-1 text-xs">
+                        3. Inteligência em 100% Cloud (Groq LPU)
                       </strong>
-                      <p className="text-[11px] text-zinc-500 mb-2">
-                        Utilize <code className="bg-zinc-950 px-1 rounded text-orange-300">npm run dev</code> para hospedar a interface web na sua rede local (ex: acesso via celular pela porta 3000) e inicializar os painéis do backend no servidor Node principal.
+                      <p className="text-zinc-500 mb-2 leading-relaxed">
+                        Esqueça Ollama! Economize energia usando LLMs ultrarrápidos através do Groq Cloud. Vá em <strong>Chaves de APIs</strong> no menu superior e preencha a Groq API Key obtida gratuitamente em <a href="https://console.groq.com" target="_blank" className="text-[var(--brand-light)] underline">console.groq.com</a>. O JARVIS automaticamente mudará o roteamento cognitivo usando <code>llama-3.3-70b-versatile</code> para lhe responder na hora.
                       </p>
                     </div>
                     <div>
-                      <strong className="text-rose-400 block mb-1">
-                        Passo 4: Executável de Painel
+                      <strong className="text-white block mb-1 text-xs">
+                        4. Voz (Edge TTS Gratuito)
                       </strong>
-                      <p className="text-[11px] text-zinc-500">
-                        Se preferir acesso local fixo, após rodar a primeira vez <code className="bg-zinc-950 px-1 rounded text-rose-300">npm install</code>, rode <code className="bg-zinc-950 px-1 rounded text-rose-300">npm run build:electron</code> ou <code className="bg-zinc-950 px-1 rounded text-white bg-black">npm start</code> no PC Servidor para abrir a versão Client Standalone que se encarregará de iniciar o backend local e as chamadas do cliente de Electron nativamente.
+                      <p className="text-zinc-500 mb-2 leading-relaxed">
+                        Para a comunicação verbal responsiva, a infraestrutura <strong>Microsoft Edge TTS</strong> é habilitada por padrão sem custo (via Node). Ao mandar comandos de voz no microfone central, o Assistente responderá em Português-BR com uma voz realista ("Antônio" ou "Francisca") sempre que o modo "Retorno de Voz" estiver ativo. Nenhum setup a mais é exigido.
+                      </p>
+                    </div>
+                    <div>
+                      <strong className="text-rose-400 block mb-1 text-xs">
+                        5. Conectando a Segunda Memória (Obsidian)
+                      </strong>
+                      <p className="text-zinc-500 leading-relaxed">
+                        Agora instale o <a href="https://obsidian.md" target="_blank" className="text-rose-400 underline">Obsidian</a> no seu PC e crie um cofre vazio. No JARVIS, vá em <strong>Configurações Globais</strong>, procure "Caminho do Vault" e indique o path (ex <code className="text-[10px] text-zinc-400">/home/user/documentos/jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
                       </p>
                     </div>
                   </div>
@@ -2475,7 +2476,7 @@ export default function App() {
                           : "4GB VRAM"}
                         )
                       </strong>
-                      . Isso possibilita rodar o modelo Llama 3.2 com tempo
+                      . Isso possibilita rodar o modelo Llama 3.3 com tempo
                       de resposta inferior a <strong>800ms por token</strong>{" "}
                       localmente.
                     </p>
@@ -2511,13 +2512,13 @@ export default function App() {
                       </p>
                       <ul className="list-disc pl-5 mt-1.5 space-y-1 text-zinc-400 text-[11px]">
                         <li>
-                          Ele detecta e ativa o WSL2 no Windows do seu{" "}
+                          Ele instala o Docker Engine e o Ollama nativamente no terminal root do seu{" "}
                           {hardwareStats?.cpu || "Notebook (Servidor)"}.
                         </li>
                         <li>
-                          Usa o gerador <strong>winget de pacotes</strong> do
-                          Windows para instalar o Docker Desktop de forma
-                          sileciosa.
+                          Usa o gerenciador <strong>apt de pacotes</strong> do
+                          Linux (Debian/Ubuntu) para instalar o Docker CLI e Docker Compose de forma
+                          silenciosa.
                         </li>
                         <li>
                           Cria a estrutura de pastas do seu Obsidian Vault no

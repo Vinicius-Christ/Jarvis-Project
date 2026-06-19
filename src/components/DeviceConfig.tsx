@@ -400,80 +400,70 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
             </form>
           </div>
 
-          {/* Column 1 Card 2: Local Ollama Configuration & Verification Tutorials */}
+          {/* Column 1 Card 2: Groq Cloud Configuration & Verification Tutorials */}
           <div className="holographic-card p-5 space-y-5">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <h3 className="text-sm font-sans font-semibold text-[var(--brand-light)] uppercase tracking-wider flex items-center gap-2">
               <Cpu className="h-4 w-4 text-[var(--brand-light)]" />
-              IA Local-First (Powering local Ollama)
+              IA Groq LPU (API Route)
             </h3>
             <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-900/40 px-2 py-0.5 rounded font-mono uppercase font-bold animate-pulse">
-              Ativo Offline
+              100% Cloud
             </span>
           </div>
 
           <p className="text-xs text-zinc-400 leading-relaxed">
-            De acordo com as especificações, seu JARVIS <strong>não fará chamadas à nuvem da OpenAI ou Gemini</strong> na sua rede local. Toda a lógica de NLP é executada nativamente pelo Ollama via placa gráfica local <strong>(CUDA/Aceleração de Hardware)</strong>.
+            De acordo com as especificações, seu JARVIS <strong>usará infraestrutura de aceleração LPU do Groq</strong>. Toda a lógica de NLP e respostas são executadas quase instantaneamente de forma terceirizada via API (Modelos Llama 3).
           </p>
 
           <div className="space-y-3 font-mono text-xs bg-black/40 border border-zinc-800 rounded-xl p-4">
             <div>
-              <label className="text-zinc-500 block text-[10px] uppercase mb-1">Endereço da API Local (Ollama Endpoint)</label>
+              <label className="text-zinc-500 block text-[10px] uppercase mb-1">Status da Chave (Token Groq)</label>
               <div className="flex gap-2">
                 <div className="flex-1 bg-zinc-950/80 border border-zinc-800 text-zinc-400 font-mono text-xs px-2.5 py-1.5 rounded select-none cursor-not-allowed">
-                  {ollamaUrl || "Auto-detected"}
+                  Validação via "Chaves APIs"
                 </div>
-                <button
-                  onClick={testOllamaConnection}
-                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 font-bold rounded cursor-pointer transition text-[11px]"
-                >
-                  {ollamaStatus === "testing" ? "Testando..." : "Testar Conexão"}
-                </button>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="text-zinc-500 block text-[10px] uppercase mb-1">Modelo Principal</label>
-                <div className="bg-zinc-950 border border-zinc-800 text-zinc-300 font-mono text-xs p-1.5 rounded flex items-center justify-center gap-1.5 h-[34px] opacity-75 cursor-not-allowed">
-                  Llama 3.2 (9B) Local
+                <div className="bg-zinc-950 border border-zinc-800 text-zinc-300 font-mono text-xs p-1.5 rounded flex items-center justify-center gap-1.5 h-[34px] opacity-75 cursor-not-allowed text-center">
+                  llama-3.3-70b-versatile
                 </div>
               </div>
               <div>
-                <label className="text-zinc-500 block text-[10px] uppercase mb-1">Aceleração Ativa</label>
+                <label className="text-zinc-500 block text-[10px] uppercase mb-1">Hardware LPU</label>
                 <div className="bg-zinc-950 border border-emerald-900/30 text-emerald-400 font-mono text-xs p-1.5 rounded flex items-center justify-center gap-1.5 font-bold h-[34px]">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  NVIDIA CUDA
+                  Groq Cloud LPU
                 </div>
               </div>
             </div>
 
-            {ollamaStatus === "online" && (
-              <div className="bg-emerald-950/20 border border-emerald-900/30 p-2.5 rounded-lg text-emerald-400 text-[11px] leading-relaxed flex items-start gap-2 mt-4">
-                <span className="h-2 w-2 rounded-full bg-emerald-400  mt-1 shrink-0"></span>
-                <div>
-                  <strong className="block">OLLAMA DEPLOY ONLINE:</strong>
-                  Conexão estabelecida com sucesso. Llama 3.2 carregado no cache de hardware. Tempo médio de resposta: 42ms/token.
-                </div>
+            <div className="bg-emerald-950/20 border border-emerald-900/30 p-2.5 rounded-lg text-emerald-400 text-[11px] leading-relaxed flex items-start gap-2 mt-4">
+              <span className="h-2 w-2 rounded-full bg-emerald-400  mt-1 shrink-0"></span>
+              <div>
+                <strong className="block">DEPLOY CLOUD LIGADO:</strong>
+                Se você adicionou o token Groq na aba Módulo de Tokens, o LLM e RAG responderão em milisegundos usando o Groq.
               </div>
-            )}
+            </div>
           </div>
 
           {/* Practical guide details for vinicius */}
           <div className="space-y-4">
             <h4 className="text-xs font-mono font-bold text-white uppercase border-l-2 border-[var(--brand-primary)] pl-2">
-              Guia Prático: Como Colocar Tudo para Funcionar realmente com Dados Reais?
+              Como configurar as Chaves Cloud Corretamente?
             </h4>
             
             <div className="space-y-3.5 text-xs text-zinc-300 leading-relaxed">
               <div className="flex gap-2.5 items-start">
                 <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5.5 w-5.5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
                 <div>
-                  <span className="font-semibold block text-white text-[11px]">Liberar Ollama na Rede Doméstica (Expor de fora da Máquina)</span>
+                  <span className="font-semibold block text-white text-[11px]">Gerar e Inserir API Keys</span>
                   <div className="text-[11px] text-zinc-400 mt-1">
-                    Por padrão, o Ollama roda apenas em <code className="bg-zinc-950 px-1 py-0.5 rounded text-[var(--brand-light)] text-[10px]">localhost:11434</code>. Para que o aplicativo Electron ou outros computadores da casa consigam acessá-lo na LAN pelo IP do desktop (Ex: <code className="text-[10px] text-[var(--brand-light)] bg-zinc-950 px-1 rounded">192.168.1.104</code>), defina esta variável de sistema no Windows da máquina servidora:
-                    <pre className="bg-black/50 p-2 rounded text-[10px] text-lime-400 font-mono mt-1.5 leading-snug">OLLAMA_HOST=0.0.0.0:11434</pre>
-                    Abra o prompt de comando do Windows e reinicie o Ollama executando: <code className="text-[var(--brand-light)] font-mono">ollama serve</code>.
+                    Vá até a guia "Configurações Globais" {'>'} "Gerenciador de Tokens". Lá você verá as configurações do <strong>Groq API Key</strong>. Registre-se em <code className="text-zinc-400 font-mono bg-zinc-900 px-1 py-0.5 rounded">console.groq.com</code> e valide e insira a chave obtida lá no painel esquerdo.
                   </div>
                 </div>
               </div>
@@ -489,7 +479,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               </div>
 
               <div className="flex gap-2.5 items-start">
-                <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5.5 w-5.5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5.5 w-5.5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
                 <div>
                   <span className="font-semibold block text-white text-[11px]">Conectando com Lâmpadas Positivos e Alexa</span>
                   <p className="text-[11px] text-zinc-400">
@@ -543,12 +533,11 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     Ligando o Túnel no seu Computador
                   </h5>
                   <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
-                    <li>O site agora mostra um código cheio de letras feias. Olhe as caixinhas de sistema em cima (Windows, Mac, Linux...). Se seu sistema está usando o Windows para rodar o Docker, clique na caixinha <strong>Windows</strong>.</li>
-                    <li>No quadrado cinza embaixo, olhe pro lado direito dele e <b>clique no desenho de 2 folhinhas</b>. Isso vai "Copiar" esse código grandão para a memória.</li>
-                    <li>Volte para a área de trabalho do seu computador de casa. Aperte o "Iniciar" e digite <strong>PowerShell</strong>.</li>
-                    <li>Clique com o <strong>Botão Direito do Mouse</strong> e escolha <strong>"Executar como Administrador"</strong>.</li>
-                    <li>Quando abrir a tela azul, apenas dê outro Pique com o botão direito lá no meio e aperte o botão <strong>"ENTER"</strong> no teclado.</li>
-                    <li>Espere baixar e instalar sozinho. Volte pro site: se lá embaixo estiver escrito <strong><span className="text-emerald-400">Connected</span></strong> (Conectado), sorria! Você conseguiu fazer o túnel! Clique em <strong>Next</strong>.</li>
+                    <li>O site agora mostra um código de instalação. Olhe as caixinhas de sistema em cima e clique em <strong>Debian</strong> (ou a distribuição Linux que você está usando).</li>
+                    <li>No quadrado cinza embaixo, olhe pro lado direito dele e <b>clique no desenho de 2 folhinhas</b>. Isso vai "Copiar" esse script grandão para a memória.</li>
+                    <li>Abra o terminal do seu servidor Linux (SSH) como root/sudo.</li>
+                    <li>Cole o comando completo e aperte <strong>"ENTER"</strong> no teclado. Ele irá baixar o pacote e instalar o cloudflared daemon.</li>
+                    <li>Espere baixar e instalar. Volte pro site do Cloudflare: se lá embaixo estiver escrito <strong><span className="text-emerald-400">Connected</span></strong> (Conectado), sorria! Você conseguiu fazer o túnel! Clique em <strong>Next</strong>.</li>
                   </ul>
                 </div>
 

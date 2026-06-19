@@ -3,7 +3,7 @@
 
 Este manual definitivo foi desenvolvido sob medida para o seu cenário: um **Notebook Servidor** com uma instalação limpa do **Linux Mint (do zero, sem nada instalado)** e um **PC Pessoal (Windows)** de uso geral que atuará puramente como o cliente de voz e visor do JARVIS.
 
-> 🚫 **REGRA DE OURO DE DEPRECIAÇÃO DE RECURSOS:** O Docker, banco de dados PostgreSQL, Redis, n8n, ChromaDB e o pesado motor de Inteligência Artificial (Ollama) **ficarão única e exclusivamente no seu notebook Linux Mint (Servidor)**. Seu computador pessoal Windows ficará totalmente livre desse peso, hospedando apenas o aplicativo visual leve do JARVIS, evitando qualquer degradação de performance nos seus jogos ou programas de trabalho!
+> 🚫 **REGRA DE OURO DE DEPRECIAÇÃO DE RECURSOS:** O Docker, banco de dados PostgreSQL, Redis, n8n, ChromaDB e o pesado motor de Inteligência Artificial (Groq) **ficarão única e exclusivamente no seu notebook Linux Mint (Servidor)**. Seu computador pessoal Windows ficará totalmente livre desse peso, hospedando apenas o aplicativo visual leve do JARVIS, evitando qualquer degradação de performance nos seus jogos ou programas de trabalho!
 
 ---
 
@@ -14,7 +14,7 @@ Este manual definitivo foi desenvolvido sob medida para o seu cenário: um **Not
    - Roda unicamente o App JARVIS (.exe)       - Executa a API principal em Node (porta 3000)
    - Escuta o Microfone local ("Hey Jarvis")   - Roda os containers Docker em background:
    - Peso na CPU/GPU: Praticamente 0%          - Postgres, n8n, ChromaDB, Redis, Home Assistant
-   - Não possui Docker nem bancos instalados    - Executa o Ollama de IA nativo (porta 11434)
+   - Não possui Docker nem bancos instalados    - Executa o Groq de IA nativo (porta 11434)
                      |                                         |
                      +--------------- < Wi-Fi / LAN > ---------+
 ```
@@ -69,13 +69,11 @@ Se você preferir clonar via terminal usando o Git:
 4. Quando perguntar **`Username`**, digite seu usuário do GitHub: `vini091422`
 5. Quando perguntar **`Password`**, **NÃO DIGITE SUA SENHA COMUM**. Clique com o botão direito do mouse no terminal e **cole o Token de Segurança (`ghp_...`)** que você gerou, e aperte `Enter`. O clone será descarregado perfeitamente!
 
-### Passo 2: Rodar o Script de Instalação Um-Clique (`AutoInstaller.sh`)
+### Passo 2: Rodar o Script de Instalação Um-Clique (`deploy_jarvis.sh`)
 Criamos um script atualizado e super inteligente que faz **TODOS** os passos descritos de uma única vez para você no Linux Mint:
 * Instala o Docker Engine oficial e o Docker-Compose.
-* Configura as dependências do Node.js de produção v20 e as compila.
-* Detecta placas NVIDIA dedicadas e vincula o NVIDIA Container Toolkit (para super aceleração gráfica IA).
-* Instala o Ollama nativo de forma global no Linux Mint e o configura (`systemd`) para aceitar conexões remotas do seu PC Windows (`OLLAMA_HOST=0.0.0.0:11434`).
-* Sincroniza e faz o download automático dos modelos `llama3.2` (8B) e `nomic-embed-text` (embeddings) na sua máquina.
+* Detecta e configura as dependências do Node.js de produção v20 e as compila.
+* Sincroniza o download automático do modelo embed `nomic-embed-text` internamente.
 * Cria os repositórios estruturados do seu "Cérebro" Obsidian Vault (`jarvis-vault`).
 * **Sobe de forma totalmente automática as ferramentas de background** (PostgreSQL, Redis, ChromaDB, n8n, Home Assistant) usando imagens prontas oficiais da nuvem, sem necessitar de build local lento ou falhas de compilação!
 
@@ -83,8 +81,8 @@ Criamos um script atualizado e super inteligente que faz **TODOS** os passos des
 
 Apenas execute estes dois comandos no terminal do Linux Mint:
 ```bash
-sudo chmod +x AutoInstaller.sh
-sudo ./AutoInstaller.sh
+sudo chmod +x deploy_jarvis.sh
+sudo ./deploy_jarvis.sh
 ```
 
 ---
@@ -195,46 +193,14 @@ Se você precisar desconectar o notebook de servidor para estudar fora de casa, 
 
 ## 💻 FASE 2: GERAÇÃO E INSTALAÇÃO NO SEU PC PESSOAL WINDOWS (CLIENTE)
 
-Lembre-se: **Não instale Docker ou Postgres no Windows!** Faremos apenas o empacotamento do App do Windows para que você tenha um `.exe` instalável limpo e leve.
+Esqueça aplicativos nativos instalados. A interface em Web UI já provê suporte nativo a comandos de microfone de forma instantânea através do acesso pela nuvem ou rede. Seu Windows fica 100% livre.
 
-### Passo 1: Instalar Node-base e Git no Windows
-Utilizaremos estas ferramentas rápidas apenas uma vez para preparar e gerar nosso instalador final.
-1. Baixe e instale o Git para Windows em [git-scm.com](https://git-scm.com).
-2. Baixe e instale o Node.JS (Versão LTS Recomendada) para Windows em [nodejs.org](https://nodejs.org).
-
-### Passo 2: Clonar e Compilar o `.exe` no Windows
-1. Abra o **PowerShell** no Windows e vá para um local limpo:
-   ```powershell
-   cd D:\
-   git clone https://github.com/seu-usuario/jarvis-system-suite.git
-   cd jarvis-system-suite
-   ```
-2. Instale as dependências:
-   ```powershell
-   npm install
-   ```
-3. **Gere o instalador autocompilado do Windows:**
-   ```powershell
-   npm run dist
-   ```
-4. Procure a pasta chamada `release` criada no projeto do Windows. Lá dentro estará o arquivo executável pronto para instalação:
-   `JARVIS-Suite-Setup.exe` ou similar.
-5. Execute o instalador no seu PC principal. **Ao abrir pela primeira vez, feche o aplicativo.**
-
-### Passo 3: Roteamento Inteligente (Apontando para o Linux Mint)
-Nativamente, o App instalável procura o Jarvis em `localhost`. Para desviá-lo para ler o seu servidor Linux Mint:
-
-1. No Windows, clique com o **Botão Direito** no ícone do atalho do JARVIS Core Suite na Área de Trabalho e clique em **"Abrir Local do Arquivo"**.
-2. Você será levado à pasta invisível real onde o programa está instalado (como `C:\Users\SEU_NOME\AppData\Local\Programs\jarvis-system-suite`).
-3. Crie um arquivo de texto comum do bloco de notas nesta pasta com o nome literal:
-   `jarvis-target.txt`
-4. Abra o arquivo no bloco de notas e escreva dentro dele o endereço HTTP do seu notebook Linux Mint. Exemplo:
-   ```text
-   http://192.168.1.15:3000
-   ```
-5. Salve o arquivo e feche o editor.
-
-Abra o App JARVIS Suite na área de trabalho! O aplicativo Electron abrirá de forma nativa e, no plano de fundo, buscará todas as APIs, bancos, conexões n8n e chats direto do seu cérebro Linux Mint, enquanto seu Windows se mantém 100% livre!
+### Navegador Como Cliente Principal (PWA / Tunnels)
+1. Certifique-se que executou a Fase 4 de criar os Cloudflare Tunnels (ex: `jarvis.seunome.com`).
+2. Abra o Google Chrome, Edge ou Brave no seu Windows e vá para o endereço de sua Cloudflare.
+3. Clique no ícone de instalar App/PWA na barra de endereços (se disponível) para criar um atalho que age como um app Desktop.
+4. Conceda a permissão ao Microfone quando requisitado. Graças à criptografia ponta a ponta (HTTPS) gerado pelo Cloudflare, o sistema reconhecerá perfeitamente sem bloqueios.
+5. Em seu celular (Android/iOS), faça o mesmo pelo navegador: abra seu domínio, instale na tela inicial e use como um App nativo no dia a dia.
 
 ---
 
@@ -251,7 +217,7 @@ Para importar qualquer um deles no n8n:
 3. Desative as opções (se tiver) e apenas cole o código JSON copiado.
 
 ### 🤖 Fluxo 1: Automatizador de Respostas de I.A. (Chatbot Local Webhook)
-Este fluxo escuta webhooks externos do seu frontend JARVIS e responde utilizando a inteligência Llama 3.2 no seu próprio notebook.
+Este fluxo escuta webhooks externos do seu frontend JARVIS e responde utilizando a inteligência Llama 3 rápida no LPU da Groq Cloud.
 
 ```json
 {
@@ -277,14 +243,14 @@ Este fluxo escuta webhooks externos do seu frontend JARVIS e responde utilizando
         }
       },
       "id": "bb02996d-3af1-460d-a7ca-eed2f4dfb5db",
-      "name": "Ollama Local Model",
-      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "name": "Groq Local Model",
+      "type": "@n8n/n8n-nodes-langchain.lmGroq",
       "typeVersion": 1,
       "position": [620, 240],
       "credentials": {
-        "ollamaApi": {
+        "groqApi": {
           "id": "1",
-          "name": "Ollama Servidor Interno"
+          "name": "Groq Servidor Interno"
         }
       }
     },
@@ -304,14 +270,14 @@ Este fluxo escuta webhooks externos do seu frontend JARVIS e responde utilizando
       "main": [
         [
           {
-            "node": "Ollama Local Model",
+            "node": "Groq Local Model",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Ollama Local Model": {
+    "Groq Local Model": {
       "main": [
         [
           {
@@ -433,15 +399,15 @@ Permite que você mande mensagens para o seu JARVIS de fora de casa pelo celular
         "prompt": "={{ $json.message.text }}",
         "options": {}
       },
-      "id": "ollama-telegram",
-      "name": "Ollama Responder",
-      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "id": "groq-telegram",
+      "name": "Groq Responder",
+      "type": "@n8n/n8n-nodes-langchain.lmGroq",
       "typeVersion": 1,
       "position": [460, 240],
       "credentials": {
-        "ollamaApi": {
+        "groqApi": {
           "id": "1",
-          "name": "Ollama Servidor Interno"
+          "name": "Groq Servidor Interno"
         }
       }
     },
@@ -469,14 +435,14 @@ Permite que você mande mensagens para o seu JARVIS de fora de casa pelo celular
       "main": [
         [
           {
-            "node": "Ollama Responder",
+            "node": "Groq Responder",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Ollama Responder": {
+    "Groq Responder": {
       "main": [
         [
           {
@@ -511,7 +477,7 @@ No App do Windows ou pela própria interface Web do Jarvis em `http://192.168.1.
 **Tokens Opcionais e para que servem:**
 * **TELEGRAM_BOT_TOKEN:** Necessário APENAS se você ativou o "Fluxo 3" (O bot de celular). Obtido com o `@BotFather` no aplicativo do Telegram.
 * **HOME_ASSISTANT_TOKEN:** Necessário APENAS se você for conectar painéis ou tomadas inteligentes da sua casa ao cérebro do Jarvis.
-* **OPENAI_API_KEY / GROQ_API_KEY:** Necessários APENAS caso você queira substituir temporariamente sua Placa de Vídeo por uma API externa na nuvem super rápida. Mas como o seu ecossistema roda local no `llama3.2` no Ollama, você pode deixá-las em branco por padrão.
+* **OPENAI_API_KEY / GROQ_API_KEY:** OBRIGATÓRIAS. Adicione sua chave de API Groq (obtida gratuitamente em `console.groq.com`) no Gerenciador de Tokens. O JARVIS transicionou todo o processamento massivo para a nuvem através dos poderosos LPUs da Groq (Modelo `llama-3.3-70b-versatile`), resultando em respostas imediatas e aliviando a CPU/GPU de seu próprio computador.
 
 ---
 
@@ -532,17 +498,17 @@ Esqueça a instalação de gerenciadores externos como Portainer ou Docker Deskt
 2. No menu lateral da Dashboard, vá até a aba **Engines & Containers (Docker)** ou em Configurações.
 3. Você verá todos os seus contêineres (`n8n`, `chromadb`, `postgres`, `redis`) com seus status, consumo de memória (RAM/VRAM) e botões para ligar/desligar de forma integrada!
 
-### 3. Ollama (Via Próprio JARVIS)
-Não há necessidade de instalar o Open-WebUI ou outro app de terceiros para conversar com o Ollama ou ver os modelos. O JARVIS foi projetado para ser o seu único painel de comunicação:
+### 3. Engine IA e Groq Cloud
+O JARVIS foi projetado para ser o seu único painel de comunicação:
 1. Na própria Web UI do JARVIS `http://localhost:3000`, clique sobre o ícone do microfone ou no painel de Chat.
-2. A inteligência artificial já roda de forma transparente com o modelo que você fez o pull no Ollama. Toda a conversa e contexto já estão unificados ali de forma nativa e belíssima, conectada aos seus arquivos! Se precisar gerenciar ou ver o Ollama e os consumos, basta usar a aba de **Painel de Sistemas** na própria central.
+2. A inteligência artificial já roda de forma transparente e delegada via nuvem usando o Groq. Toda a infraestrutura roda fora de sua máquina de forma instantânea, respondendo no chat ou com Microsoft Edge TTS! Se precisar monitorar a latência da API para o RAG, use a aba de **Painel de Sistemas** na própria central.
 
 ---
 
 ## 🏆 RECAPITULANDO O USO OPERACIONAL DIÁRIO
 
 1. **Iniciando o sistema:** Ao ligar o notebook Linux Mint, basta rodar `npm run start` na pasta do suite para levantar o backend.
-2. **Abra o App no Windows:** Dê dois cliques no ícone do **JARVIS** no Windows. Ele automaticamente lerá o destino do seu arquivo `jarvis-target.txt` e fará a ponte transparente de dados, com microfone e recursos 100% integrados usando seu usuário recém cadastrado de rede.
+2. **Acesso pela Web ou PWA:** Sem instalar executáveis, acesse o JARVIS Cloudflare Tunnel e a aplicação carregará inteiramente via web.
 3. **Mochila e Viagens (Pausa Segura):** Sempre que for levar o notebook para a rua, faculdade ou viagens, clique em **"Pausar JARVIS"** na central ou desligue o notebook normalmente. Os dados estão salvos nas pastas locais e o consumo de energia da RAM e CPU será reduzido a zero para garantir sua autonomia!
 
 **Sua suíte de controle pessoal descentralizada está 100% configurada e automatizada no Linux e no Windows!** 🚀

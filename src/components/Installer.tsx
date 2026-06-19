@@ -13,7 +13,7 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
         <div>
           <span className="text-[10px] tracking-widest text-[var(--brand-light)] uppercase font-bold flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-[var(--brand-light)] "></span>
-            Script PowerShell Executando no Computador
+            Script Bash Executando no Servidor
           </span>
           <h3 className="text-xs font-sans font-semibold text-zinc-200 mt-1 uppercase">
             Instalador Automático: Provisionando Ecossistema JARVIS Christ v5
@@ -109,25 +109,25 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
           </div>
         </div>
 
-        {/* Animated Ollama CUDA Block */}
+        {/* Animated Groq Cloud Block */}
         <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-4 flex flex-col justify-between space-y-4">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[9px] text-lime-500">IA LOCAL COGNITIVA</span>
-              <h4 className="text-xs font-semibold text-zinc-300 mt-0.5">Ollama CUDA Core</h4>
+              <span className="text-[9px] text-lime-500">IA NUVEM ULTRA RÁPIDA</span>
+              <h4 className="text-xs font-semibold text-zinc-300 mt-0.5">Groq Cloud API</h4>
             </div>
-            <span className={`text-[9px] text-lime-400 bg-lime-950/40 border border-lime-900/30 px-1.5 py-0.5 rounded ${modules.ollama.status === "running" ? "animate-pulse" : ""}`}>
-              {modules.ollama.status === "completed" ? "✓ DISPONÍVEL" : modules.ollama.status === "running" ? "● PULLING GGUF" : "⏱️ AGUARDANDO"}
+            <span className={`text-[9px] text-lime-400 bg-lime-950/40 border border-lime-900/30 px-1.5 py-0.5 rounded animate-pulse`}>
+              ✓ LPU DISPONÍVEL
             </span>
           </div>
 
-          {/* Ollama Node Orbit Constellation SVG */}
+          {/* Cloud Orbit Constellation SVG */}
           <div className="h-28 flex items-center justify-center bg-black/40 rounded-lg relative overflow-hidden border border-zinc-900">
             {/* Starry matrix backdrop */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(132,204,22,0.04)_0%,transparent_70%)] animate-pulse"></div>
             
             <div className="relative flex flex-col items-center">
-              {/* Central GPU Active Node */}
+              {/* Central Cloud Node */}
               <div className="bg-lime-950/40 border-2 border-lime-400/60 p-2 rounded-full animate-pulse shadow-[0_4px_12px_rgba(132,204,22,0.15)] z-10">
                 <svg className="w-5 h-5 text-lime-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
@@ -135,7 +135,7 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
                 </svg>
               </div>
 
-              {/* Orbit dots representing models pulling */}
+              {/* Orbit dots */}
               <div className="absolute top-1/2 left-1/2 -ml-8 -mt-8 h-16 w-16 rounded-full border border-dashed border-lime-500/20 animate-spin">
                 <span className="absolute -top-1 left-1/2 -ml-1 h-2 w-2 rounded-full bg-lime-400 shadow-[0_0_8px_#84cc16]"></span>
               </div>
@@ -144,8 +144,7 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
               </div>
 
               <span className="block text-[9px] text-zinc-500 mt-2 font-mono">
-                {modules.ollama.status === "running" ? `Baixando GGUFs com CUDA... ${modules.ollama.progress}%` : 
-                 modules.ollama.status === "completed" ? "Cache CUDA v12.1 ativado!" : "Ollama offline."}
+                Latência LPU estimada: 60ms
               </span>
             </div>
           </div>
@@ -153,15 +152,15 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
           {/* Model registries and details */}
           <div className="space-y-1 text-[9px] leading-snug">
             <div className="flex justify-between items-center bg-black/40 px-2 py-0.5 rounded border border-zinc-900/50">
-              <span>Llama 3.2 (9B)</span>
-              <span className={modules.ollama.progress >= 80 ? "text-lime-400" : "text-zinc-500"}>
-                {modules.ollama.progress >= 80 ? "Carregado (4.7GB)" : modules.ollama.status === "running" ? `${Math.min(100, Math.round(modules.ollama.progress * 1.5))}%` : "Pendente"}
+              <span>llama-3.3-70b-versatile</span>
+              <span className="text-lime-400">
+                Cloud API Rate Ligth
               </span>
             </div>
             <div className="flex justify-between items-center bg-black/40 px-2 py-0.5 rounded border border-zinc-900/50">
-              <span>nomic-embed-text</span>
-              <span className={modules.ollama.progress >= 40 ? "text-lime-400" : "text-zinc-500"}>
-                {modules.ollama.progress >= 40 ? "Carregado (0.3GB)" : modules.ollama.status === "running" ? "Baixando..." : "Pendente"}
+              <span>nomic-embed-text (Groq)</span>
+              <span className="text-lime-400">
+                 Cloud API RAG
               </span>
             </div>
           </div>
@@ -313,84 +312,64 @@ volumes:
   pg_data:
 `;
 
-  // Real Windows Powershell Script to install everything automatically
-  const powershellScript = `# install_jarvis_suite.ps1
+  // Real Linux Bash Script to install everything automatically
+  const bashScript = `#!/bin/bash
+# install_jarvis_suite.sh
 # Script de Instalação e Configuração Automatizada do Ecossistema JARVIS v5.0
-# Execute este arquivo no Windows Terminal como Administrador
+# Execute este arquivo localmente no terminal do Linux como root ou sudo
 
-Write-Host "=========================================================" -ForegroundColor Cyan
-Write-Host "          JARVIS AUTOMATED INSTALLER & CONFIGURATION     " -ForegroundColor Cyan
-Write-Host "=========================================================" -ForegroundColor Cyan
-Write-Host "Este script irá instalar Docker, Ollama e Obsidian no seu Windows."
+echo -e "\\e[36m=========================================================\\e[0m"
+echo -e "\\e[36m          JARVIS AUTOMATED INSTALLER (LINUX)             \\e[0m"
+echo -e "\\e[36m=========================================================\\e[0m"
+echo "Este script irá instalar o Docker e estruturar o Obsidian no seu Servidor Linux."
 
-# 1. Verificar privilégios de Administrador
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Warning "AVISO: Por favor, execute este script como ADMINISTRADOR para instalar os softwares."
-    Exit
-}
+# 1. Verificar privilégios de root
+if [ "$EUID" -ne 0 ]; then
+  echo -e "\\e[33mAVISO: Por favor, execute este script como root (sudo ./install_jarvis_suite.sh) para instalar os softwares.\\e[0m"
+  exit 1
+fi
 
-# 2. Ativar Recursos do Windows para WSL2
-Write-Host "[1/5] Ativando Plataforma de Máquina Virtual e Subsistema Windows para Linux..." -ForegroundColor Yellow
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+# 2. Atualizar repositórios e instalar dependências essenciais
+echo -e "\\e[33m[1/5] Atualizando pacotes APT e instalando utilitários essenciais...\\e[0m"
+apt-get update && apt-get install -y curl wget git jq unzip nodejs npm
 
-# 3. Instalar softwares usando o Windows Package Manager (winget)
-Write-Host "[2/5] Baixando e Instalando Softwares Core na Máquina..." -ForegroundColor Yellow
+# 3. Instalar softwares (Docker)
+echo -e "\\e[33m[2/5] Baixando e Instalando Softwares Core no Servidor...\\e[0m"
 
-# Instalar Docker Desktop
-Write-Host "Instalando Docker Desktop..." -ForegroundColor Cyan
-winget install Docker.DockerDesktop --silent --accept-package-agreements --accept-source-agreements
-
-# Instalar Obsidian
-Write-Host "Instalando Obsidian..." -ForegroundColor Cyan
-winget install Obsidian.Obsidian --silent --accept-package-agreements
-
-# Instalar Ollama
-Write-Host "Instalando Ollama..." -ForegroundColor Cyan
-winget install Ollama.Ollama --silent --accept-package-agreements
+# Instalar Docker
+echo -e "\\e[36mInstalando Docker Engine...\\e[0m"
+if ! command -v docker &> /dev/null; then
+  curl -fsSL https://get.docker.com -o get-docker.sh
+  sh get-docker.sh
+  usermod -aG docker $SUDO_USER
+else
+  echo "Docker já instalado."
+fi
 
 # 4. Criar estrutura do Obsidian Vault
-Write-Host "[3/5] Estruturando Obsidian Vault em C:\\jarvis-vault..." -ForegroundColor Yellow
-$vaultPath = "C:\\jarvis-vault"
-$dirs = @("perfil", "agenda", "financas", "casa", "conversas", "aprendizados", "arquivos-indexados", "rotinas-pc")
+echo -e "\\e[33m[3/5] Estruturando Vault do Sistema no diretório ~/jarvis-vault...\\e[0m"
+VAULT_PATH="/home/$SUDO_USER/jarvis-vault"
+if [ -z "$SUDO_USER" ]; then VAULT_PATH="$HOME/jarvis-vault"; fi
 
-if (-not (Test-Path $vaultPath)) {
-    New-Item -ItemType Directory -Force -Path $vaultPath | Out-Null
-}
-
-foreach ($dir in $dirs) {
-    $subPath = Join-Path $vaultPath $dir
-    if (-not (Test-Path $subPath)) {
-        New-Item -ItemType Directory -Force -Path $subPath | Out-Null
-        Write-Host "Criada pasta: C:\\jarvis-vault\\$dir" -ForegroundColor Gray
-    }
-}
+mkdir -p "$VAULT_PATH"/{perfil,agenda,financas,casa,conversas,aprendizados,arquivos-indexados,rotinas-pc}
 
 # Criar arquivo de Perfil do Usuário padrão com dados estruturados
-$profileContent = @"
+cat <<EOT > "$VAULT_PATH/perfil/usuario.md"
 # Perfil do Usuário
 
-Nome: Vinícius
+Nome: Usuário Mestre
 Tom preferido: Respeitoso, inteligente, direto, estilo Mordomo / JARVIS
 Horário produtivo principal: 19:00 - 23:00
 Foco atual: Automação residencial de luzes e ar condicionado, e controle financeiro pessoal.
-"@
-Set-Content -Path "C:\\jarvis-vault\\perfil\\usuario.md" -Value $profileContent
+EOT
 
-# 5. Baixar modelos locais no Ollama
-Write-Host "[4/5] Inicializando serviço do Ollama e baixando modelos locais..." -ForegroundColor Yellow
-Start-Process -FilePath "ollama" -ArgumentList "serve" -NoNewWindow -PassThru
-Start-Sleep -Seconds 5
+chown -R $SUDO_USER:$SUDO_USER "$VAULT_PATH"
+echo -e "\\e[90mDiretórios criados em $VAULT_PATH\\e[0m"
 
-Write-Host "Baixando modelo principal llama3.2..." -ForegroundColor Cyan
-ollama pull llama3.2
+echo -e "\\e[32m[4/5] Ambiente configurado para Deploy Automático.\\e[0m"
 
-Write-Host "Baixando modelo de Embeddings para RAG (nomic-embed-text)..." -ForegroundColor Cyan
-ollama pull nomic-embed-text
-
-Write-Host "[5/5] Docker-compose e Obsidian prontos!" -ForegroundColor Green
-Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para carregar o Docker WSL2." -ForegroundColor Green
+echo -e "\\e[32m[5/5] Docker Instalado!\\e[0m"
+echo -e "\\e[32mInstalação concluída com sucesso! Para aplicar os grupos do Docker, faça logout e login novamente.\\e[0m"
 `;
 
   return (
@@ -402,7 +381,7 @@ Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para
             Módulo de Instalação e Provisionamento
           </h2>
           <p className="text-xs text-zinc-400 mt-1">
-            Configure e provisione de forma totalmente automática o ecossistema local do JARVIS (Docker, Obsidian e Ollama).
+            Configure e provisione de forma totalmente automática o ecossistema local do JARVIS (Docker e Obsidian).
           </p>
         </div>
         <div className="flex gap-2">
@@ -454,7 +433,7 @@ Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para
                 />
                 <label htmlFor="detect-existing-check" className="text-xs text-zinc-300 font-sans leading-relaxed cursor-pointer select-none">
                   <span className="font-semibold text-white block">Reutilizar e Pular Passos Manuais Concluídos (Etapas 1 a 4)</span>
-                  Identifiquei que você já iniciou a configuração manual do ecossistema. Ative esta opção para que o instalador do JARVIS faça um scanner de ambiente, preserve as pastas <code className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-[var(--brand-light,rgba(6,182,212))] font-mono text-[10px]">~/jarvis-vault</code>, contêineres Docker e modelos baixados no Ollama, evitando downloads lentos e sobrescritas de arquivos!
+                  Identifiquei que você já iniciou a configuração manual do ecossistema. Ative esta opção para que o instalador do JARVIS faça um scanner de ambiente, preserve as pastas <code className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-[var(--brand-light,rgba(6,182,212))] font-mono text-[10px]">~/jarvis-vault</code> e contêineres Docker, evitando downloads lentos e sobrescritas de arquivos!
                 </label>
               </div>
             </div>
@@ -500,7 +479,7 @@ Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para
             <div className="flex justify-between items-center bg-zinc-900/80 px-4 py-2 border-b border-zinc-800">
               <span className="text-zinc-400 text-xs font-mono flex items-center gap-1.5">
                 <Terminal className="h-3.5 w-3.5 text-[var(--brand-light)]" />
-                Console de Provisionamento Local (PowerShell logs)
+                Console de Provisionamento Local (Bash logs)
               </span>
               <div className="flex gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
@@ -522,7 +501,7 @@ Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para
                   if (log.includes("[INFO]")) colorClass = "text-[var(--brand-light)]";
                   if (log.includes("[DOCKER]")) colorClass = "text-blue-400";
                   if (log.includes("[OBSIDIAN]")) colorClass = "text-[var(--brand-light)]";
-                  if (log.includes("[OLLAMA]")) colorClass = "text-lime-400";
+                  if (log.includes("[GROQ]")) colorClass = "text-lime-400";
                   if (log.includes("[N8N]")) colorClass = "text-pink-400";
                   if (log.includes("CONCLUÍDA") || log.includes("sucesso")) colorClass = "text-emerald-400 font-semibold";
 
@@ -577,7 +556,7 @@ Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para
                 <div className="flex gap-2.5 items-start bg-zinc-950/30 p-2.5 rounded-lg border border-zinc-900">
                   <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5 w-5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
                   <div>
-                    <strong className="text-zinc-200">Prepare o Ambiente Windows:</strong> Abra o PowerShell como Administrador e execute o script auto-instalador. Ele instalará Docker, Obsidian e Ollama no Windows nativamente.
+                    <strong className="text-zinc-200">Prepare o Ambiente Linux:</strong> Abra o Terminal do Servidor Linux e execute o script bash auto-instalador como sudo. Ele instalará Docker e Obsidian no Linux nativamente. Em seguida adicione a Groq API Key nas opções e pronto, o sistema rodará 100% cloud-LLM usando Node/Systemd.
                   </div>
                 </div>
                 <div className="flex gap-2.5 items-start bg-zinc-950/30 p-2.5 rounded-lg border border-zinc-900">
@@ -617,9 +596,9 @@ Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para
             {activeTab === "script" && (
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-mono text-zinc-500">Windows PowerShell Auto-Installer</span>
+                  <span className="text-[10px] font-mono text-zinc-500">Linux Bash Auto-Installer</span>
                   <button
-                    onClick={() => handleCopy(powershellScript)}
+                    onClick={() => handleCopy(bashScript)}
                     className="flex items-center gap-1 text-[10px] font-mono text-[var(--brand-light)] hover:text-white transition cursor-pointer"
                   >
                     {copiedText ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}

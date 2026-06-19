@@ -51,7 +51,7 @@ export default function MCPSettings() {
             Servidores MCP (Model Context Protocol) 
           </h2>
           <p className="text-xs text-zinc-400 mt-2 max-w-2xl leading-relaxed">
-            Em vez de construir centenas de ferramentas isoladas, ative Servidores MCP Locais. Eles padronizam como a LLM (Llama 3.2) se conecta a programas, bases de dados e arquivos locais sem necessidade de gambiarras. 
+            Em vez de construir centenas de ferramentas isoladas, ative Servidores MCP Locais. Eles padronizam como a LLM (Llama 3.3) se conecta a programas, bases de dados e arquivos locais sem necessidade de gambiarras. 
           </p>
         </div>
       </div>
@@ -107,7 +107,7 @@ export default function MCPSettings() {
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-805 text-zinc-400">JSON-RPC 2.0</span>
             </div>
             <p className="text-[10px] text-zinc-500 leading-normal">
-              Seu Llama 3.2 local consulta dinamicamente esta rota para solicitar execuções de ferramentas no host doméstico.
+              Seu Llama 3.3 local consulta dinamicamente esta rota para solicitar execuções de ferramentas no host doméstico.
             </p>
           </div>
 

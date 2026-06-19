@@ -47,7 +47,7 @@ interface HardwareStats {
   wslMemoryTotal: number;
 }
 
-export default function CUDATelemetryHUD() {
+export default React.memo(function CUDATelemetryHUD() {
   const [stats, setStats] = useState<HardwareStats | null>(null);
   const [localStats, setLocalStats] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -495,4 +495,4 @@ export default function CUDATelemetryHUD() {
       </div>
     </div>
   );
-}
+});

@@ -85,7 +85,7 @@ const HOLO_THEMES = {
   }
 };
 
-export default function DeviceConfig({ devices, onRefresh, currentTheme, onChangeTheme, configTab, isDarkMode = true, onToggleDarkMode }: DeviceConfigProps) {
+export default React.memo(function DeviceConfig({ devices, onRefresh, currentTheme, onChangeTheme, configTab, isDarkMode = true, onToggleDarkMode }: DeviceConfigProps) {
   // Local states for device additions
   const [activePersona, setActivePersona] = useState<string>("jarvis");
 
@@ -794,4 +794,4 @@ export default function DeviceConfig({ devices, onRefresh, currentTheme, onChang
 
     </>
   );
-}
+});

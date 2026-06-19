@@ -207,7 +207,7 @@ export default function App() {
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const data = await res.json();
-          setSystemState(data);
+          setSystemState(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
         }
       }
     } catch (err) {
@@ -221,7 +221,8 @@ export default function App() {
       if (res.ok) {
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
-          setUpdateState(await res.json());
+          const data = await res.json();
+          setUpdateState(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
         }
       }
     } catch (err) { /* ignore */ }
@@ -233,7 +234,8 @@ export default function App() {
       if (res.ok) {
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
-          setHardwareStats(await res.json());
+          const data = await res.json();
+          setHardwareStats(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
         }
       }
     } catch (e) { /* ignore */ }
@@ -407,9 +409,29 @@ export default function App() {
     }
   };
 
+  const handleSendMessageRef = useRef(handleSendMessage);
+  useEffect(() => { handleSendMessageRef.current = handleSendMessage; }, [handleSendMessage]);
+
+  const onSendMessageStable = useCallback((text: string, file?: any, model?: string) => {
+    return handleSendMessageRef.current(text, file, model);
+  }, []);
+
+  const fetchSystemStateRef = useRef(fetchSystemState);
+  useEffect(() => { fetchSystemStateRef.current = fetchSystemState; }, [fetchSystemState]);
+
+  const onRefreshStable = useCallback(() => {
+    return fetchSystemStateRef.current();
+  }, []);
+
+  const fetchUpdateStateRef = useRef(fetchUpdateState);
+  useEffect(() => { fetchUpdateStateRef.current = fetchUpdateState; }, [fetchUpdateState]);
+
+  const onUpdateRefreshStable = useCallback(() => {
+    return fetchUpdateStateRef.current();
+  }, []);
+
   // Change preset in Home Assistant
   const triggerPresetChange = async (presetName: string) => {
-    setSelectedPreset(presetName);
     try {
       await fetch(getServerUrl() + "/api/update/iot", {
         method: "POST",
@@ -458,10 +480,11 @@ export default function App() {
     let despesas = 0;
     if (systemState?.finances) {
       systemState.finances.forEach((item: any) => {
+        const val = typeof item.value === 'number' && !isNaN(item.value) ? item.value : 0;
         if (item.category === "Renda") {
-          receitas += item.value;
+          receitas += val;
         } else {
-          despesas += item.value;
+          despesas += val;
         }
       });
     }
@@ -512,7 +535,8 @@ export default function App() {
     if (systemState?.finances) {
       systemState.finances.forEach((item: any) => {
         if (item.category !== "Renda") {
-          expenses[item.category] = (expenses[item.category] || 0) + item.value;
+          const val = typeof item.value === 'number' && !isNaN(item.value) ? item.value : 0;
+          expenses[item.category] = (expenses[item.category] || 0) + val;
         }
       });
     }
@@ -562,10 +586,12 @@ export default function App() {
       if (!grouped[sortKey])
         grouped[sortKey] = { mes: keyStr, receitas: 0, despesas: 0 };
 
+      const val = typeof item.value === 'number' && !isNaN(item.value) ? item.value : 0;
+
       if (item.category === "Renda") {
-        grouped[sortKey].receitas += item.value;
+        grouped[sortKey].receitas += val;
       } else {
-        grouped[sortKey].despesas += item.value;
+        grouped[sortKey].despesas += val;
       }
     });
 
@@ -1068,7 +1094,7 @@ export default function App() {
                   }`}>
                     <JarvisAssistant
                       conversations={systemState?.conversations || []}
-                      onSendMessage={handleSendMessage}
+                      onSendMessage={onSendMessageStable}
                     />
                   </div>
 
@@ -1565,7 +1591,7 @@ export default function App() {
                           Meta de Economia Mensal
                         </span>
                         <span className="text-sm font-semibold text-white">
-                          R$ {currentGoal.limit.toFixed(2)}
+                          R$ {typeof currentGoal.limit === 'number' && !isNaN(currentGoal.limit) ? currentGoal.limit.toFixed(2) : '0.00'}
                         </span>
                       </div>
                       <div className="flex justify-between items-baseline bg-zinc-950 p-3 rounded-xl border border-zinc-900">
@@ -1573,7 +1599,7 @@ export default function App() {
                           Valor Total Guardado/Disponível
                         </span>
                         <span className="text-xl font-light text-emerald-400 font-mono">
-                          R$ {guardado.toFixed(2)}
+                          R$ {typeof guardado === 'number' && !isNaN(guardado) ? guardado.toFixed(2) : '0.00'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-900 group">
@@ -1906,7 +1932,7 @@ export default function App() {
                                 </span>
                               </td>
                               <td className="py-2.5 text-right font-medium text-[var(--brand-light)]">
-                                R$ {item.value.toFixed(2)}
+                                R$ {typeof item.value === 'number' && !isNaN(item.value) ? item.value.toFixed(2) : '0.00'}
                               </td>
                               <td className="py-2.5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
@@ -2237,7 +2263,7 @@ export default function App() {
                   settingsTab === "appearance") && (
                   <DeviceConfig
                     devices={systemState?.homeAssistant?.devices || []}
-                    onRefresh={fetchSystemState}
+                    onRefresh={onRefreshStable}
                     currentTheme={currentTheme}
                     onChangeTheme={changeTheme}
                     configTab={settingsTab}
@@ -2250,7 +2276,7 @@ export default function App() {
                     <div className="bg-zinc-950/10 border border-zinc-900 p-1 rounded-xl">
                       <Installer
                         installerState={systemState?.installer}
-                        onRefresh={fetchSystemState}
+                        onRefresh={onRefreshStable}
                       />
                     </div>
                   </div>
@@ -2259,7 +2285,7 @@ export default function App() {
                 {settingsTab === "updates" && (
                   <SystemUpdater
                     updateState={updateState}
-                    onRefresh={fetchUpdateState}
+                    onRefresh={onUpdateRefreshStable}
                   />
                 )}
 

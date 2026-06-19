@@ -198,7 +198,7 @@ interface InstallerProps {
   onRefresh: () => void;
 }
 
-export default function Installer({ installerState, onRefresh }: InstallerProps) {
+export default React.memo(function Installer({ installerState, onRefresh }: InstallerProps) {
   const [activeTab, setActiveTab] = useState<"installer" | "compose" | "script">("installer");
   const [copiedText, setCopiedText] = useState(false);
   const [detectExisting, setDetectExisting] = useState(true);
@@ -636,4 +636,4 @@ Write-Host "Instalação concluída com sucesso! Favor reiniciar a máquina para
       </div>
     </div>
   );
-}
+});

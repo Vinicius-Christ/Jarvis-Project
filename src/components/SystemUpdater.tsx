@@ -7,7 +7,7 @@ interface SystemUpdaterProps {
   onRefresh: () => void;
 }
 
-export default function SystemUpdater({ updateState, onRefresh }: SystemUpdaterProps) {
+export default React.memo(function SystemUpdater({ updateState, onRefresh }: SystemUpdaterProps) {
   const [repoInput, setRepoInput] = useState(updateState?.githubRepo || "Vinicius-Christ/Jarvis-Project-");
   const [tokenInput, setTokenInput] = useState(updateState?.githubToken || "");
   const [isSaving, setIsSaving] = useState(false);
@@ -259,4 +259,4 @@ export default function SystemUpdater({ updateState, onRefresh }: SystemUpdaterP
       </div>
     </div>
   );
-}
+});

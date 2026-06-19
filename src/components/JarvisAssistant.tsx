@@ -40,7 +40,7 @@ interface JarvisAssistantProps {
   isDarkMode?: boolean;
 }
 
-export default function JarvisAssistant({ conversations, onSendMessage, isDarkMode = true }: JarvisAssistantProps) {
+export default React.memo(function JarvisAssistant({ conversations, onSendMessage, isDarkMode = true }: JarvisAssistantProps) {
   const [inputText, setInputText] = useState("");
   const [appState, setAppState] = useState<"inactive" | "listening" | "processing" | "speaking">("inactive");
   const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; size: number; content?: string } | null>(null);
@@ -253,6 +253,14 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
 
       recognitionRef.current = rec;
     }
+    
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch(e) {}
+      }
+    };
   }, [selectedVoiceURI, pitch, rate, voiceVolume]);
 
   // Scroll to bottom of conversation
@@ -1135,4 +1143,4 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
       )}
     </div>
   );
-}
+});

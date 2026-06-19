@@ -1466,9 +1466,10 @@ app.post("/api/delete/goal", (req, res) => {
 // Endpoint: Dynamic operations on agenda, finances & Home Device modifications
 app.post("/api/update/finance", (req, res) => {
   const { value, category, description, date } = req.body;
+  const parsedValue = parseFloat(value);
   const newItem = {
     id: db.finances.length + 1,
-    value: parseFloat(value),
+    value: isNaN(parsedValue) ? 0 : parsedValue,
     category,
     description,
     date: date || new Date().toISOString().split("T")[0]

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Terminal, RefreshCw, Layers, ShieldCheck, Play, Pause, XCircle, RotateCw, Server, Activity, FileText } from "lucide-react";
 import jsPDF from "jspdf";
 
-export default function LogsDocker() {
+export default React.memo(function LogsDocker() {
   const [selectedContainer, setSelectedContainer] = useState<string>("all");
   const [logs, setLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -532,4 +532,4 @@ export default function LogsDocker() {
 
     </div>
   );
-}
+});

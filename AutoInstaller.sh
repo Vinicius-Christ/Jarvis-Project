@@ -198,6 +198,7 @@ sudo -u $REAL_USER npm run build
 log_status "Sincronizando e subindo containers do Docker (Postgres, n8n, etc)..."
 # Executa como root para garantir permissões totais no soquete durante a instalação
 docker compose down || true
+docker rm -f jarvis_chromadb jarvis_n8n jarvis_homeassistant jarvis_postgres jarvis_redis 2>/dev/null || true
 docker compose up -d
 
 # Garante que todo o diretório pertence ao usuário real

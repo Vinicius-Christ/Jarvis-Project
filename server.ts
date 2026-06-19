@@ -675,16 +675,27 @@ app.post("/api/chat", async (req, res) => {
 
   contextPrompt += personaDetails.prompt + "\n\n";
   contextPrompt += `Regras de Interação e Saída:
-1. Responda em português de forma concisa, objetiva e nobre de acordo com o seu perfil da persona.
-2. Você tem acesso à base de conhecimento Obsidian e ao sistema de controle da casa inteligente (Home Assistant) e comandos do PC.
-3. Se o usuário pedir para executar ações de IoT (ex: apagar lâmpadas, ligar o ar) ou de PC (ex: carregar workspace de estudos), responda afirmando que está executando e inclua no final da resposta uma tag XML de comando para o aplicativo processar:
+1. Responda em português de forma EXTREMAMENTE concisa, objetiva e direta. Como sua resposta será sintetizada em voz, use 1 a 2 frases no máximo para evitar lentidão. Mantenha a nobreza de sua persona.
+2. Você tem acesso à base de conhecimento Obsidian, ao sistema de controle da casa inteligente (Home Assistant) e comandos do PC.
+3. Se o usuário pedir para executar ações de IoT (ex: apagar lâmpadas) ou de PC, responda muito rápido afirmando que está executando e inclua a tag XML:
    - Ex IoT: <command type="IoT" action="Modo Cinema" />
+   - Ex PC: <command type="PC" workspace="study" />
+4. Para INCLUIR registros, use as tags:
    - Ex Agenda: <command type="Agenda" title="Almoço com a família" datetime="2026-05-31T12:30" />
    - Ex Finanças: <command type="Finance" value="45.90" category="Alimentação" description="iFood Jantar" />
-   - Ex PC: <command type="PC" workspace="study" />
-4. Seja sempre técnico quando o usuário perguntar sobre o sistema. Seus modelos quantizados e locais estão rodando offline.
-5. Integração com Obsidian: Se o usuário definir uma meta financeira, compartilhar uma preferência ou discutir pontos importantes, você DEVE atualizar o seu "cérebro" (Obsidian Vault) para manter a memória persistente. Use o bloco especial \`\`\`obsidian-update ... \`\`\` para isso.
-
+5. Para EXCLUIR registros se o usuário pedir (e apagar do Obsidian automaticamente), use as tags:
+   - Ex Apagar Compasso: <command type="AgendaDelete" title="Almoço" />
+   - Ex Apagar Finança: <command type="FinanceDelete" description="iFood" />
+   - Ex Apagar Meta Financeira: <command type="GoalDelete" />
+   - Ex Apagar Nota do Cérebro: <command type="ObsidianDelete" path="/caminho/do/arquivo.md" />
+6. Seja técnico, mas breve.
+7. Integração com Obsidian: Se o usuário definir uma regra, prefira salvar na memória persistente usando o bloco:
+\`\`\`obsidian-update
+path: /caminho/do/arquivo.md
+content:
+O conteúdo novo
+\`\`\`
+Para apagar, basta usar a tag <command type="ObsidianDelete" ... /> em vez do bloco acima.
 `;
   contextPrompt += `Mensagem do Usuário: ${message}`;
   
@@ -1437,8 +1448,14 @@ app.post("/api/update/pc", (req, res) => {
 
 app.post("/api/update/goal", (req, res) => {
   const { limit, reason } = req.body;
-  if (limit) db.goal.limit = limit;
-  if (reason) db.goal.reason = reason;
+  if (limit !== undefined) db.goal.limit = limit;
+  if (reason !== undefined) db.goal.reason = reason;
+  saveDB();
+  res.json({ success: true, goal: db.goal });
+});
+
+app.post("/api/delete/goal", (req, res) => {
+  db.goal = { limit: 0, reason: "" };
   saveDB();
   res.json({ success: true, goal: db.goal });
 });
@@ -1458,6 +1475,15 @@ app.post("/api/update/finance", (req, res) => {
   res.json({ success: true, item: newItem });
 });
 
+app.post("/api/delete/finance", (req, res) => {
+  const { description } = req.body;
+  if (description) {
+    db.finances = db.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
+  }
+  saveDB();
+  res.json({ success: true });
+});
+
 app.post("/api/update/agenda", (req, res) => {
   const { title, datetime, category, notes } = req.body;
   const newItem = {
@@ -1470,6 +1496,15 @@ app.post("/api/update/agenda", (req, res) => {
   db.agenda.push(newItem);
   saveDB();
   res.json({ success: true, item: newItem });
+});
+
+app.post("/api/delete/agenda", (req, res) => {
+  const { title } = req.body;
+  if (title) {
+    db.agenda = db.agenda.filter(a => !a.title.toLowerCase().includes(title.toLowerCase()));
+  }
+  saveDB();
+  res.json({ success: true });
 });
 
 app.post("/api/update/iot", async (req, res) => {
@@ -2317,6 +2352,21 @@ app.post("/api/update/obsidian", (req, res) => {
   }
   saveDB();
   syncNoteToVault(notePath, content);
+  res.json({ success: true, notePath });
+});
+
+app.post("/api/delete/obsidian", (req, res) => {
+  const { path: notePath } = req.body;
+  db.obsidianNotes = db.obsidianNotes.filter(n => n.path !== notePath);
+  saveDB();
+  const absolutePath = path.join(vaultPath, notePath);
+  if (fs.existsSync(absolutePath)) {
+    try {
+      fs.unlinkSync(absolutePath);
+    } catch(e) {
+      console.error("Erro ao deletar arquivo fisico do obsidian", e);
+    }
+  }
   res.json({ success: true, notePath });
 });
 

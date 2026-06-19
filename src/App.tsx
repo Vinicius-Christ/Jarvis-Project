@@ -365,6 +365,37 @@ export default function App() {
                 body: JSON.stringify({ workspace: workspaceMatch[1] }),
               });
             }
+          } else if (type === "FinanceDelete") {
+            const descMatch = attributesStr.match(/description="([^"]+)"/);
+            if (descMatch) {
+              await fetch(getServerUrl() + "/api/delete/finance", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ description: descMatch[1] }),
+              });
+            }
+          } else if (type === "AgendaDelete") {
+            const titleMatch = attributesStr.match(/title="([^"]+)"/);
+            if (titleMatch) {
+              await fetch(getServerUrl() + "/api/delete/agenda", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: titleMatch[1] }),
+              });
+            }
+          } else if (type === "GoalDelete") {
+            await fetch(getServerUrl() + "/api/delete/goal", {
+              method: "POST"
+            });
+          } else if (type === "ObsidianDelete") {
+            const pathMatch = attributesStr.match(/path="([^"]+)"/);
+            if (pathMatch) {
+              await fetch(getServerUrl() + "/api/delete/obsidian", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path: pathMatch[1] }),
+              });
+            }
           }
         }
       }
@@ -624,6 +655,48 @@ export default function App() {
         datetime: "",
         category: "Trabalho",
         notes: "",
+      });
+      fetchSystemState();
+    } catch { /* ignore */ }
+  };
+
+  const handleDeleteAgenda = async (title: string) => {
+    try {
+      await fetch(getServerUrl() + "/api/delete/agenda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      fetchSystemState();
+    } catch { /* ignore */ }
+  };
+
+  const handleDeleteFinance = async (description: string) => {
+    try {
+      await fetch(getServerUrl() + "/api/delete/finance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description }),
+      });
+      fetchSystemState();
+    } catch { /* ignore */ }
+  };
+
+  const handleDeleteGoal = async () => {
+    try {
+      await fetch(getServerUrl() + "/api/delete/goal", {
+        method: "POST"
+      });
+      fetchSystemState();
+    } catch { /* ignore */ }
+  };
+  
+  const handleDeleteObsidian = async (path: string) => {
+    try {
+      await fetch(getServerUrl() + "/api/delete/obsidian", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
       });
       fetchSystemState();
     } catch { /* ignore */ }
@@ -1503,13 +1576,24 @@ export default function App() {
                           R$ {guardado.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between items-baseline bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                        <span className="text-[10px] text-zinc-500 font-mono">
-                          Motivo da Meta
-                        </span>
-                        <span className="text-xs text-white">
-                          {currentGoal.reason}
-                        </span>
+                      <div className="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-900 group">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                            Motivo da Meta
+                            </span>
+                            <span className="text-xs text-white">
+                            {currentGoal.reason}
+                            </span>
+                        </div>
+                        {currentGoal.limit > 0 && (
+                            <button
+                                onClick={handleDeleteGoal}
+                                className="text-zinc-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Apagar Meta Atual"
+                            >
+                                <Trash2 className="h-3 w-3" />
+                            </button>
+                        )}
                       </div>
                     </div>
 
@@ -1802,11 +1886,12 @@ export default function App() {
                             <th className="pb-2">Local/Lançamento</th>
                             <th className="pb-2">Categoria</th>
                             <th className="pb-2 text-right">Valor</th>
+                            <th className="pb-2"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-850">
                           {systemState?.finances.map((item: any) => (
-                            <tr key={item.id} className="text-zinc-300">
+                            <tr key={item.id} className="text-zinc-300 group">
                               <td className="py-2.5 text-zinc-500">
                                 {new Date(item.date).toLocaleString("pt-BR", {
                                   hour12: false,
@@ -1822,6 +1907,14 @@ export default function App() {
                               </td>
                               <td className="py-2.5 text-right font-medium text-[var(--brand-light)]">
                                 R$ {item.value.toFixed(2)}
+                              </td>
+                              <td className="py-2.5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => handleDeleteFinance(item.description)}
+                                    className="text-zinc-600 hover:text-red-500 transition-colors px-2"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -1965,6 +2058,12 @@ export default function App() {
                             <span className="px-2 py-0.5 bg-[var(--brand-dark)] border border-[var(--brand-border)] text-[9px] text-[var(--brand-light)] rounded">
                               {item.category}
                             </span>
+                            <button
+                                onClick={() => handleDeleteAgenda(item.title)}
+                                className="text-zinc-600 hover:text-red-500 transition-colors"
+                            >
+                                <Trash2 className="h-3 w-3" />
+                            </button>
                           </div>
                           <h4 className="text-xs font-semibold text-white mt-1 line-clamp-2">
                             {item.title}
@@ -2219,11 +2318,20 @@ export default function App() {
                             (note: any, index: number) => (
                               <div
                                 key={index}
-                                className="bg-black/40 border border-zinc-800/60 rounded-xl p-4"
+                                className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 group"
                               >
-                                <div className="text-[10px] font-bold text-yellow-400 mb-2 font-mono flex items-center gap-1">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-400"></span>
-                                  {note.path}
+                                <div className="text-[10px] font-bold text-yellow-400 mb-2 font-mono flex items-center justify-between">
+                                  <div className="flex items-center gap-1">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-yellow-400"></span>
+                                      {note.path}
+                                  </div>
+                                  <button
+                                      onClick={() => handleDeleteObsidian(note.path)}
+                                      className="text-zinc-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                      title="Apagar Nota do Obsidian"
+                                  >
+                                      <Trash2 className="h-3 w-3" />
+                                  </button>
                                 </div>
                                 <textarea
                                   rows={6}

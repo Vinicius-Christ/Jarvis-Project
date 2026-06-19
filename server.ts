@@ -8,6 +8,28 @@ import si from "systeminformation";
 import dns from "dns";
 import WebSocket from "ws";
 
+// Helper: load .env into process.env manually since we don't use dotenv module
+try {
+  if (fs.existsSync(path.join(process.cwd(), ".env"))) {
+    const envContent = fs.readFileSync(path.join(process.cwd(), ".env"), "utf8");
+    envContent.split("\n").forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
+        const splitIdx = trimmed.indexOf("=");
+        const key = trimmed.substring(0, splitIdx).trim();
+        let val = trimmed.substring(splitIdx + 1).trim();
+        // Remove surrounding quotes if present
+        val = val.replace(/^["'](.*)["']$/, '$1');
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    });
+  }
+} catch (e) {
+  console.error("Failed to load .env manually:", e);
+}
+
 // Ensure localhost/ipv4 works nicely
 dns.setDefaultResultOrder("ipv4first");
 
@@ -673,35 +695,68 @@ app.post("/api/chat", async (req, res) => {
   let replyText = "";
   let isLocalSimulated = false;
   // Envia apenas o nome bruto recebido do frontend ou o padrão "llama3.2". O Ollama entende as resoluções nativamente.
-  const ollamaModelName = model || "llama3.2";
+  let ollamaModelName = model || "llama3.2";
 
-  // 2. Try native fetching from local Ollama (127.0.0.1:11434)
-  // This will naturally work when the user runs this codebase locally.
+  // 2. Try native fetching from local Ollama or high-speed Groq
   const ollamaHost = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
-  try {
-    const ollamaRes = await fetch(`${ollamaHost}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(60000), // longer timeout for actual inference
-      body: JSON.stringify({
-         model: ollamaModelName,
-         prompt: contextPrompt,
-         stream: false,
-         options: {
-           temperature: 0.7,
-           num_ctx: 4096
-         }
-      })
-    });
+  const groqApiKey = process.env.GROQ_API_KEY;
 
-    if (!ollamaRes.ok) throw new Error(`Ollama failed with status: ${ollamaRes.status}`);
-    
-    const ollamaData = await ollamaRes.json();
-    replyText = ollamaData.response || "Mestre, não consegui processar os tensores dimensionais.";
-  } catch (error) {
+  try {
+    if (groqApiKey && groqApiKey.trim().length > 0) {
+      // Use Groq Cloud for ultra-fast Llama 3 generation
+      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${groqApiKey}`
+        },
+        signal: AbortSignal.timeout(30000), // very fast timeout
+        body: JSON.stringify({
+          model: ollamaModelName.includes("3.2") ? "llama-3.2-11b-vision-preview" : "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: "Responda como JARVIS. Execute os comandos se solicitados usando as tags XML do manual na mensagem anterior." },
+            { role: "user", content: contextPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2048
+        })
+      });
+
+      if (!groqRes.ok) {
+        throw new Error(`Groq failed with status: ${groqRes.status}`);
+      }
+
+      const groqData = await groqRes.json();
+      replyText = groqData.choices?.[0]?.message?.content || "Mestre, os clusters da Groq retornaram nulo.";
+      isLocalSimulated = true; // Technically cloud, but for the UI it distinguishes from native local
+      ollamaModelName += " [LPU Turbinado]";
+
+    } else {
+      // Use standard local Ollama
+      const ollamaRes = await fetch(`${ollamaHost}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(180000), // longer timeout for actual inference
+        body: JSON.stringify({
+           model: ollamaModelName,
+           prompt: contextPrompt,
+           stream: false,
+           options: {
+             temperature: 0.7,
+             num_ctx: 8192
+           }
+        })
+      });
+  
+      if (!ollamaRes.ok) throw new Error(`Ollama failed with status: ${ollamaRes.status}`);
+      
+      const ollamaData = await ollamaRes.json();
+      replyText = ollamaData.response || "Mestre, não consegui processar os tensores dimensionais.";
+    }
+  } catch (error: any) {
     // 3. FALLBACK FOR AI STUDIO PREVIEW (Ollama is unreachable in the cloud)
     isLocalSimulated = true;
-    console.warn("Could not reach local Ollama at 127.0.0.1:11434. Using smart mock fallback.");
+    console.warn(`Could not reach local Ollama at ${ollamaHost}. Error: ${error?.message || error}. Using smart mock fallback.`);
     
     const lower = message.toLowerCase();
     

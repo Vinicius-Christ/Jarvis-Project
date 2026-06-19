@@ -6,7 +6,7 @@ services:
   # ChromaDB - Banco de Dados Vetorial para armazenar os embeddings (RAG) do Obsidian
   chromadb:
     image: chromadb/chroma:latest
-    container_name: jarvis_chromadb
+    # container_name: jarvis_chromadb
     ports:
       - "8000:8000"
     volumes:
@@ -20,7 +20,7 @@ services:
   # n8n - Motor de Automações, Workflows e Conexão de Nós para Orquestrar a IA
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
-    container_name: jarvis_n8n
+    # container_name: jarvis_n8n
     ports:
       - "5678:5678"
     environment:
@@ -40,7 +40,7 @@ services:
   # Home Assistant - Hub unificado para internet das coisas (IoT) e automação de lâmpadas/ar
   homeassistant:
     image: lscr.io/linuxserver/homeassistant:latest
-    container_name: jarvis_homeassistant
+    # container_name: jarvis_homeassistant
     ports:
       - "8123:8123"
     environment:
@@ -58,7 +58,7 @@ services:
   # PostgreSQL - Banco de Dados para armazenar Financeiros, Agenda e Históricos do App
   db:
     image: postgres:15-alpine
-    container_name: jarvis_postgres
+    # container_name: jarvis_postgres
     ports:
       - "5432:5432"
     environment:
@@ -75,7 +75,7 @@ services:
   # Redis - Cache em memória ultra-rápido para fila de comandos de Voz do Microfone
   redis:
     image: redis:alpine
-    container_name: jarvis_redis
+    # container_name: jarvis_redis
     ports:
       - "6379:6379"
     networks:

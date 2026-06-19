@@ -56,7 +56,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
   const [voiceVolume, setVoiceVolume] = useState(1.0);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const [systemVoices, setSystemVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [engineType, setEngineType] = useState("premium_api");
+  const [engineType, setEngineType] = useState("local_system_tts");
   const [noiseGate, setNoiseGate] = useState(-45);
   const [lastMeasureLatency, setLastMeasureLatency] = useState({ stt: 14, llm: 215, tts: 28 });
   const [activePersona, setActivePersona] = useState("jarvis");
@@ -434,14 +434,20 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
         else if (activePersona === "glados") voiceId = "LcfcDJNUP1GQjkvn1xUw";
         else if (activePersona === "hal9000") voiceId = "N2lVS1w4EtoT3dr4eOWO";
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
         const res = await fetch(getServerUrl() + "/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({ 
             text: cleanText, 
             voiceId
           })
         });
+
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const blob = await res.blob();

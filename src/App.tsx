@@ -370,22 +370,30 @@ export default function App() {
             }
           } else if (type === "FinanceDelete") {
             const descMatch = attributesStr.match(/description="([^"]+)"/);
-            if (descMatch) {
-              await fetch(getServerUrl() + "/api/delete/finance", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ description: descMatch[1] }),
-              });
-            }
+            const allMatch = attributesStr.match(/all="([^"]+)"/);
+            const isAll = (allMatch && allMatch[1] === "true") || attributesStr.includes("all=") || !descMatch;
+            
+            await fetch(getServerUrl() + "/api/delete/finance", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                description: descMatch ? descMatch[1] : undefined, 
+                all: isAll 
+              }),
+            });
           } else if (type === "AgendaDelete") {
             const titleMatch = attributesStr.match(/title="([^"]+)"/);
-            if (titleMatch) {
-              await fetch(getServerUrl() + "/api/delete/agenda", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: titleMatch[1] }),
-              });
-            }
+            const allMatch = attributesStr.match(/all="([^"]+)"/);
+            const isAll = (allMatch && allMatch[1] === "true") || attributesStr.includes("all=") || !titleMatch;
+            
+            await fetch(getServerUrl() + "/api/delete/agenda", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                title: titleMatch ? titleMatch[1] : undefined, 
+                all: isAll 
+              }),
+            });
           } else if (type === "GoalDelete") {
             await fetch(getServerUrl() + "/api/delete/goal", {
               method: "POST"

@@ -559,7 +559,17 @@ app.post("/api/tts", async (req, res) => {
   try {
     if (service === "edge" || (!ELEVENLABS_API_KEY && !OPENAI_API_KEY) || (!service)) {
       // Setup Edge TTS (Free, high quality)
-      const voice = voiceId || "pt-BR-AntonioNeural";
+      let voice = voiceId || "pt-BR-AntonioNeural";
+      
+      // If voice is an ElevenLabs ID or not a valid Edge voice (with no hyphen), map it correctly
+      if (voice && !voice.includes("-")) {
+        if (voice === "EXAVITQu4vr4xnSDxMaL" || voice === "LcfcDJNUP1GQjkvn1xUw") {
+          voice = "pt-BR-FranciscaNeural";
+        } else {
+          voice = "pt-BR-AntonioNeural";
+        }
+      }
+
       const tts = new EdgeTTS({
         voice: voice,
         lang: 'pt-BR',
@@ -708,9 +718,11 @@ app.post("/api/chat", async (req, res) => {
     }
   }
   
+  const currentSaoPauloTime = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const selectedP = db.activePersona || "jarvis";
   const personaDetails = AI_PERSONAS[selectedP] || AI_PERSONAS.jarvis;
 
+  contextPrompt += `\n[FUSO HORÁRIO / DATA E HORA DE BRASÍLIA/SP]: ${currentSaoPauloTime}. Sempre use para calcular compromissos relativos ("hoje", "amanhã", "este sábado", etc.)\n\n`;
   contextPrompt += personaDetails.prompt + "\n\n";
   contextPrompt += `Regras de Interação e Saída:
 1. Responda em português de forma fluida, proativa e pareça humano (ainda mantendo o tom elegante de sua persona). Responda concisamente e aja!
@@ -719,16 +731,21 @@ app.post("/api/chat", async (req, res) => {
    - Ex IoT (Modos): <command type="IoT" action="Modo Cinema" />
    - Ex IoT (Desligar): <command type="IoT" action="Desligar Luzes" />
    - Ex PC: <command type="PC" workspace="study" />
-4. Para INCLUIR registros, use as tags:
+4. DIRETRIZ CRÍTICA DE CONSULTA (LEITURA) vs EXECUÇÃO (CRIAÇÃO/AGENDAMENTO):
+   - Se o usuário estiver apenas CONSULTANDO, PERGUNTANDO ou LISTANDO (ex: "quais compromissos eu tenho hoje?", "o que tenho agendado?", "quais os meus gastos?", "mostre minha agenda"), responda apenas listando os itens reais existentes nas seções [SISTEMA DE CALENDÁRIO / AGENDA / COMPROMISSOS REAIS CADASTRADOS] e [SISTEMA FINANCEIRO / GASTOS / TRANSAÇÕES REAIS CADASTRADAS] fornecidas no prompt. NUNCA invente compromissos falsos ou de exemplo se as listas estiverem vazias, fale a verdade absoluta! NUNCA gere ou envie tags de comando como "<command type="Agenda" .../>" ou "<command type="Finance" .../>" durante uma simples consulta, pois gerar tais tags fará a aplicação cadastrá-las indevidamente como novos itens!
+   - Só emita comando de inserção de agenda (<command type="Agenda" title="..." datetime="..." />) ou finanças se o usuário explicitamente e ativamente mandar você criar um novo registro (ex: "agende uma reunião amanhã às 14h", "crie o compromisso X", "lance despesa de Y").
+5. Para CADASTRAR/AGENDAR/INSERIR registros (SOMENTE quando o usuário solicitar ativamente para criar um novo registro):
    - Ex Agenda: <command type="Agenda" title="Almoço com a família" datetime="2026-05-31T12:30" />
    - Ex Finanças: <command type="Finance" value="45.90" category="Alimentação" description="iFood Jantar" />
-5. Para EXCLUIR registros se o usuário pedir (e apagar do Obsidian automaticamente), use as tags:
-   - Ex Apagar Compasso: <command type="AgendaDelete" title="Almoço" />
-   - Ex Apagar Finança: <command type="FinanceDelete" description="iFood" />
+6. Para EXCLUIR/APAGAR registros se o usuário pedir (e apagar do Obsidian automaticamente), use as tags:
+   - Ex Apagar Um Compromisso específico pelo título: <command type="AgendaDelete" title="Almoço" />
+   - Ex Apagar TODOS os compromissos da agenda: <command type="AgendaDelete" all="true" />
+   - Ex Apagar Uma Finança específica pela descrição: <command type="FinanceDelete" description="iFood" />
+   - Ex Apagar TODAS as finanças: <command type="FinanceDelete" all="true" />
    - Ex Apagar Meta Financeira: <command type="GoalDelete" />
    - Ex Apagar Nota do Cérebro: <command type="ObsidianDelete" path="/caminho/do/arquivo.md" />
-6. Seja técnico, mas breve.
-7. Integração com Obsidian: Se o usuário definir uma regra, prefira salvar na memória persistente usando o bloco:
+7. Seja técnico, mas breve.
+8. Integração com Obsidian: Se o usuário definir uma regra, prefira salvar na memória persistente usando o bloco:
 \`\`\`obsidian-update
 path: /caminho/do/arquivo.md
 content:
@@ -765,7 +782,12 @@ DIRETRIZES CRÍTICAS PARA RECONHECIMENTO DE COMPROMISSOS E FINANÇAS REAIS:
 3. CONSULTA VS CRIAÇÃO: 
    - Se o usuário estiver apenas CONSULTANDO (ex: "quais compromissos eu tenho hoje?", "o que tenho agendado?", "quais os meus gastos?", "mostre minha agenda"), responda apenas listando os itens reais existentes naquelas seções. NUNCA envie ou emita tags XML de comando como "<command type=\"Agenda\" .../>" ou "<command type=\"Finance\" .../>" durante uma simples consulta, pois gerar tais tags fará a aplicação cadastrá-las indevidamente como novos itens!
    - Só emita comando de inserção de agenda (<command type="Agenda" title="..." datetime="..." />) ou finanças se o usuário explicitamente e ativamente mandar você criar um novo registro (ex: "agende uma reunião amanhã às 14h", "crie o compromisso X", "lance despesa de Y").
-4. Tom de voz: Aja de forma fluida, inteligente, prestativa e formal (tratando por "senhor" ou "Mestre"). Evite rodeios e narrações burocráticas sobre as tags XML. Emita apenas os comandos úteis de forma limpa e invisível.`;
+4. DELETAR / APAGAR: Se o usuário pedir para apagar, excluir ou eliminar compromissos ou finanças do banco/agenda:
+   - Para apagar TODOS os compromissos, emita: <command type="AgendaDelete" all="true" />
+   - Para apagar um compromisso específico pelo título: <command type="AgendaDelete" title="Nome do Evento" />
+   - Para apagar TODAS as finanças, emita: <command type="FinanceDelete" all="true" />
+   - Para apagar uma finança específica pela descrição: <command type="FinanceDelete" description="Descrição do Gasto" />
+5. Tom de voz: Aja de forma fluida, inteligente, prestativa e formal (tratando por "senhor" ou "Mestre"). Evite rodeios e narrações burocráticas sobre as tags XML. Emita apenas os comandos úteis de forma limpa e invisível.`;
 
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -1544,8 +1566,10 @@ app.post("/api/update/finance", (req, res) => {
 });
 
 app.post("/api/delete/finance", (req, res) => {
-  const { description } = req.body;
-  if (description) {
+  const { description, all } = req.body;
+  if (all === true || (description && (description.toLowerCase() === "all" || description.toLowerCase() === "todos" || description.toLowerCase() === "tudo"))) {
+    db.finances = [];
+  } else if (description) {
     db.finances = db.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
   }
   saveDB();
@@ -1567,8 +1591,10 @@ app.post("/api/update/agenda", (req, res) => {
 });
 
 app.post("/api/delete/agenda", (req, res) => {
-  const { title } = req.body;
-  if (title) {
+  const { title, all } = req.body;
+  if (all === true || (title && (title.toLowerCase() === "all" || title.toLowerCase() === "todos" || title.toLowerCase() === "tudo"))) {
+    db.agenda = [];
+  } else if (title) {
     db.agenda = db.agenda.filter(a => !a.title.toLowerCase().includes(title.toLowerCase()));
   }
   saveDB();

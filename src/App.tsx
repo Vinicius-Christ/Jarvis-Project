@@ -1107,7 +1107,7 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {systemState?.homeAssistant?.devices.map(
+                      {systemState?.homeAssistant?.devices?.map(
                         (device: any) => (
                           <div
                             key={device.id}
@@ -1890,7 +1890,7 @@ export default function App() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-850">
-                          {systemState?.finances.map((item: any) => (
+                          {systemState?.finances?.map((item: any) => (
                             <tr key={item.id} className="text-zinc-300 group">
                               <td className="py-2.5 text-zinc-500">
                                 {new Date(item.date).toLocaleString("pt-BR", {
@@ -2049,7 +2049,7 @@ export default function App() {
                       Compromissos Registrados
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono w-full">
-                      {systemState?.agenda.map((item: any) => (
+                      {systemState?.agenda?.map((item: any) => (
                         <div
                           key={item.id}
                           className="bg-zinc-950 p-4 rounded-xl border border-zinc-800/60 flex flex-col h-full hover:border-zinc-700 transition duration-300"

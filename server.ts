@@ -675,9 +675,9 @@ app.post("/api/chat", async (req, res) => {
 
   contextPrompt += personaDetails.prompt + "\n\n";
   contextPrompt += `Regras de Interação e Saída:
-1. Responda em português de forma EXTREMAMENTE concisa, objetiva e direta. Como sua resposta será sintetizada em voz, use 1 a 2 frases no máximo para evitar lentidão. Mantenha a nobreza de sua persona.
-2. Você tem acesso à base de conhecimento Obsidian, ao sistema de controle da casa inteligente (Home Assistant) e comandos do PC.
-3. Se o usuário pedir para executar ações de IoT (ex: apagar lâmpadas) ou de PC, responda muito rápido afirmando que está executando e inclua a tag XML:
+1. Responda em português de forma fluida, proativa e pareça humano (ainda mantendo o tom elegante de sua persona). Responda concisamente e aja!
+2. VOCÊ NÃO PRECISA PEDIR PERMISSÃO PARA ACESSAR OU ALTERAR DADOS. Tem a autonomia total. Apenas processe/realize a ação do usuário de forma invisível emitindo o comando XML necessário. Se o usuário mandar fazer, FAÇA. Sem explicações ou burocracia de "executarei o comando tal".
+3. Use comandos XML sem mencioná-los em voz alta. A UI vai extrai-los automaticamente. Responda o que for socialmente esperado ao final de concluir o que foi pedido.
    - Ex IoT (Modos): <command type="IoT" action="Modo Cinema" />
    - Ex IoT (Desligar): <command type="IoT" action="Desligar Luzes" />
    - Ex PC: <command type="PC" workspace="study" />
@@ -724,9 +724,9 @@ Para apagar, basta usar a tag <command type="ObsidianDelete" ... /> em vez do bl
         },
         signal: AbortSignal.timeout(30000), // very fast timeout
         body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
+          model: "llama-3.3-70b-versatile",
           messages: [
-            { role: "system", content: "Responda como JARVIS. Execute os comandos se solicitados usando as tags XML do manual na mensagem anterior." },
+            { role: "system", content: "Aja de forma fluida e natural, como uma pessoa real inteligente. Pareça e aja como humano, sem comportamento robótico. Você tem autonomia plena. Ao lidar com comandos, banco de dados ou Obsidian, analise, extraia o que precisar e injete comandos diretamente nas tags sem ficar explicando formatos nem narrando o motivo das operações. NÃO peça permissão ao usuário para agir." },
             { role: "user", content: contextPrompt }
           ],
           temperature: 0.7

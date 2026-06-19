@@ -62,6 +62,16 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
   const [activePersona, setActivePersona] = useState("jarvis");
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
+  const activePersonaRef = useRef(activePersona);
+  useEffect(() => {
+    activePersonaRef.current = activePersona;
+  }, [activePersona]);
+
+  const onSendMessageRef = useRef(onSendMessage);
+  useEffect(() => {
+    onSendMessageRef.current = onSendMessage;
+  }, [onSendMessage]);
+
   // Load available system synthesis voices
   useEffect(() => {
     const loadVoices = () => {
@@ -91,7 +101,7 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
       const res = await fetch(getServerUrl() + "/api/ai/persona");
       if (res.ok) {
         const data = await res.json();
-        if (data.activePersona && data.activePersona !== activePersona) {
+        if (data.activePersona && data.activePersona !== activePersonaRef.current) {
           setActivePersona(data.activePersona);
           // Set specific vocal presets optimal for each persona
           if (data.activePersona === "jarvis") {
@@ -217,7 +227,7 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
           }
 
           const startLlm = Date.now();
-          const reply = await onSendMessage(transcript, undefined, "llama3.2");
+          const reply = await onSendMessageRef.current(transcript, undefined, "llama3.2");
           const endLlm = Date.now();
 
           const sttLatency = Math.floor(Math.random() * 15) + 10; // 10-25ms
@@ -243,7 +253,7 @@ export default function JarvisAssistant({ conversations, onSendMessage, isDarkMo
 
       recognitionRef.current = rec;
     }
-  }, [onSendMessage, selectedVoiceURI, pitch, rate, voiceVolume]);
+  }, [selectedVoiceURI, pitch, rate, voiceVolume]);
 
   // Scroll to bottom of conversation
   useEffect(() => {

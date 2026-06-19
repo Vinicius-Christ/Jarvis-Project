@@ -760,7 +760,7 @@ Para apagar, basta usar a tag <command type="ObsidianDelete" ... /> em vez do bl
       const groqData = await groqRes.json();
       replyText = groqData.choices?.[0]?.message?.content || "Mestre, os clusters da Groq retornaram nulo.";
       isLocalSimulated = true; // Technically cloud, but for the UI it distinguishes from native local
-      ollamaModelName += " [LPU Turbinado]";
+      groqModelName += " [LPU Turbinado]";
 
     } else {
       // Use standard local Ollama
@@ -769,7 +769,7 @@ Para apagar, basta usar a tag <command type="ObsidianDelete" ... /> em vez do bl
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.timeout(180000), // longer timeout for actual inference
         body: JSON.stringify({
-           model: ollamaModelName,
+           model: groqModelName,
            prompt: contextPrompt,
            stream: false,
            options: {
@@ -883,7 +883,7 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
 
   // 5. Save and respond
   const displayText = file ? `${message} (📂 Anexo: ${file.name})` : message;
-  const modelLabel = isLocalSimulated ? `${ollamaModelName.toUpperCase()} [Cloud Mock]` : `${ollamaModelName.toUpperCase()} [Native Local]`;
+  const modelLabel = isLocalSimulated ? `${groqModelName.toUpperCase()} [Cloud Mock]` : `${groqModelName.toUpperCase()} [Native Local]`;
   
   db.conversations.push({ sender: "User", text: displayText, time: new Date().toISOString() });
   db.conversations.push({ sender: "JARVIS", text: replyText, time: new Date().toISOString() });

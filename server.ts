@@ -648,6 +648,26 @@ app.post("/api/chat", async (req, res) => {
     contextPrompt += `--- ${note.path} ---\n${note.content}\n\n`;
   });
 
+  // 1b. Inject Real Agenda/Calendar database events
+  contextPrompt += `\n[SISTEMA DE CALENDÁRIO / AGENDA / COMPROMISSOS REAIS CADASTRADOS]:\n`;
+  if (db.agenda && db.agenda.length > 0) {
+    db.agenda.forEach(item => {
+      contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"} | Notas: ${item.notes || "Sem notas."}\n`;
+    });
+  } else {
+    contextPrompt += `*(Nenhum compromisso agendado no calendário no momento)*\n`;
+  }
+
+  // 1c. Inject Real Finances database transactions
+  contextPrompt += `\n[SISTEMA FINANCEIRO / GASTOS / TRANSAÇÕES REAIS CADASTRADAS]:\n`;
+  if (db.finances && db.finances.length > 0) {
+    db.finances.forEach(item => {
+      contextPrompt += `- ID: ${item.id} | Valor: R$ ${parseFloat(item.value).toFixed(2)} | Categoria: ${item.category} | Descrição: "${item.description}"\n`;
+    });
+  } else {
+    contextPrompt += `*(Nenhum registro financeiro de despesas ou receitas cadastrado no momento)*\n`;
+  }
+
   // PRE-PROCESS INTEGRATED MCP TOOLS
   if (db.mcpEnabled && db.mcpServers) {
     const fsSrv = db.mcpServers.find(s => s.id === "fs");
@@ -852,10 +872,23 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
         replyText = "Com certeza, senhor. Ajustando a iluminação local periférica para as tarefas solicitadas. <command type=\"IoT\" action=\"Modo Cinema\" />";
       } else if (lower.includes("estudos") || lower.includes("trabalhar") || lower.includes("workspace")) {
         replyText = "Configurando a ponte de automação local. Abrindo o Notion e documentações, bons estudos. <command type=\"PC\" workspace=\"study\" />";
-      } else if (lower.includes("agenda") || lower.includes("compromisso")) {
-        replyText = "O senhor possui uma reunião de alinhamento com a equipe amanhã. Deseja que eu gere um briefing?";
+      } else if (lower.includes("agenda") || lower.includes("compromisso") || lower.includes("reunião")) {
+        if (db.agenda && db.agenda.length > 0) {
+          const list = db.agenda.map(a => `- **${a.title}** (${new Date(a.datetime).toLocaleString('pt-BR', { timeZone: 'UTC' })}) - *${a.category || "Agenda"}*: ${a.notes || ""}`).join("\n");
+          replyText = `Com certeza, senhor. Consultei a base de dados em tempo real. Aqui estão os compromissos cadastrados no seu calendário:\n\n${list}\n\nDeseja realizar alguma alteração ou agendar novo evento?`;
+        } else {
+          replyText = `Com certeza, senhor. Consultei sua agenda no sistema e verifiquei que não há nenhum compromisso agendado no momento.\n\nDeseja que eu agende algo para o senhor? Basta pedir "Agende uma reunião amanhã às 15:00", por exemplo!`;
+        }
+      } else if (lower.includes("gasto") || lower.includes("finan") || lower.includes("despesa") || lower.includes("transação")) {
+        if (db.finances && db.finances.length > 0) {
+          const list = db.finances.map(f => `- **R$ ${parseFloat(f.value).toFixed(2)}** (${f.category}): ${f.description}`).join("\n");
+          const total = db.finances.reduce((acc, f) => acc + parseFloat(f.value), 0);
+          replyText = `Senhor, consultei os lançamentos no banco de dados. Aqui estão as transações cadastradas:\n\n${list}\n\n**Total Geral:** R$ ${total.toFixed(2)}.\n\nDeseja cadastrar um novo lançamento ou excluir alguma despesa?`;
+        } else {
+          replyText = `Senhor, verifiquei na base de dados SQLite/PostgreSQL e não localizei nenhuma transação registrada atualmente.\n\nDeseja registrar algum gasto? Você pode dizer "Lance uma despesa de R$ 45.90 com Jantar de ifood", por exemplo!`;
+        }
       } else {
-        replyText = `Sim, senhor. Compreendo: "<strong>${message}</strong>". Estou processando puramente via CPU/GPU local, sem chamadas ao Google Gemini ou cloud externa, conforme sua arquitetura nativa exigida. Lembre-se que meus repositórios Markdown do Obsidian estão indexados para nossa busca.`;
+        replyText = `Sim, senhor. Compreendo de forma offline: "<strong>${message}</strong>". Lembre-se que me sintonizei com o Obsidian e seu banco relacional, e as consultas diretas estão plenamente disponíveis tanto via nuvem LPU rápida quanto fallbacks estruturados.`;
       }
     }
   }

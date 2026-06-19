@@ -712,7 +712,7 @@ app.post("/api/chat", async (req, res) => {
         },
         signal: AbortSignal.timeout(30000), // very fast timeout
         body: JSON.stringify({
-          model: ollamaModelName.includes("3.2") ? "llama-3.2-11b-vision-preview" : "llama-3.1-8b-instant",
+          model: "llama-3.3-70b-versatile",
           messages: [
             { role: "system", content: "Responda como JARVIS. Execute os comandos se solicitados usando as tags XML do manual na mensagem anterior." },
             { role: "user", content: contextPrompt }
@@ -723,7 +723,9 @@ app.post("/api/chat", async (req, res) => {
       });
 
       if (!groqRes.ok) {
-        throw new Error(`Groq failed with status: ${groqRes.status}`);
+        let errorBody = "";
+        try { errorBody = await groqRes.text(); } catch(e) {}
+        throw new Error(`Groq failed with status: ${groqRes.status}. Details: ${errorBody}`);
       }
 
       const groqData = await groqRes.json();

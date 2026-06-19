@@ -2,8 +2,6 @@
 # Configuração Multi-Container Docker para a Stack Local do JARVIS v5.0
 # Execute este arquivo com o comando: docker compose up -d
 
-version: "3.8"
-
 services:
   # ChromaDB - Banco de Dados Vetorial para armazenar os embeddings (RAG) do Obsidian
   chromadb:

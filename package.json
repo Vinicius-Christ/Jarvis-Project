@@ -59,7 +59,8 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.14.0",
+    "eslint": "^9.14.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/cors": "^2.8.19",
     "@types/dompurify": "^3.0.5",

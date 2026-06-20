@@ -247,7 +247,7 @@ let db: DbSchema = {
   chromaMemories: [] as any[],
   githubRepo: "",
   githubToken: "",
-  googleSheetUrl: "",
+  googleSheetUrl: "https://docs.google.com/spreadsheets/d/13wmGhejq3V78ZHSHl-SxayDZM7pk9s3qYRPVtZnbhgg/edit?usp=sharing",
   systemActive: true,
   activePersona: "friday",
   containerMockStates: {
@@ -318,6 +318,9 @@ if (fs.existsSync(DB_FILE)) {
     const fileContent = fs.readFileSync(DB_FILE, "utf-8");
     const parsed = JSON.parse(fileContent);
     db = { ...db, ...parsed }; // merge keys to prevent breaking if schema updates
+    if (!db.googleSheetUrl || db.googleSheetUrl.trim() === "") {
+      db.googleSheetUrl = "https://docs.google.com/spreadsheets/d/13wmGhejq3V78ZHSHl-SxayDZM7pk9s3qYRPVtZnbhgg/edit?usp=sharing";
+    }
   } catch (err: any) {
     console.error("Falha ao ler db.json, usando padrao:", err?.message || err);
   }

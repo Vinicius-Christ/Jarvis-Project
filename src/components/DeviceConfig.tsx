@@ -1,6 +1,7 @@
 import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect } from "react";
 import { Plus, Wifi, Save, ArrowUpRight, Cpu, ShieldCheck, Palette } from "lucide-react";
+import { useGoogleLogin } from "@react-oauth/google";
 
 interface DeviceConfigProps {
   devices: any[];
@@ -100,6 +101,41 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
     "Modo Noturno": { brightness: 5, color: "#FF8F00", temp: 24 }
   });
   const [savingHA, setSavingHA] = useState(false);
+
+  const [isGoogleConnected, setIsGoogleConnected] = useState(!!localStorage.getItem("google_token"));
+  const [googleEmail, setGoogleEmail] = useState<string | null>(localStorage.getItem("google_user_email"));
+
+  const loginGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        if (!tokenResponse.access_token) return;
+        localStorage.setItem("google_token", tokenResponse.access_token);
+        
+        // Fetch profile
+        const checkRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+        });
+        if (checkRes.ok) {
+          const profile = await checkRes.json();
+          if (profile.email) {
+            localStorage.setItem("google_user_email", profile.email);
+            setGoogleEmail(profile.email);
+          }
+        }
+        setIsGoogleConnected(true);
+      } catch (err) {
+        console.error("Failed to connect google account", err);
+      }
+    },
+    onError: () => console.error("Google authentication failed")
+  });
+
+  const handleDisconnectGoogle = () => {
+    localStorage.removeItem("google_token");
+    localStorage.removeItem("google_user_email");
+    setIsGoogleConnected(false);
+    setGoogleEmail(null);
+  };
 
   useEffect(() => {
     fetch(getServerUrl() + "/api/ai/persona")
@@ -466,6 +502,34 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                 SALVAR URL
               </button>
             </form>
+
+            <div className="pt-3 border-t border-zinc-800/60 flex flex-col gap-2">
+              <label className="text-zinc-500 block text-[9px] uppercase font-mono">Conexão da Conta Google (Google API OAuth)</label>
+              {isGoogleConnected ? (
+                <div className="flex items-center justify-between bg-emerald-950/40 border border-emerald-900/40 text-emerald-400 font-mono text-[10px] px-3 py-2 rounded-xl">
+                  <div className="flex flex-col animate-fadeIn">
+                    <span className="font-bold flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" /> CONECTADO</span>
+                    {googleEmail && <span className="text-zinc-500 text-[9px] mt-0.5">{googleEmail}</span>}
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={handleDisconnectGoogle}
+                    className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-red-500/30 text-rose-400 hover:text-rose-300 rounded text-[9px] cursor-pointer"
+                  >
+                    Desconectar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => loginGoogle()}
+                  className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold tracking-wider rounded uppercase hover:bg-emerald-500/10 transition flex items-center justify-center gap-1.5 cursor-pointer text-[10px] shadow-lg animate-pulse"
+                >
+                  <ArrowUpRight className="h-3.5 w-3.5 text-white" />
+                  CONECTAR CONTA GOOGLE
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Column 1 Card 2: Groq Cloud Configuration & Verification Tutorials */}

@@ -82,25 +82,40 @@ const ALLOWED_EMAIL = process.env.ALLOWED_EMAIL || 'viniciusc.castro09@gmail.com
 
 // Add the auth middleware
 app.use(async (req, res, next) => {
-  // Public routes that do not need auth
-  const ip = req.ip || "";
-  const host = req.headers.host || "";
-  const isLocal = ip === '127.0.0.1' || 
-                  ip === '::1' || 
-                  ip === '::ffff:127.0.0.1' || 
-                  host.includes('localhost') ||
-                  host.includes('127.0.0.1') ||
-                  host.includes('[::1]');
-  
-  // Libera a pasta pública e assets
-  if (isLocal || req.path.startsWith('/api/public/')) {
+  // 1. Libera todos os arquivos estáticos e rotas do frontend (qualquer rota que não comece com /api/)
+  // Libera também as rotas públicas da API (/api/public/)
+  if (!req.path.startsWith('/api/') || req.path.startsWith('/api/public/')) {
      return next();
   }
 
-  // Se não for localhost, vamos exigir um Bearer Token do Google
+  // 2. Verifica se é uma requisição de ambiente de desenvolvimento local ou LAN (Ex: localhost ou rede privada 192.168.x.x, 10.x.x.x, etc.)
+  const ip = req.ip || "";
+  const host = req.headers.host || "";
+  const isPrivateIP = (ipStr: string) => {
+    const cleanIp = ipStr.replace(/^::ffff:/, '');
+    return cleanIp === '127.0.0.1' ||
+           cleanIp === '::1' ||
+           cleanIp.startsWith('192.168.') ||
+           cleanIp.startsWith('10.') ||
+           /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(cleanIp);
+  };
+
+  const isLocal = isPrivateIP(ip) || 
+                  host.includes('localhost') ||
+                  host.includes('127.0.0.1') ||
+                  host.includes('192.168.') ||
+                  host.includes('10.') ||
+                  /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
+                  host.includes('[::1]');
+  
+  if (isLocal) {
+     return next();
+  }
+
+  // Se não for local network / dev local, vamos exigir um Bearer Token do Google para as rotas /api/
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-     return res.status(401).json({ error: "Missing or invalid authorization header. Please pass a valid JWT Bearer token." });
+     return res.status(401).json({ error: "Cabeçalho de autorização ausente ou inválido. Por favor, forneça um token JWT Bearer válido." });
   }
 
   const token = authHeader.split(' ')[1];

@@ -87,11 +87,18 @@ const HOLO_THEMES = {
 
 export default React.memo(function DeviceConfig({ devices, onRefresh, currentTheme, onChangeTheme, configTab, isDarkMode = true, onToggleDarkMode }: DeviceConfigProps) {
   // Local states for device additions
-  const [activePersona, setActivePersona] = useState<string>("jarvis");
+  const [activePersona, setActivePersona] = useState<string>("friday");
 
   const [haIp, setHaIp] = useState("");
   const [haToken, setHaToken] = useState("");
   const [haWsStatus, setHaWsStatus] = useState("disconnected");
+  const [googleSheetUrl, setGoogleSheetUrl] = useState("");
+  const [hiddenDevices, setHiddenDevices] = useState<string[]>([]);
+  const [modesConfig, setModesConfig] = useState<Record<string, any>>({
+    "Modo Trabalho": { brightness: 90, color: "#E0F7FA", temp: 22 },
+    "Modo Cinema": { brightness: 15, color: "#E040FB", temp: 20 },
+    "Modo Noturno": { brightness: 5, color: "#FF8F00", temp: 24 }
+  });
   const [savingHA, setSavingHA] = useState(false);
 
   useEffect(() => {
@@ -108,10 +115,13 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
       fetch(getServerUrl() + "/api/db")
         .then(r => r.json())
         .then(data => {
+          if (data.googleSheetUrl !== undefined) setGoogleSheetUrl(data.googleSheetUrl);
           if (data.homeAssistant) {
             setHaIp(data.homeAssistant.ip || (typeof window !== 'undefined' ? window.location.hostname : ""));
             setHaToken(data.homeAssistant.token || "");
             setHaWsStatus(data.homeAssistant.wsStatus || "disconnected");
+            if (data.homeAssistant.hiddenDevices) setHiddenDevices(data.homeAssistant.hiddenDevices);
+            if (data.homeAssistant.modesConfig) setModesConfig(data.homeAssistant.modesConfig);
           }
         })
         .catch(() => {});
@@ -131,10 +141,6 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
   
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // States for testing Ollama connection
-  const [ollamaStatus, setOllamaStatus] = useState<"idle" | "testing" | "online">("online");
-  const [ollamaUrl, setOllamaUrl] = useState(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:11434`);
 
   const deviceTypes = [
     "Lâmpada Inteligente (RGB/Dimmer)",
@@ -216,6 +222,45 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
     }
   };
 
+  const handleToggleHiddenDevice = async (deviceId: string) => {
+    const isHidden = hiddenDevices.includes(deviceId);
+    const newHidden = isHidden ? hiddenDevices.filter(id => id !== deviceId) : [...hiddenDevices, deviceId];
+    setHiddenDevices(newHidden);
+    
+    try {
+      await fetch(getServerUrl() + "/api/homeassistant/config", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hiddenDevices: newHidden })
+      });
+      onRefresh();
+    } catch (err) {}
+  };
+
+  const handleUpdateModeConfig = async (mode: string, field: string, value: any) => {
+    const newConfig = { ...modesConfig, [mode]: { ...modesConfig[mode], [field]: value } };
+    setModesConfig(newConfig);
+    
+    try {
+      await fetch(getServerUrl() + "/api/homeassistant/config", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modesConfig: newConfig })
+      });
+      onRefresh();
+    } catch (err) {}
+  };
+
+  const handleSaveGoogleSheetUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await fetch(getServerUrl() + "/api/settings/googlesheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: googleSheetUrl }),
+      });
+      onRefresh();
+    } catch (err) {}
+  };
+
   const handleSaveHAConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingHA(true);
@@ -235,13 +280,6 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
     } finally {
       setSavingHA(false);
     }
-  };
-
-  const testOllamaConnection = () => {
-    setOllamaStatus("testing");
-    setTimeout(() => {
-      setOllamaStatus("online");
-    }, 1200);
   };
 
   return (
@@ -396,6 +434,36 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               >
                 <Wifi className="h-3.5 w-3.5" />
                 {savingHA ? "REINICIANDO AMBIENTE SOCKET..." : "SALVAR E CONECTAR VIA WEBSOCKET"}
+              </button>
+            </form>
+          </div>
+
+          <div className="holographic-card p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-805 pb-3">
+              <h3 className="text-sm font-sans font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                Domótica: Memória Central Sheets
+              </h3>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              O JARVIS cria uma base de memória central e persistente baseada em arquivos de Google Sheets gerados em sua integração. Adicione o link de uma de suas planilhas para permitir acesso direto pelo botão central da interface.
+            </p>
+            <form onSubmit={handleSaveGoogleSheetUrl} className="space-y-3 font-mono text-xs p-3.5 bg-black/40 border border-zinc-800 rounded-xl">
+              <div>
+                <label className="text-zinc-500 block text-[9px] uppercase mb-1">Link Compartilhado do Google Sheets</label>
+                <input
+                  type="url"
+                  placeholder="https://docs.google.com/spreadsheets/d/...."
+                  value={googleSheetUrl}
+                  onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 font-mono text-xs px-2 py-1.5 rounded focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-1.5 bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 text-emerald-400 hover:text-emerald-300 font-mono font-bold tracking-wider rounded uppercase hover:bg-emerald-500/10 transition flex items-center justify-center gap-1.5 cursor-pointer text-[10px]"
+              >
+                <Save className="h-3.5 w-3.5" />
+                SALVAR URL
               </button>
             </form>
           </div>
@@ -735,6 +803,15 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
+                        <label className="flex items-center gap-2 cursor-pointer text-[10px] text-zinc-400 select-none">
+                          <input 
+                            type="checkbox" 
+                            className="bg-black/40 border-zinc-700 rounded cursor-pointer accent-[var(--brand-primary)]"
+                            checked={!hiddenDevices.includes(device.id)}
+                            onChange={() => handleToggleHiddenDevice(device.id)}
+                          />
+                          Painel
+                        </label>
                         <button
                           onClick={() => handleToggleDevice(device.id, device.state)}
                           className={`w-11 h-6 rounded-full p-0.5 transition-all duration-300 ease-in-out cursor-pointer relative flex items-center shrink-0 active:scale-90 hover:brightness-110 shadow-inner ${
@@ -775,6 +852,58 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               )}
             </div>
           </div>
+          
+          {/* Modes Config UI */}
+          <div className="holographic-card p-5 mt-6">
+            <h3 className="text-xs font-mono font-medium text-zinc-400 uppercase border-l border-[var(--brand-primary)] pl-2 mb-4">
+              Configuração dos Modos
+            </h3>
+            <div className="space-y-4">
+              {Object.entries(modesConfig).map(([mode, config]: [string, any]) => (
+                <div key={mode} className="bg-black/40 border border-zinc-800/60 p-3 rounded-xl">
+                  <div className="mb-2 text-xs font-bold text-zinc-200">{mode}</div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Brilho (%)</label>
+                      <input 
+                        type="number" min="0" max="100" 
+                        value={config.brightness || 0}
+                        onChange={(e) => handleUpdateModeConfig(mode, "brightness", parseInt(e.target.value))}
+                        className="w-full bg-black/50 border border-zinc-800 text-xs px-2 py-1 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Cor Hexo</label>
+                      <div className="flex gap-2 items-center">
+                        <input 
+                          type="color" 
+                          value={config.color || "#000000"}
+                          onChange={(e) => handleUpdateModeConfig(mode, "color", e.target.value)}
+                          className="w-6 h-6 border-0 bg-transparent rounded cursor-pointer shrink-0"
+                        />
+                        <input 
+                          type="text" 
+                          value={config.color || ""}
+                          onChange={(e) => handleUpdateModeConfig(mode, "color", e.target.value)}
+                          className="w-full bg-black/50 border border-zinc-800 text-[10px] font-mono px-2 py-1 rounded uppercase"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Ar (°C)</label>
+                      <input 
+                        type="number" min="16" max="30" 
+                        value={config.temp || 24}
+                        onChange={(e) => handleUpdateModeConfig(mode, "temp", parseInt(e.target.value))}
+                        className="w-full bg-black/50 border border-zinc-800 text-xs px-2 py-1 rounded"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
         </div>
 
       </div>

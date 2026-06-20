@@ -9,8 +9,7 @@ export default function TokensManager() {
     telegramToken: "",
     elevenlabsToken: "",
     openaiToken: "",
-    webUsername: "",
-    webPassword: ""
+    googleClientId: ""
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,30 +94,19 @@ export default function TokensManager() {
             <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-l-4 border-l-rose-500">
               <div className="md:col-span-2">
                 <label className="block text-[11px] uppercase font-bold text-rose-400 font-mono mb-1.5 flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4" /> Autenticação Web Externa (Basic Auth)
+                  <ShieldCheck className="h-4 w-4" /> Google OAuth Client ID
                 </label>
-                <p className="text-[10px] text-zinc-500 mb-1 leading-relaxed">Pede usuário e senha sempre que acessar a interface web remotamente (Cybersegurança). Deixe em branco se for usar apenas na própria rede interna segura.</p>
+                <p className="text-[10px] text-zinc-500 mb-1 leading-relaxed">Protege a interface web remotamente exigindo login com a sua própria conta Google. Preencha este campo com seu Web App Client ID do GCP.</p>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <input
                   type="text"
-                  name="webUsername"
-                  autoComplete="new-password"
-                  value={tokens?.webUsername || ""}
+                  name="googleClientId"
+                  autoComplete="off"
+                  value={tokens?.googleClientId || ""}
                   onChange={handleChange}
-                  placeholder="Nome de Usuário"
-                  className="w-full bg-black/60 border border-zinc-800 text-rose-300 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-rose-500 transition-colors"
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  name="webPassword"
-                  autoComplete="new-password"
-                  value={tokens?.webPassword || ""}
-                  onChange={handleChange}
-                  placeholder="Senha Mestra"
-                  className="w-full bg-black/60 border border-zinc-800 text-rose-300 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-rose-500 transition-colors"
+                  placeholder="xxxxxx-xxxxxxxxx.apps.googleusercontent.com"
+                  className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-rose-500 transition-colors"
                 />
               </div>
             </div>

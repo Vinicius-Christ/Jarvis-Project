@@ -606,7 +606,7 @@ echo -e "\\e[32mInstalação concluída com sucesso! Para aplicar os grupos do D
                   </button>
                 </div>
                 <pre className="bg-black/50 p-3 rounded-lg overflow-x-auto text-[9px] font-mono text-zinc-400 h-64 leading-tight select-text scrollbar-thin scrollbar-thumb-zinc-800">
-                  {powershellScript}
+                  {bashScript}
                 </pre>
               </div>
             )}

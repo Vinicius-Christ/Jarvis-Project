@@ -23,6 +23,7 @@ import {
   Workflow,
   Code,
   Trash2,
+  Table,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -946,6 +947,24 @@ export default function App() {
                 <Home className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[var(--brand-light)]" />
               </a>
               <a
+                href={systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/"}
+                target="_blank"
+                rel="noreferrer"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all group ${
+                  "border-zinc-800 bg-zinc-900"
+                }`}
+                title="Abrir Memória Central (Google Sheets)"
+                onClick={(e) => {
+                  if (!systemState?.googleSheetUrl) {
+                    e.preventDefault();
+                    setActiveTab("settings");
+                    setSettingsTab("general");
+                  }
+                }}
+              >
+                <Table className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400" />
+              </a>
+              <a
                 href="/api-docs"
                 target="_blank"
                 rel="noreferrer"
@@ -1142,54 +1161,80 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {systemState?.homeAssistant?.devices?.map(
+                      {systemState?.homeAssistant?.devices?.filter((d: any) => !systemState?.homeAssistant?.hiddenDevices?.includes(d.id)).map(
                         (device: any) => (
                           <div
                             key={device.id}
-                            className={`p-3 rounded-xl border transition-all ${
+                            className={`p-3 rounded-xl border transition-all flex flex-col justify-between ${
                               device.state === "on"
                                 ? "bg-[var(--brand-dark)] border-[var(--brand-border)]"
                                 : "bg-zinc-950/40 border-zinc-900/60 text-zinc-500"
                             }`}
                           >
-                            <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-mono text-zinc-500 tracking-wider block uppercase">
-                                {device.type}
-                              </span>
-                              <button
-                                onClick={() =>
-                                  toggleDeviceState(device.id, device.state)
-                                }
-                                className={`w-11 h-6 rounded-full p-0.5 transition-all duration-300 ease-in-out cursor-pointer relative flex items-center shrink-0 active:scale-90 hover:brightness-110 shadow-inner ${
-                                  device.state === "on"
-                                    ? "bg-[var(--brand-primary,rgb(6,182,212))] shadow-[0_0_10px_var(--brand-primary,rgba(6,182,212,0.45))]"
-                                    : "bg-zinc-800 border border-zinc-700/35"
-                                }`}
-                                title={
-                                  device.state === "on" ? "Desligar" : "Ligar"
-                                }
-                              >
-                                <div
-                                  className={`bg-zinc-950 w-4.5 h-4.5 rounded-full shadow-inner transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1.2)] flex items-center justify-center ${
+                            <div>
+                              <div className="flex justify-between items-start">
+                                <span className="text-[10px] font-mono tracking-wider block uppercase">
+                                  {device.type}
+                                </span>
+                                <button
+                                  onClick={() =>
+                                    toggleDeviceState(device.id, device.state)
+                                  }
+                                  className={`w-11 h-6 rounded-full p-0.5 transition-all duration-300 ease-in-out cursor-pointer relative flex items-center shrink-0 active:scale-90 hover:brightness-110 shadow-inner ${
                                     device.state === "on"
-                                      ? "transform translate-x-5"
-                                      : "transform translate-x-0"
+                                      ? "bg-[var(--brand-primary,rgb(6,182,212))] shadow-[0_0_10px_var(--brand-primary,rgba(6,182,212,0.45))]"
+                                      : "bg-zinc-800 border border-zinc-700/35"
                                   }`}
+                                  title={
+                                    device.state === "on" ? "Desligar" : "Ligar"
+                                  }
                                 >
                                   <div
-                                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${device.state === "on" ? "bg-[var(--brand-light,rgb(6,182,212))] animate-pulse" : "bg-zinc-650"}`}
-                                  />
-                                </div>
-                              </button>
+                                    className={`bg-zinc-950 w-4.5 h-4.5 rounded-full shadow-inner transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1.2)] flex items-center justify-center ${
+                                      device.state === "on"
+                                        ? "transform translate-x-5"
+                                        : "transform translate-x-0"
+                                    }`}
+                                  >
+                                    <div
+                                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${device.state === "on" ? "bg-[var(--brand-light,rgb(6,182,212))] animate-pulse" : "bg-zinc-650"}`}
+                                    />
+                                  </div>
+                                </button>
+                              </div>
+                              <div className="mt-2.5">
+                                <span className="text-xs font-semibold text-zinc-200 block">
+                                  {device.name}
+                                </span>
+                                <span className="text-[9px] font-mono opacity-80 block mt-0.5">
+                                  {device.status}
+                                </span>
+                              </div>
                             </div>
-                            <div className="mt-2.5">
-                              <span className="text-xs font-semibold text-zinc-200 block">
-                                {device.name}
-                              </span>
-                              <span className="text-[9px] font-mono text-zinc-500 block mt-0.5">
-                                {device.status}
-                              </span>
-                            </div>
+                            
+                            {device.type === "light" && device.state === "on" && (
+                              <div className="mt-3 flex items-center gap-2 pt-2 border-t border-zinc-500/20">
+                                <input 
+                                  type="range" 
+                                  min="1" max="100" 
+                                  className="w-full accent-[var(--brand-primary)] h-1 bg-zinc-900 rounded-lg appearance-none cursor-pointer"
+                                  value={device.brightness || 100}
+                                  onChange={(e) => fetch(getServerUrl() + "/api/update/iot", {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ deviceId: device.id, brightness: parseInt(e.target.value) })
+                                  })}
+                                />
+                                <input 
+                                  type="color"
+                                  className="w-4 h-4 p-0 border-0 bg-transparent rounded cursor-pointer shrink-0"
+                                  value={device.color || "#FFFFFF"}
+                                  onChange={(e) => fetch(getServerUrl() + "/api/update/iot", {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ deviceId: device.id, color: e.target.value })
+                                  })}
+                                />
+                              </div>
+                            )}
                           </div>
                         ),
                       )}
@@ -1345,34 +1390,7 @@ export default function App() {
                       </div>
 
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-zinc-400">
-                          3. Modelos Llama 3.3
-                        </span>
-                        <span
-                          className={
-                            systemState?.installer?.modules?.ollama?.status ===
-                            "completed"
-                              ? "text-emerald-400"
-                              : "text-zinc-500"
-                          }
-                        >
-                          {systemState?.installer?.modules?.ollama?.status ===
-                          "completed"
-                            ? "CUDA-Cache"
-                            : "Ok"}
-                        </span>
-                      </div>
-                      <div className="w-full bg-zinc-950 h-1 rounded overflow-hidden">
-                        <div
-                          className="bg-lime-500 h-full transition-all"
-                          style={{
-                            width: `${systemState?.installer?.modules?.ollama?.progress || 100}%`,
-                          }}
-                        ></div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-zinc-400">4. Workflows n8n</span>
+                        <span className="text-zinc-400">3. Workflows n8n</span>
                         <span
                           className={
                             systemState?.installer?.modules?.n8n?.status ===
@@ -2212,7 +2230,7 @@ export default function App() {
                           : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
                       }`}
                     >
-                      📝 Obsidian Vault
+                      📊 Google Sheets DB
                     </button>
                     <button
                       onClick={() => setSettingsTab("mcp")}
@@ -2300,85 +2318,65 @@ export default function App() {
 
                 {settingsTab === "obsidian" && (
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 font-mono">
-                    {/* Left selector listing virtual files in obsidian */}
                     <div className="holographic-card p-4 space-y-3">
                       <h3 className="text-xs font-bold text-[var(--brand-light)] uppercase tracking-widest pl-2 border-l border-[var(--brand-primary)] mb-4 animate-pulse">
-                        Obsidian Vault Explorer
+                        Google Sheets Memória
                       </h3>
                       <p className="text-[11px] text-zinc-400 leading-normal mb-3">
-                        Os arquivos Markdown{" "}
+                        A IA estrutura e armazena os dados através de planilhas.{" "}
                         <code className="text-[10px] text-lime-400 font-bold bg-zinc-950 border border-zinc-900 px-1 rounded">
-                          .md
+                          Sync Auto
                         </code>{" "}
-                        são o cérebro do JARVIS. Você pode ler e editar live
-                        abaixo:
                       </p>
 
                       <div className="space-y-1.5 text-xs">
-                        {systemState?.obsidianNotes?.map((note: any) => (
-                          <button
-                            key={note.path}
+                        {systemState?.googleSheetsData?.map((sheet: any) => (
+                          <div
+                            key={sheet.sheet + sheet.spreadsheet}
                             className="w-full text-left p-2.5 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-[11px] cursor-pointer"
                           >
-                            <span className="block font-bold text-white text-[10px] text-[var(--brand-light)]">
-                              📝 {note.path}
+                            <span className="block font-bold text-white text-[10px] text-emerald-400">
+                              📊 {sheet.spreadsheet} - {sheet.sheet}
                             </span>
                             <span className="block text-[9px] text-zinc-500 truncate mt-0.5">
-                              {note.content?.substring(0, 40)}...
+                              {sheet.rows?.length || 0} Registros
                             </span>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Note Editor area */}
                     <div className="lg:col-span-3 bg-zinc-900/50 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-center border-b border-zinc-800 pb-3 mb-4">
                           <div>
                             <h3 className="text-xs font-bold text-white uppercase pr-2">
-                              Visualizador de Memórias Ativas (RAG Ingested)
+                              Visualizando Tabelas Relacionais do Cerebro
                             </h3>
                             <p className="text-[10px] text-zinc-500">
-                              Mapeado fisicamente em: ~/jarvis-vault/
+                              Google Sheets OAuth (Próximo Módulo)
                             </p>
                           </div>
-                          <span className="text-[10px] text-zinc-400 bg-zinc-950 px-2 py-1 rounded">
-                            Visualizando: perfil/usuario.md
-                          </span>
                         </div>
 
                         <div className="space-y-4">
-                          {systemState?.obsidianNotes?.map(
-                            (note: any, index: number) => (
+                          {systemState?.googleSheetsData?.map(
+                            (sheet: any, index: number) => (
                               <div
                                 key={index}
                                 className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 group"
                               >
-                                <div className="text-[10px] font-bold text-yellow-400 mb-2 font-mono flex items-center justify-between">
+                                <div className="text-[10px] font-bold text-emerald-400 mb-2 font-mono flex items-center justify-between">
                                   <div className="flex items-center gap-1">
-                                      <span className="h-1.5 w-1.5 rounded-full bg-yellow-400"></span>
-                                      {note.path}
+                                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                                      {sheet.spreadsheet} &gt; {sheet.sheet}
                                   </div>
-                                  <button
-                                      onClick={() => handleDeleteObsidian(note.path)}
-                                      className="text-zinc-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                      title="Apagar Nota do Obsidian"
-                                  >
-                                      <Trash2 className="h-3 w-3" />
-                                  </button>
                                 </div>
-                                <textarea
-                                  rows={6}
-                                  defaultValue={note.content}
-                                  onChange={(e) =>
-                                    updateObsidianNote(
-                                      note.path,
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full bg-zinc-950 text-xs font-mono text-zinc-350 p-3 rounded-lg border border-zinc-900 focus:outline-none focus:border-[var(--brand-primary)] resize-none leading-relaxed"
-                                />
+                                <div className="bg-zinc-950 text-xs font-mono text-zinc-350 p-3 rounded-lg border border-zinc-900 leading-loose overflow-x-auto">
+                                  {sheet.rows?.map((r: string, i: number) => (
+                                      <div key={i} className="border-b border-zinc-800/50 pb-1 mb-1 last:border-0">{r}</div>
+                                  ))}
+                                </div>
                               </div>
                             ),
                           )}
@@ -2386,10 +2384,7 @@ export default function App() {
                       </div>
 
                       <div className="border-t border-zinc-800 pt-3 mt-4 text-[10px] text-zinc-500 leading-normal">
-                        💡 <strong>Dica do JARVIS:</strong> Ao salvar
-                        modificações em arquivos Markdown no Obsidian Vault, os
-                        triggers automáticos do n8n atualizam o ChromaDB
-                        instantaneamente no Docker.
+                        💡 <strong>Dica do JARVIS:</strong> Todas as informações estruturadas (metas, preferências, agendamentos longos) agora são guardadas na API do Sheets. Caso o OAuth não conclua, as informações ficarão apenas na memória do MOCK e sincronizadas com a UI do sistema local.
                       </div>
                     </div>
                   </div>
@@ -2520,7 +2515,7 @@ export default function App() {
                       </p>
                       <ul className="list-disc pl-5 mt-1.5 space-y-1 text-zinc-400 text-[11px]">
                         <li>
-                          Ele instala o Docker Engine e o Ollama nativamente no terminal root do seu{" "}
+                          Ele instala o Docker Engine nativamente no terminal root do seu{" "}
                           {hardwareStats?.cpu || "Notebook (Servidor)"}.
                         </li>
                         <li>
@@ -2541,8 +2536,7 @@ export default function App() {
                           de agenda e de perfis no local.
                         </li>
                         <li>
-                          Baixa e carrega o Llama 3.2 e nomic-embed-text na
-                          GPU via CUDA.
+                          Integra e configura a API cognitiva ultraveloz do Groq Cloud.
                         </li>
                       </ul>
                     </div>
@@ -2555,29 +2549,24 @@ export default function App() {
                       <p className="text-zinc-300">
                         Todo o projeto baseia-se em{" "}
                         <strong>
-                          NodeJS, Docker, n8n de orquestração e Ollama
+                          NodeJS, Docker, n8n de orquestração e Groq LPU Cloud
                         </strong>
                         :
                       </p>
                       <div className="grid grid-cols-2 gap-3 mt-2 font-mono text-[10px]">
                         <div className="bg-zinc-950 p-2.5 rounded border border-zinc-900">
                           <strong className="text-[var(--brand-light)] block mb-0.5">
-                            Ollama (Fora do Docker)
+                            Groq Cloud LPU
                           </strong>
-                          Rodado fora dos containers para usufruir da aceleração
-                          de hardware CUDA da{" "}
-                          {hardwareStats?.gpus?.[0]?.model
-                            ?.replace("NVIDIA GeForce", "")
-                            .trim() || "GTX 1650"}{" "}
-                          de maneira nativa, contornando gargalos do WSL2.
+                          Processamento cognitivo de altíssima velocidade na nuvem,
+                          poupando o consumo local de RAM/VRAM do host.
                         </div>
                         <div className="bg-zinc-950 p-2.5 rounded border border-zinc-900">
                           <strong className="text-[var(--brand-light)] block mb-0.5">
-                            RAG & ChromaDB Matrix
+                            RAG & Google Sheets / ChromaDB
                           </strong>
-                          O n8n monitora o Obsidian. Qualquer extrato bancário
-                          em PDF ou anotação inserida é dividida em chunks e
-                          guardada no banco vetorial.
+                          O n8n monitora o ecossistema. Qualquer transação ou anotação
+                          é processada e estruturada para sincronização e vetorização.
                         </div>
                       </div>
                     </div>

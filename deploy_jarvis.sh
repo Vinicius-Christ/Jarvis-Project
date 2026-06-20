@@ -34,7 +34,7 @@ echo -e "${CYAN}================================================================
 echo -e "        ${GREEN}JARVIS CORE SUITE - INSTALADOR AUTOMATIZADO LINUX MINT${NC}"
 echo -e "${CYAN}======================================================================${NC}"
 echo -e "Este script irá configurar o seu notebook servidor totalmente do zero."
-echo -e "Serão instalados: Docker, Node.js v20, Ollama, Modelos IA e o Servidor."
+echo -e "Serão instalados: Docker, Node.js v20, Banco de dados Postgres e o Servidor."
 echo -e "${CYAN}======================================================================${NC}"
 echo ""
 
@@ -122,37 +122,9 @@ else
 fi
 
 # ============================================
-# 5. INSTALAR OLLAMA E EXPÔ-LO NA REDE
+# 5. COGNITIVE ENGINE CONFIGURATION (Groq Cloud)
 # ============================================
-log_status "Preparando Motor de Inteligência Artificial Local (Ollama)..."
-if ! command -v ollama &> /dev/null; then
-    log_warning "Ollama não localizado. Instalando nativamente via script oficial..."
-    curl -fsSL https://ollama.com/install.sh | sh
-else
-    log_success "Ollama já instalado."
-fi
-
-log_status "Expondo a porta do Ollama na rede para controle remoto (JARVIS-Client)..."
-# Criar override do systemd de forma automatizada
-mkdir -p /etc/systemd/system/ollama.service.d
-cat <<EOF > /etc/systemd/system/ollama.service.d/override.conf
-[Service]
-Environment="OLLAMA_HOST=0.0.0.0:11434"
-EOF
-
-# Aplicar mudanças do systemd e reatar Ollama
-systemctl daemon-reload
-systemctl restart ollama
-log_success "Ollama configurado de forma soberana para ouvir em todo o Wi-Fi doméstico na porta 11434!"
-
-# ============================================
-# 6. BAIXAR OS MODELOS DA IA
-# ============================================
-log_status "Puxando modelo lógico llama3.2 (Aguarde o download)..."
-ollama pull llama3.2
-log_status "Puxando modelo de embeddings nomic-embed-text..."
-ollama pull nomic-embed-text
-log_success "Modelos de IA sincronizados na máquina servidor!"
+log_success "Dispositivo configurado de forma soberana com Groq Cloud API e sincronização Google Sheets!"
 
 # ============================================
 # 7. INSTALAR NODEJS v20 OFICIAL
@@ -217,7 +189,7 @@ echo ""
 echo -e "🤖 ${YELLOW}IP DO SEU NOTEBOOK SERVIDOR LINUX:${NC} ${GREEN}${LOCAL_IP}${NC}"
 echo -e "🌐 ${CYAN}Painel JARVIS Web / API:${NC}  http://${LOCAL_IP}:3000"
 echo -e "🧩 ${CYAN}Orquestrador n8n Master:${NC} http://${LOCAL_IP}:5678"
-echo -e "🧠 ${CYAN}Motor IA Ollama Aberto:${NC}  http://${LOCAL_IP}:11434"
+echo -e "🧠 ${CYAN}Motor IA Avançado:${NC}       Groq Cloud LPU (llama-3.3-70b)"
 echo -e "📂 ${CYAN}Banco ChromaDB Inspetor:${NC} http://${LOCAL_IP}:8000"
 echo -e "🏠 ${CYAN}Home Assistant Nativo:${NC}   http://${LOCAL_IP}:8123"
 echo -e "======================================================================"

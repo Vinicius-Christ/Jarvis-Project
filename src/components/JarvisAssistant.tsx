@@ -56,10 +56,10 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
   const [voiceVolume, setVoiceVolume] = useState(1.0);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const [systemVoices, setSystemVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [engineType, setEngineType] = useState("local_system_tts");
+  const [engineType, setEngineType] = useState("microsoft_edge_tts");
   const [noiseGate, setNoiseGate] = useState(-45);
   const [lastMeasureLatency, setLastMeasureLatency] = useState({ stt: 14, llm: 215, tts: 28 });
-  const [activePersona, setActivePersona] = useState("jarvis");
+  const [activePersona, setActivePersona] = useState("friday");
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const activePersonaRef = useRef(activePersona);
@@ -426,7 +426,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
     try {
       // If user selected premium_api, try use elevenlabs / openai
-      if (engineType === "premium_api") {
+      if (engineType === "premium_api" || engineType === "microsoft_edge_tts") {
         // Map persona to ElevenLabs standard voice ids
         let voiceId = "21m00Tcm4TlvDq8ikWAM"; // default ElevenLabs 
         if (activePersona === "jarvis") voiceId = "bVMeCyTHy58xNoL34h3p";
@@ -443,7 +443,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           signal: controller.signal,
           body: JSON.stringify({ 
             text: cleanText, 
-            voiceId
+            voiceId,
+            service: engineType === "microsoft_edge_tts" ? "edge" : undefined
           })
         });
 
@@ -956,7 +957,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
               </div>
 
               {/* General Engine Type Selector */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setEngineType("local_system_tts")}
@@ -968,7 +969,20 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                         : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
                   }`}
                 >
-                  System Speech Synthesis
+                  Sistema Offline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEngineType("microsoft_edge_tts")}
+                  className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center flex flex-col justify-center items-center ${
+                    engineType === "microsoft_edge_tts"
+                      ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold shadow-[0_2px_8px_var(--brand-glow)]"
+                      : isDarkMode
+                        ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
+                        : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
+                  }`}
+                >
+                  <span>Microsoft Edge TTS</span>
                 </button>
                 <button
                   type="button"
@@ -981,8 +995,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                         : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
                   }`}
                 >
-                  <span>Microsoft Edge TTS </span>
-                  <span className="opacity-70 text-[8px] font-sans">(ou ElevenLabs/OpenAI)</span>
+                  <span>Módulos API Premium </span>
+                  <span className="opacity-70 text-[8px] font-sans">(ElevenLabs/OpenAI)</span>
                 </button>
               </div>
 
@@ -1090,7 +1104,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                   <span className={isDarkMode ? "text-zinc-300" : "text-zinc-800"}>{lastMeasureLatency.stt > 0 ? `${lastMeasureLatency.stt}ms` : "0ms (Teclado)"}</span>
                 </div>
                 <div className="flex justify-between font-mono">
-                  <span>Geração Ollama Llama 3/Phi:</span>
+                  <span>Motor IA (Groq Cloud LPU):</span>
                   <span className={isDarkMode ? "text-zinc-300" : "text-zinc-800"}>{lastMeasureLatency.llm} ms</span>
                 </div>
                 <div className="flex justify-between font-mono">

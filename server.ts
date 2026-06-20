@@ -48,60 +48,79 @@ if (typeof AbortSignal.timeout !== "function") {
   };
 }
 
+import { OAuth2Client } from 'google-auth-library';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Basic Auth nativo super leve para proteger a aplicação web
-app.use((req, res, next) => {
-  let username = process.env.WEB_USERNAME || "";
-  let password = process.env.WEB_PASSWORD || "";
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const ALLOWED_EMAIL = 'viniciusc.castro09@gmail.com';
+
+// Add the auth middleware
+app.use(async (req, res, next) => {
+  // Public routes that do not need auth
+  const ip = req.ip || "";
+  const host = req.headers.host || "";
+  const isLocal = ip === '127.0.0.1' || 
+                  ip === '::1' || 
+                  ip === '::ffff:127.0.0.1' || 
+                  host.includes('localhost') ||
+                  host.includes('127.0.0.1') ||
+                  host.includes('[::1]');
   
-  if (!username || !password) {
-    try {
-      if (fs.existsSync(".env")) {
-        const envContent = fs.readFileSync(".env", "utf8");
-        const lines = envContent.split("\n");
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith("WEB_USERNAME=")) username = trimmed.substring(trimmed.indexOf("=") + 1).replace(/^"|"$/g, "").replace(/^'|'$/g, "");
-          if (trimmed.startsWith("WEB_PASSWORD=")) password = trimmed.substring(trimmed.indexOf("=") + 1).replace(/^"|"$/g, "").replace(/^'|'$/g, "");
-        }
-      }
-    } catch(e) {}
+  // Libera a pasta pública e assets
+  if (isLocal || req.path.startsWith('/api/public/')) {
+     return next();
   }
 
-  if (!username || !password) {
-    // Segurança: se não há Basic Auth configurado, rejeita acessos de fora do localhost
-    const ip = req.ip || "";
-    const host = req.headers.host || "";
-    const isLocal = ip === '127.0.0.1' || 
-                    ip === '::1' || 
-                    ip === '::ffff:127.0.0.1' || 
-                    host.includes('localhost') ||
-                    host.includes('127.0.0.1') ||
-                    host.includes('[::1]');
-    
-    // Libera a pasta pública e assets
-    if (!isLocal && req.path.startsWith('/api/')) {
-        console.warn(`[SECURITY] Acesso remoto/LAN BLOQUEADO para IP: ${ip}, Host: ${host} na rota ${req.path}. Adicione WEB_USERNAME e WEB_PASSWORD no .env para liberar acesso universal.`);
-        return res.status(403).json({ error: "Acesso remoto não autorizado. Configure WEB_USERNAME e WEB_PASSWORD nas configurações para acessar via rede / rede local." });
-    }
-    return next();
+  // Se não for localhost, vamos exigir um Bearer Token do Google
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+     return res.status(401).json({ error: "Missing or invalid authorization header. Please pass a valid JWT Bearer token." });
   }
 
-  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
-  const [loginMsg, passwordMsg] = Buffer.from(b64auth, 'base64').toString().split(':');
+  const token = authHeader.split(' ')[1];
+  try {
+     // Primeiro tentamos como Access Token (usado nos fluxos de popup para iframes)
+     try {
+       const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`, {
+           headers: { Authorization: `Bearer ${token}` }
+       });
+       if (response.ok) {
+           const payload = await response.json();
+           if (payload && payload.email === ALLOWED_EMAIL) {
+               return next();
+           } else if (payload && payload.email) {
+               return res.status(403).json({ error: `Acesso negado. O e-mail ${payload.email} não tem autorização.` });
+           }
+       }
+     } catch (fetchErr) {
+       console.warn("Userinfo fetch failed, falling back to ID token validation:", fetchErr);
+     }
 
-  if (loginMsg && passwordMsg && loginMsg === username && passwordMsg === password) {
-    return next();
+     // Fallback: validamos como ID Token
+     const ticket = await googleClient.verifyIdToken({
+         idToken: token,
+         audience: process.env.GOOGLE_CLIENT_ID, 
+     });
+     const payload = ticket.getPayload();
+     if (!payload || payload.email !== ALLOWED_EMAIL) {
+         return res.status(403).json({ error: `Acesso negado. O e-mail ${payload?.email || 'desconhecido'} não tem autorização.` });
+     }
+     // O e-mail está valido e é o correto
+     return next();
+  } catch (error) {
+     console.error("Token verification failed:", error);
+     return res.status(401).json({ error: "Token inválido ou expirado. Faça o login novamente." });
   }
-
-  res.set('WWW-Authenticate', 'Basic realm="JARVIS Secure Access"');
-  res.status(401).send('Acesso restrito. Autenticação necessária.');
 });
 
 const PORT = 3000;
+
+app.get("/api/public/config", (req, res) => {
+  res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || "" });
+});
 
 const DB_FILE = path.join(process.cwd(), "data", "db.json");
 
@@ -111,6 +130,7 @@ export interface DbSchema {
   githubToken: string;
   systemActive: boolean;
   activePersona: string;
+  googleSheetUrl?: string;
   containerMockStates: Record<string, string>;
   goal: { limit: number; reason: string };
   conversations: any[];
@@ -124,6 +144,8 @@ export interface DbSchema {
     ip: string;
     token: string;
     wsStatus: string;
+    hiddenDevices?: string[];
+    modesConfig?: Record<string, { brightness: number; color: string; temp: number }>;
   };
   mcpEnabled: boolean;
   mcpServers: any[];
@@ -146,8 +168,9 @@ let db: DbSchema = {
   chromaMemories: [] as any[],
   githubRepo: "",
   githubToken: "",
+  googleSheetUrl: "",
   systemActive: true,
-  activePersona: "jarvis",
+  activePersona: "friday",
   containerMockStates: {
     chromadb: "running",
     n8n: "running",
@@ -168,7 +191,13 @@ let db: DbSchema = {
     devices: [] as any[],
     ip: "",
     token: "COLOQUE_SEU_TOKEN_AQUI",
-    wsStatus: "disconnected"
+    wsStatus: "disconnected",
+    hiddenDevices: [] as string[],
+    modesConfig: {
+      "Modo Trabalho": { brightness: 90, color: "#E0F7FA", temp: 22 },
+      "Modo Cinema": { brightness: 15, color: "#E040FB", temp: 20 },
+      "Modo Noturno": { brightness: 5, color: "#FF8F00", temp: 24 }
+    }
   },
   mcpEnabled: true,
   mcpServers: [
@@ -185,6 +214,7 @@ let db: DbSchema = {
     ]
   },
   obsidianNotes: [],
+  googleSheetsData: [],
   installer: {
     status: "idle", // idle, installing, completed
     progress: 0,
@@ -646,6 +676,171 @@ app.post("/api/tts", async (req, res) => {
   }
 });
 
+function isOnlyConsultationQuery(userMessage: string): boolean {
+  const msg = userMessage.toLowerCase();
+  
+  // Palavras indicadoras de consulta comuns
+  const queryWords = [
+    "quais", "quais os", "qual", "quais são", "mostre", "mostra", "listar", "lista", "onde", "onde estão", "ver", "visualizar", "tem", "tenho", "agendado", "agenda", "gastos", "gastos de hoje", "gastos de ontem", "compromisso", "compromissos", "saldo", "transações", "lançamentos", "registros"
+  ];
+  
+  // Palavras-chave imperativas de criação ativa
+  const creationWords = [
+    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei"
+  ];
+  
+  // Palavras-chave de exclusão ativa
+  const deleteWords = [
+    "apagar", "apague", "excluir", "exclua", "deletar", "delete", "remover", "remova", "eliminar", "elimine", "limpar", "limpa"
+  ];
+
+  const hasDelete = deleteWords.some(w => msg.includes(w));
+  if (hasDelete) {
+    return false;
+  }
+
+  const hasQuery = queryWords.some(w => msg.includes(w));
+  const hasCreation = creationWords.some(w => msg.includes(w));
+
+  if (hasQuery && !hasCreation) {
+    return true;
+  }
+  
+  const shortQueries = ["agenda", "compromissos", "compromisso", "gastos", "despesas", "gasto", "saldo", "finanças", "tarefas"];
+  if (shortQueries.includes(msg.trim()) || (msg.length < 25 && (msg.includes("agenda") || msg.includes("compromisso") || msg.includes("gasto")))) {
+    if (!hasCreation) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: string[], token: string) {
+  const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!match) return;
+  const spreadsheetId = match[1];
+
+  try {
+    // 1. Get spreadsheet metadata to see if the tab exists
+    const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    
+    if (!metaRes.ok) {
+       console.error("Failed to read sheet metadata:", await metaRes.text());
+       return;
+    }
+    const meta: any = await metaRes.json();
+    const sheetTitles = meta.sheets?.map((s: any) => s.properties.title) || [];
+    
+    // 2. If tab does not exist, create it
+    if (!sheetTitles.includes(tabName)) {
+      const createRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          requests: [{
+            addSheet: {
+              properties: { title: tabName }
+            }
+          }]
+        })
+      });
+      if (!createRes.ok) {
+         console.error("Failed to create tab:", await createRes.text());
+      }
+    }
+
+    // 3. Parse rows (e.g. "Coluna1: Valor1 | Coluna2: Valor2")
+    for (const rawRow of rows) {
+      const parts = rawRow.split("|").map(p => p.trim());
+      const rowData: Record<string, string> = {};
+      parts.forEach(part => {
+        const idx = part.indexOf(":");
+        if (idx !== -1) {
+          const col = part.substring(0, idx).trim();
+          const val = part.substring(idx + 1).trim();
+          rowData[col] = val;
+        }
+      });
+
+      if (Object.keys(rowData).length === 0) continue;
+
+      // 4. Read first row to see if we have headers
+      const rangeRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}!A1:Z1`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      let headers: string[] = [];
+      if (rangeRes.ok) {
+        const rangeData: any = await rangeRes.json();
+        headers = rangeData.values?.[0] || [];
+      }
+
+      const rowKeys = Object.keys(rowData);
+      
+      // 5. If sheet has no headers, write headers first
+      if (headers.length === 0) {
+        headers = rowKeys;
+        const writeHeadersRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=USER_ENTERED`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            values: [headers]
+          })
+        });
+        if (!writeHeadersRes.ok) {
+          console.error("Failed to write headers:", await writeHeadersRes.text());
+        }
+      } else {
+        // Look for any headers of the new row that are missing inside the existing headers
+        const missingHeaders = rowKeys.filter(k => !headers.includes(k));
+        if (missingHeaders.length > 0) {
+          headers.push(...missingHeaders);
+          // Overwrite the headers row with the new combined set of headers
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=USER_ENTERED`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              values: [headers]
+            })
+          });
+        }
+      }
+
+      // 6. Align rawRow values to headers
+      const valuesRow = headers.map(h => rowData[h] || "");
+
+      // 7. Append row
+      const appendRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          values: [valuesRow]
+        })
+      });
+      if (!appendRes.ok) {
+        console.error("Failed to append row:", await appendRes.text());
+      }
+    }
+  } catch (err) {
+    console.error("Google Sheets sync failed:", err);
+  }
+}
+
 app.post("/api/chat", async (req, res) => {
   const { message, history, file, model } = req.body;
   if (!message) {
@@ -745,27 +940,21 @@ app.post("/api/chat", async (req, res) => {
    - Ex Apagar Meta Financeira: <command type="GoalDelete" />
    - Ex Apagar Nota do Cérebro: <command type="ObsidianDelete" path="/caminho/do/arquivo.md" />
 7. Seja técnico, mas breve.
-8. Integração com Obsidian: Se o usuário definir uma regra, prefira salvar na memória persistente usando o bloco:
-\`\`\`obsidian-update
-path: /caminho/do/arquivo.md
-content:
-O conteúdo novo
+8. Integração com Google Sheets (Base de Memória Central): Agora o cérebro de longo prazo será relacional no Google Sheets. Crie suas próprias relações de tabelas. Para salvar informações permanentemente, use o formato estruturado:
+\`\`\`sheets-update
+spreadsheet: Memória Central
+sheet: <nome-da-aba, ex: Regras, Finanças, Preferências>
+rows:
+- Coluna1: Valor1 | Coluna2: Valor2
 \`\`\`
-Para apagar, basta usar a tag <command type="ObsidianDelete" ... /> em vez do bloco acima.
+Isto criará abas e preencherá as colunas dinamicamente, substituindo a antiga integração Obsidian.
 `;
   contextPrompt += `Mensagem do Usuário: ${message}`;
-  
-  if (file) {
-    contextPrompt += `\n\n[Arquivo Anexado: ${file.name} (${file.size} bytes, tipo: ${file.type})]\nConteúdo extraído do arquivo:\n${file.content || "(Sem conteúdo legível detectado)"}`;
-  }
-
   let replyText = "";
   let isLocalSimulated = false;
-  // Envia apenas o nome bruto recebido do frontend ou o padrão "llama-3.3-70b-versatile". O Ollama entende as resoluções nativamente.
-  let groqModelName = model || "llama3.3";
+  let groqModelName = model || "llama-3.3-70b-versatile";
 
-  // 2. Try native fetching from local Ollama or high-speed Groq
-  const ollamaHost = process.env.GROQ_HOST || "http://127.0.0.1:11434";
+  // 2. Try native fetching from high-speed Groq Cloud
   const groqApiKey = process.env.GROQ_API_KEY;
 
   try {
@@ -787,7 +976,16 @@ DIRETRIZES CRÍTICAS PARA RECONHECIMENTO DE COMPROMISSOS E FINANÇAS REAIS:
    - Para apagar um compromisso específico pelo título: <command type="AgendaDelete" title="Nome do Evento" />
    - Para apagar TODAS as finanças, emita: <command type="FinanceDelete" all="true" />
    - Para apagar uma finança específica pela descrição: <command type="FinanceDelete" description="Descrição do Gasto" />
-5. Tom de voz: Aja de forma fluida, inteligente, prestativa e formal (tratando por "senhor" ou "Mestre"). Evite rodeios e narrações burocráticas sobre as tags XML. Emita apenas os comandos úteis de forma limpa e invisível.`;
+5. INTEGRAÇÃO GOOGLE SHEETS: Quando o usuário mandar anotar ou salvar compromissos, tarefas, receitas, despesas ou regras, use a estrutura abaixo para criar e sincronizar de verdade as abas e colunas da planilha vazia:
+\`\`\`sheets-update
+spreadsheet: Memória Central
+sheet: <nome-da-aba, ex: Regras, Finanças, Preferências, Agenda>
+rows:
+- Coluna1: Valor1 | Coluna2: Valor2 | ...
+\`\`\`
+- Use nomes lógicos para as páginas/abas (ex: "Finanças" para transações e despesas, "Agenda" para compromissos, "Preferências" para regras gerais).
+- O sistema criará as abas e colunas correspondentes dinamicamente se a planilha estiver vazia.
+6. Tom de voz: Aja de forma fluida, inteligente, prestativa e formal (tratando por "senhor" ou "Mestre"). Evite rodeios e narrações burocráticas sobre as tags XML. Emita apenas os comandos úteis de forma limpa e invisível.`;
 
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -814,43 +1012,24 @@ DIRETRIZES CRÍTICAS PARA RECONHECIMENTO DE COMPROMISSOS E FINANÇAS REAIS:
 
       const groqData = await groqRes.json();
       replyText = groqData.choices?.[0]?.message?.content || "Mestre, os clusters da Groq retornaram nulo.";
-      isLocalSimulated = true; // Technically cloud, but for the UI it distinguishes from native local
+      isLocalSimulated = false;
       groqModelName += " [LPU Turbinado]";
 
     } else {
-      // Use standard local Ollama
-      const ollamaRes = await fetch(`${ollamaHost}/api/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: AbortSignal.timeout(180000), // longer timeout for actual inference
-        body: JSON.stringify({
-           model: groqModelName,
-           prompt: contextPrompt,
-           stream: false,
-           options: {
-             temperature: 0.7,
-             num_ctx: 8192
-           }
-        })
-      });
-  
-      if (!ollamaRes.ok) throw new Error(`Ollama failed with status: ${ollamaRes.status}`);
-      
-      const ollamaData = await ollamaRes.json();
-      replyText = ollamaData.response || "Mestre, não consegui processar os tensores dimensionais.";
+      throw new Error("GROQ_API_KEY_MISSING");
     }
   } catch (error: any) {
-    // 3. FALLBACK FOR AI STUDIO PREVIEW (Ollama is unreachable in the cloud)
+    // 3. FALLBACK FOR DEVELOPMENT / AI STUDIO PREVIEW OR MISSING KEYS
     isLocalSimulated = true;
-    console.warn(`Could not reach local Ollama at ${ollamaHost}. Error: ${error?.message || error}. Using smart mock fallback.`);
+    console.warn(`Could not fetch from Groq Cloud. Error: ${error?.message || error}. Using smart mock fallback.`);
     
     const lower = message.toLowerCase();
     
     if (file) {
       if (lower.includes("gasto") || lower.includes("finan") || lower.includes("excel")) {
-        replyText = `Entendido, senhor. O arquivo financeiro 📂 **${file.name}** foi recebido. Entretanto, estou em modo fallback offline local, e não conectei de verdade à base de dados para segurança de dados inconsistentes. O Ollama deve estar ativo na infra.`;
+        replyText = `Entendido, mestre. O arquivo financeiro 📂 **${file.name}** foi recebido. Entretanto, configure o \`GROQ_API_KEY\` nas configurações globais ou no arquivo .env para processarmos real-time cognitivo.`;
       } else {
-        replyText = `Processando arquivo 📂 **${file.name}**. Identifiquei informações relevantes e atualizei meu pipeline interno.`;
+        replyText = `Processando arquivo 📂 **${file.name}**. Por favor, adicione sua chave \`GROQ_API_KEY\` para processamento cognitivo avançado na nuvem.`;
       }
     } else {
       const fsSrv = db.mcpServers?.find(s => s.id === "fs");
@@ -928,6 +1107,43 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     }
   }
 
+  // Higienização Inteligente contra alucinações e exemplar bias do LLM
+  const isQueryOnly = isOnlyConsultationQuery(message);
+  
+  if (isQueryOnly) {
+    // 1. Remover terminalmente quaisquer tags XML de criação/agendamento geradas em consultas para não poluir
+    replyText = replyText.replace(/<command\s+type="Agenda"\s+([^>]+)\/>/gi, "");
+    replyText = replyText.replace(/<command\s+type="Finance"\s+([^>]+)\/>/gi, "");
+    
+    // 2. Se a agenda ou finanças reais estão vazias na base de dados, mas o LLM alucinou que há itens,
+    // nós saneamos a resposta textual para que o usuário receba dados 100% verídicos do sistema!
+    const msgLower = message.toLowerCase();
+    
+    if (msgLower.includes("agenda") || msgLower.includes("compromisso") || msgLower.includes("reunião")) {
+      if (!db.agenda || db.agenda.length === 0) {
+        // Se a agenda real está completamente vazia
+        replyText = `Mestre, consultei a base de dados central em tempo real e confirmo que **não há nenhum compromisso agendado** na sua agenda no momento.\n\nDeseja que eu registre ou agende algum novo compromisso para o senhor?`;
+      } else {
+        // Se a agenda tem compromissos reais, mas o LLM pode ter alucinado outros fictícios, nós injetamos a lista real no texto da resposta de forma polida!
+        const listStr = db.agenda.map(a => {
+          const dateFormatted = new Date(a.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
+          return `- **${a.title}** (${dateFormatted}) - *${a.category || "Trabalho"}*`;
+        }).join("\n");
+        replyText = `Mestre, consultei os compromissos oficiais salvos no seu sistema. Aqui está a sua agenda real:\n\n${listStr}\n\nDeseja realizar alguma alteração ou registrar um novo evento?`;
+      }
+    }
+    
+    if (msgLower.includes("gasto") || msgLower.includes("finan") || msgLower.includes("despesa") || msgLower.includes("transação") || msgLower.includes("saldo")) {
+      if (!db.finances || db.finances.length === 0) {
+        replyText = `Senhor, verifiquei os registros da base de dados financeira e confirmo que **não há nenhuma transação ou gasto cadastrado**.\n\nDeseja que eu lance alguma despesa ou receita agora?`;
+      } else {
+        const listStr = db.finances.map(f => `- **R$ ${parseFloat(f.value).toFixed(2)}** (${f.category}): ${f.description}`).join("\n");
+        const total = db.finances.reduce((acc, f) => acc + parseFloat(f.value), 0);
+        replyText = `Senhor, aqui estão os lançamentos financeiros oficiais cadastrados no sistema:\n\n${listStr}\n\n**Total Geral:** R$ ${total.toFixed(2)}.\n\nDeseja realizar algum novo lançamento ou excluir alguma despesa?`;
+      }
+    }
+  }
+
   // 4. Process Obsidian Updates automatically (both for real Ollama and for our fallback Mocks)
   const updateRegex = /```obsidian-update\s*\npath:\s*([^\n]+)\ncontent:\s*\n([\s\S]*?)(?:```|$)/g;
   let match;
@@ -941,13 +1157,40 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     } else {
       db.obsidianNotes.push({ path: parsedPath, content: parsedContent });
     }
-    
-    // Actually persist to the physical Obsidian vault folder so the local n8n can catch it
     syncNoteToVault(parsedPath, parsedContent);
   }
-  
-  // Clean up the output to the user
   replyText = replyText.replace(updateRegex, "").trim();
+
+  // 4.b Process Google Sheets Updates
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  const sheetUpdateRegex = /```sheets-update\s*\nspreadsheet:\s*([^\n]+)\nsheet:\s*([^\n]+)\nrows:\s*\n([\s\S]*?)(?:```|$)/g;
+  let sheetMatch;
+  while ((sheetMatch = sheetUpdateRegex.exec(replyText)) !== null) {
+    const spName = sheetMatch[1].trim();
+    const shName = sheetMatch[2].trim();
+    const rowsText = sheetMatch[3].trim();
+    
+    const newRows = rowsText.split("\n").map(r => r.replace(/^- /, "").trim());
+    
+    if (!db.googleSheetsData) db.googleSheetsData = [];
+    
+    const existingDoc = db.googleSheetsData.find((d: any) => d.spreadsheet === spName && d.sheet === shName);
+    if (existingDoc) {
+      existingDoc.rows.push(...newRows);
+    } else {
+      db.googleSheetsData.push({ spreadsheet: spName, sheet: shName, rows: newRows });
+    }
+
+    // Trigger real Google Sheets sync if user is logged in & has configured spreadsheet URL
+    if (db.googleSheetUrl && token) {
+      syncToGoogleSheets(db.googleSheetUrl, shName, newRows, token).catch(e => {
+        console.error("Async Google Sheets sync failed:", e);
+      });
+    }
+  }
+  replyText = replyText.replace(sheetUpdateRegex, "").trim();
 
   // 5. Save and respond
   const displayText = file ? `${message} (📂 Anexo: ${file.name})` : message;
@@ -1258,7 +1501,7 @@ app.post("/api/install/trigger", (req, res) => {
   db.installer.status = "installing";
   db.installer.progress = 0;
   db.installer.logs = [
-    "[INFO] [17:53:14] Iniciando instalador automatizado do JARVIS Core Suite v5.0...",
+    "[INFO] Iniciando instalador automatizado do JARVIS Core Suite...",
     "[INFO] WSL2 backend detectado no sistema operacional principal da máquina local.",
     "[INFO] Estabelecendo canais de comunicação com Docker Daemon..."
   ];
@@ -1273,8 +1516,8 @@ app.post("/api/install/trigger", (req, res) => {
     // If detecting existing manual steps, we jump or complete them immediately
     if (detectExisting) {
       if (step === 0) {
-        step = 20;
-        db.installer.progress = 20;
+        step = 40;
+        db.installer.progress = 40;
         
         // Skip Docker Desktop (Step 1)
         db.installer.modules.docker.status = "completed";
@@ -1287,30 +1530,26 @@ app.post("/api/install/trigger", (req, res) => {
         db.installer.modules.obsidian.progress = 100;
         db.installer.logs.push("[SCAN] [PASSO 2 DETECTADO] Diretório '~/jarvis-vault' localizado com sucesso.");
         db.installer.logs.push("[SCAN] [PULADO] Geração de templates Obsidian ignorada (notas protegidas: não serão sobrescritas).");
-      } else if (step === 20) {
-        step = 60;
-        db.installer.progress = 60;
+      } else if (step === 40) {
+        step = 80;
+        db.installer.progress = 80;
         
-        // Skip Ollama & GGUFs (Step 3 & 4)
-        db.installer.modules.groq.status = "completed";
-        db.installer.modules.ollama.progress = 100;
-        db.installer.logs.push("[SCAN] [PASSO 3 DETECTADO] Ollama de rede local ativo em http://localhost:11434 com NVIDIA CUDA GTX 1650.");
-        db.installer.logs.push("[SCAN] [PASSO 4 DETECTADO] Modelos 'llama3.3' e 'nomic-embed-text' (Embedding) carregados no cache offline.");
-        db.installer.logs.push("[SCAN] [PULADO] Download de giga-bytes de modelos ignorado (economia de LAN e armazenamento).");
+        // Skip Offline Models (since we use Groq Cloud only)
+        db.installer.logs.push("[SCAN] [CONECTIVIDADE] Groq Cloud API ativa.");
         
         // Setup Docker Containers partly completed
         db.installer.logs.push("[DOCKER] Checando portas de containers...");
         db.installer.logs.push("[DOCKER] Container 'jarvis_chromadb' na porta 8000 já existe. Vinculando serviços.");
-      } else if (step === 60) {
-        step = 85;
-        db.installer.progress = 85;
+      } else if (step === 80) {
+        step = 95;
+        db.installer.progress = 95;
         
         // Start micro orchestration (N8N workflows & connections)
         db.installer.modules.n8n.status = "running";
-        db.installer.modules.n8n.progress = 40;
+        db.installer.modules.n8n.progress = 50;
         db.installer.logs.push("[N8N] Importando fluxos locais para conexão com Home Assistant e bots...");
         db.installer.logs.push("[N8N] Configurando integrações remanescentes para agendamentos automáticos.");
-      } else if (step >= 85) {
+      } else if (step >= 95) {
         db.installer.progress = 100;
         db.installer.status = "completed";
         db.installer.modules.n8n.progress = 100;
@@ -1322,40 +1561,28 @@ app.post("/api/install/trigger", (req, res) => {
       }
     } else {
       // Standard installation flow (if NOT skipExisting)
-      step += 5;
+      step += 10;
       db.installer.progress = step;
 
-      if (step === 10) {
+      if (step === 20) {
         db.installer.modules.docker.status = "running";
-        db.installer.modules.docker.progress = 20;
+        db.installer.modules.docker.progress = 40;
         db.installer.logs.push("[DOCKER] Carregando imagens fundamentais: postgres:15, redis:alpine, n8n:latest...");
-      } else if (step === 25) {
+      } else if (step === 50) {
         db.installer.modules.docker.progress = 100;
         db.installer.modules.docker.status = "completed";
         db.installer.modules.obsidian.status = "running";
-        db.installer.modules.obsidian.progress = 10;
+        db.installer.modules.obsidian.progress = 40;
         db.installer.logs.push("[DOCKER] Containers provisionados com sucesso.");
         db.installer.logs.push("[OBSIDIAN] Mapeando diretório de armazenamento central em ~/jarvis-vault...");
         db.installer.logs.push("[OBSIDIAN] Criando diretórios essenciais: /perfil, /agenda, /financas, /casa, /conversas...");
-      } else if (step === 50) {
+      } else if (step === 80) {
         db.installer.modules.obsidian.progress = 100;
         db.installer.modules.obsidian.status = "completed";
-        db.installer.modules.ollama.status = "running";
-        db.installer.modules.ollama.progress = 15;
-        db.installer.logs.push("[OBSIDIAN] Repositório inicial populado com arquivos padrão de template Markdown.");
-        db.installer.logs.push("[GROQ] Checando integridade do Ollama.exe integrado.");
-        db.installer.logs.push("[OLLAMA] Placa NVIDIA GeForce GTX 1650 detectada. Habilitando CUDA v12.1...");
-        db.installer.logs.push("[OLLAMA] Iniciando download do modelo nomic-embed-text (Embedding) [0.3GB]...");
-      } else if (step === 70) {
-        db.installer.modules.ollama.progress = 60;
-        db.installer.logs.push("[OLLAMA] nomic-embed-text carregado.");
-        db.installer.logs.push("[OLLAMA] Iniciando download do modelo quantizado llama3.2 (Llama 3.3)...");
-      } else if (step === 85) {
-        db.installer.modules.ollama.progress = 100;
-        db.installer.modules.ollama.status = "completed";
         db.installer.modules.n8n.status = "running";
         db.installer.modules.n8n.progress = 40;
-        db.installer.logs.push("[OLLAMA] Modelos offline devidamente registrados no CUDA cache.");
+        db.installer.logs.push("[OBSIDIAN] Repositório inicial populado com arquivos padrão de template Markdown.");
+        db.installer.logs.push("[GROQ] Integrando sistema com Groq LPU Cloud...");
         db.installer.logs.push("[N8N] Importando estrutura de workflows (.json) para orquestração automática...");
         db.installer.logs.push("[N8N] Conectando trigger do Telegram Bot API...");
       } else if (step >= 100) {
@@ -1364,7 +1591,7 @@ app.post("/api/install/trigger", (req, res) => {
         db.installer.modules.n8n.progress = 100;
         db.installer.modules.n8n.status = "completed";
         db.installer.logs.push("[N8N] Workflows ativados com gatilhos locais do WebSocket.");
-        db.installer.logs.push("[INFO] Sincronização de ChromaDB iniciada para nota de conhecimento.");
+        db.installer.logs.push("[INFO] Sincronização de Google Sheets concluída com sucesso.");
         db.installer.logs.push("[JARVIS] INSTALAÇÃO CONCLUÍDA COM SUCESSO. Todos os subsistemas estão prontos e operacionais!");
         clearInterval(interval);
       }
@@ -1381,7 +1608,6 @@ app.post("/api/install/reset", (_req, res) => {
   db.installer.logs = [];
   db.installer.modules.docker = { label: "Docker Desktop & Containers", status: "pending", progress: 0 };
   db.installer.modules.obsidian = { label: "Obsidian Vault & Templates", status: "pending", progress: 0 };
-  db.installer.modules.ollama = { label: "Ollama Local Models", status: "pending", progress: 0 };
   db.installer.modules.n8n = { label: "n8n Orquestrador & Workflows", status: "pending", progress: 0 };
   res.json({ message: "Estado de instalação reiniciado." });
 });
@@ -1448,6 +1674,20 @@ app.post("/api/docker/restart", async (req, res) => {
     exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => {});
   }
   return res.json({ success: true });
+});
+
+// Endpoint: Google Sheets Global Config
+app.get("/api/settings/googlesheets", (req, res) => {
+  res.json({ googleSheetUrl: db.googleSheetUrl || "" });
+});
+
+app.post("/api/settings/googlesheets", (req, res) => {
+  const { url } = req.body;
+  if (url !== undefined) {
+    db.googleSheetUrl = url;
+    saveDB();
+  }
+  res.json({ success: true, googleSheetUrl: db.googleSheetUrl });
 });
 
 // Endpoint: AI Persona Selector API
@@ -1609,7 +1849,12 @@ app.post("/api/update/iot", async (req, res) => {
 
   if (presetName) {
     db.homeAssistant.ambientPreset = presetName;
-    if (presetName === "Modo Cinema") {
+    const mConfig = db.homeAssistant.modesConfig?.[presetName];
+    if (mConfig) {
+      db.homeAssistant.lights.brightness = mConfig.brightness;
+      db.homeAssistant.lights.color = mConfig.color;
+      db.homeAssistant.ac.temp = mConfig.temp;
+    } else if (presetName === "Modo Cinema") {
       db.homeAssistant.lights.brightness = 15;
       db.homeAssistant.lights.color = "#E040FB"; // Ambient magenta
       db.homeAssistant.ac.temp = 20;
@@ -1638,7 +1883,18 @@ app.post("/api/update/iot", async (req, res) => {
              service = "turn_off";
              serviceData = undefined; // No extra data for turn_off
           } else {
-             if (presetName === "Modo Cinema") {
+             const mConfig = db.homeAssistant.modesConfig?.[presetName];
+             if (mConfig) {
+               serviceData.brightness_pct = mConfig.brightness;
+               // HEX to RGB
+               if (mConfig.color && mConfig.color.startsWith("#")) {
+                 const hex = mConfig.color.replace("#", "");
+                 const r = parseInt(hex.substring(0, 2), 16);
+                 const g = parseInt(hex.substring(2, 4), 16);
+                 const b = parseInt(hex.substring(4, 6), 16);
+                 serviceData.rgb_color = [r, g, b];
+               }
+             } else if (presetName === "Modo Cinema") {
                 serviceData.brightness_pct = 15;
                 serviceData.rgb_color = [224, 64, 251];
              } else if (presetName === "Modo Trabalho") {
@@ -1716,13 +1972,15 @@ app.post("/api/update/iot", async (req, res) => {
 });
 
 app.post("/api/homeassistant/config", (req, res) => {
-  const { ip, token } = req.body;
+  const { ip, token, hiddenDevices, modesConfig } = req.body;
   if (ip !== undefined) db.homeAssistant.ip = ip;
   if (token !== undefined) db.homeAssistant.token = token;
+  if (hiddenDevices !== undefined) db.homeAssistant.hiddenDevices = hiddenDevices;
+  if (modesConfig !== undefined) db.homeAssistant.modesConfig = { ...db.homeAssistant.modesConfig, ...modesConfig };
   saveDB();
 
-  // Reset socket connection on config change
-  if (haWS) {
+  // Reset socket connection on config change if IP/token changed
+  if ((ip !== undefined || token !== undefined) && haWS) {
     try {
       haWS.close();
     } catch(e) {}
@@ -1759,14 +2017,13 @@ app.get("/api/config/tokens", (_req, res) => {
       telegramToken: envTokens["TELEGRAM_TOKEN"] || "",
       elevenlabsToken: envTokens["ELEVENLABS_API_KEY"] || "",
       openaiToken: envTokens["OPENAI_API_KEY"] || "",
-      webUsername: envTokens["WEB_USERNAME"] || "",
-      webPassword: envTokens["WEB_PASSWORD"] || ""
+      googleClientId: envTokens["GOOGLE_CLIENT_ID"] || ""
     }
   });
 });
 
 app.post("/api/config/tokens", (req, res) => {
-  const { githubToken, haToken, telegramToken, elevenlabsToken, openaiToken, webUsername, webPassword } = req.body;
+  const { githubToken, haToken, telegramToken, elevenlabsToken, openaiToken, googleClientId } = req.body;
   
   // Save internal DB tokens
   if (githubToken !== undefined) {
@@ -1798,8 +2055,7 @@ app.post("/api/config/tokens", (req, res) => {
   if (telegramToken !== undefined) envTokens["TELEGRAM_TOKEN"] = `"${telegramToken}"`;
   if (elevenlabsToken !== undefined) envTokens["ELEVENLABS_API_KEY"] = `"${elevenlabsToken}"`;
   if (openaiToken !== undefined) envTokens["OPENAI_API_KEY"] = `"${openaiToken}"`;
-  if (webUsername !== undefined) envTokens["WEB_USERNAME"] = `"${webUsername}"`;
-  if (webPassword !== undefined) envTokens["WEB_PASSWORD"] = `"${webPassword}"`;
+  if (googleClientId !== undefined) envTokens["GOOGLE_CLIENT_ID"] = `"${googleClientId}"`;
 
   // Write back to .env
   try {
@@ -2043,13 +2299,13 @@ app.post("/api/mcp", (req, res) => {
   }
 });
 
-// Endpoint: System Health Monitor (Docker, Ollama and general timings)
+// Endpoint: System Health Monitor (Docker, Groq Cloud and general timings)
 app.get("/api/system/health", async (_req, res) => {
   try {
     let dockerLatency = 0;
     let dockerStatus = "offline";
-    let ollamaLatency = 0;
-    let ollamaStatus = "offline";
+    let groqLatency = 0;
+    let groqStatus = "offline";
 
     // Test Docker
     const startDocker = Date.now();
@@ -2064,14 +2320,24 @@ app.get("/api/system/health", async (_req, res) => {
        dockerLatency = Date.now() - startDocker;
     } catch(e) {}
 
-    // Test Ollama
-    const startOllama = Date.now();
+    // Test Groq Cloud Connectivity
+    const startGroq = Date.now();
     try {
-      const ollamaHost = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
-      const oRes = await fetch(`${ollamaHost}/api/tags`, { signal: AbortSignal.timeout(2000) } as any);
-      if (oRes.ok) {
-         ollamaStatus = "online";
-         ollamaLatency = Date.now() - startOllama;
+      const groqApiKey = process.env.GROQ_API_KEY;
+      if (groqApiKey && groqApiKey.trim().length > 0) {
+        const gRes = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: { "Authorization": `Bearer ${groqApiKey}` },
+          signal: AbortSignal.timeout(2500)
+        } as any);
+        if (gRes.ok) {
+           groqStatus = "online";
+           groqLatency = Date.now() - startGroq;
+        } else {
+           groqStatus = "invalid_key";
+           groqLatency = Date.now() - startGroq;
+        }
+      } else {
+         groqStatus = "missing_key";
       }
     } catch(e) {}
 
@@ -2113,7 +2379,7 @@ app.get("/api/system/health", async (_req, res) => {
     
     res.json({
       docker: { status: dockerStatus, latency: dockerLatency },
-      groq: { status: ollamaStatus, latency: ollamaLatency },
+      groq: { status: groqStatus, latency: groqLatency },
       localDb: { status: "online", latency: localDbLatency },
       containers: containerStates
     });

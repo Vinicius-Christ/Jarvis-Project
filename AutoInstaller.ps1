@@ -72,9 +72,8 @@ if ($null -eq $dockerVersion) {
 # ============================================
 # 4. INSTALAR DEPENDÊNCIAS NODE E WINGET
 # ============================================
-Write-Status "Baixando Obsidian e Ollama..." $InfoColor
+Write-Status "Baixando Obsidian..." $InfoColor
 winget install Obsidian.Obsidian --silent --accept-package-agreements | Out-Null
-winget install Ollama.Ollama --silent --accept-package-agreements | Out-Null
 
 Write-Status "Instalando dependências Node.js..." $InfoColor
 npm install
@@ -110,17 +109,6 @@ Resumo: Inicializado pelo instalador JARVIS System Suite v5.0
 Set-Content -Path "jarvis-vault\perfil\usuario.md" -Value $profileContent
 
 Write-Status "✅ Obsidian Vault criado e semeado" $SuccessColor
-
-# ============================================
-# 6. INICIAR OLLAMA E OBTER MODELOS
-# ============================================
-Write-Status "Iniciando Ollama em background..." $InfoColor
-Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden
-Start-Sleep -Seconds 5
-Write-Status "Puxando modelo llama3.2..." $InfoColor
-ollama pull llama3.2 | Out-Null
-Write-Status "Puxando modelo nomic-embed-text..." $InfoColor
-ollama pull nomic-embed-text | Out-Null
 
 # ============================================
 # 7. BUILD E DOCKER

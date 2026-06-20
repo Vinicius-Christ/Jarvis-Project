@@ -37,7 +37,14 @@ Object.defineProperty(window, "fetch", {
 });
 
 // Check if running on localhost container/development (bypasses auth usually on backend)
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isPrivateIP = (hostname: string) => {
+  return hostname === 'localhost' ||
+         hostname === '127.0.0.1' ||
+         hostname.startsWith('192.168.') ||
+         hostname.startsWith('10.') ||
+         /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+};
+const isLocal = isPrivateIP(window.location.hostname);
 let globalAllowedEmail = "viniciusc.castro09@gmail.com";
 
 function GoogleLoginButton({ onSuccess, onError }: { onSuccess: (token: string, email: string) => void; onError: (msg: string) => void }) {

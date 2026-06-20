@@ -66,9 +66,22 @@ if (process.env.VITE_SERVER_URL) {
 }
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app') || origin.includes('ais-dev-') || origin.includes('ais-pre-') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    if (
+      !origin || 
+      allowedOrigins.includes(origin) || 
+      origin.endsWith('.run.app') || 
+      origin.includes('ais-dev-') || 
+      origin.includes('ais-pre-') || 
+      origin.includes('localhost') || 
+      origin.includes('127.0.0.1') ||
+      origin.includes('192.168.') ||
+      origin.includes('10.') ||
+      origin.includes('172.') ||
+      /^http(s)?:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./.test(origin)
+    ) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] Origem bloqueada: ${origin}`);
       callback(new Error('Bloqueado por CORS'));
     }
   },

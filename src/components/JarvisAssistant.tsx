@@ -459,9 +459,13 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
              URL.revokeObjectURL(url);
           };
           audio.onerror = () => {
+             URL.revokeObjectURL(url);
              speakLocalResponse(cleanText);
           };
-          audio.play().catch(() => speakLocalResponse(cleanText));
+          audio.play().catch(() => {
+             URL.revokeObjectURL(url);
+             speakLocalResponse(cleanText);
+          });
           return;
         }
       }

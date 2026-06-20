@@ -51,11 +51,34 @@ if (typeof AbortSignal.timeout !== "function") {
 import { OAuth2Client } from 'google-auth-library';
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173'
+];
+if (process.env.VITE_SERVER_URL) {
+  try {
+    const url = new URL(process.env.VITE_SERVER_URL);
+    allowedOrigins.push(url.origin);
+  } catch {}
+}
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app') || origin.includes('ais-dev-') || origin.includes('ais-pre-') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Bloqueado por CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const ALLOWED_EMAIL = 'viniciusc.castro09@gmail.com';
+const ALLOWED_EMAIL = process.env.ALLOWED_EMAIL || 'viniciusc.castro09@gmail.com';
 
 // Add the auth middleware
 app.use(async (req, res, next) => {
@@ -116,10 +139,38 @@ app.use(async (req, res, next) => {
   }
 });
 
+// Custom In-Memory Rate Limiter to prevent API abuse without adding heavy external dependencies
+const ipLimits = new Map<string, { count: number, resetTime: number }>();
+
+function rateLimiter(requestsPerMinute: number = 15) {
+  return (req: any, res: any, next: any) => {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    const windowMs = 60000; // 1 minute
+    
+    let client = ipLimits.get(ip);
+    if (!client || now > client.resetTime) {
+      client = { count: 1, resetTime: now + windowMs };
+      ipLimits.set(ip, client);
+      return next();
+    }
+    
+    if (client.count >= requestsPerMinute) {
+      return res.status(429).json({ error: "Muitas requisições. Por favor, aguarde um minuto e tente novamente." });
+    }
+    
+    client.count++;
+    next();
+  };
+}
+
 const PORT = 3000;
 
 app.get("/api/public/config", (req, res) => {
-  res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || "" });
+  res.json({
+    googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+    allowedEmail: ALLOWED_EMAIL
+  });
 });
 
 const DB_FILE = path.join(process.cwd(), "data", "db.json");
@@ -239,8 +290,8 @@ if (fs.existsSync(DB_FILE)) {
     const fileContent = fs.readFileSync(DB_FILE, "utf-8");
     const parsed = JSON.parse(fileContent);
     db = { ...db, ...parsed }; // merge keys to prevent breaking if schema updates
-  } catch (err) {
-    console.error("Falha ao ler db.json, usando padrao:", err.message);
+  } catch (err: any) {
+    console.error("Falha ao ler db.json, usando padrao:", err?.message || err);
   }
 }
 
@@ -256,7 +307,7 @@ function saveDB() {
     saveTimeout = null;
     fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), "utf8", (err) => {
       if (err) {
-        console.error("Falha ao salvar db.json assincronamente:", err.message);
+        console.error("Falha ao salvar db.json assincronamente:", err?.message || err);
       }
     });
   }, 1000); // 1000ms debouncer
@@ -266,20 +317,28 @@ function saveDB() {
 function saveDBSync() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-  } catch (err) {
-    console.error("Falha ao salvar db.json sincronamente na finalização:", err.message);
+  } catch (err: any) {
+    console.error("Falha ao salvar db.json sincronamente na finalização:", err?.message || err);
   }
 }
 
 // Write the note to physical disk in Linux if `jarvis-vault` mapped
 function syncNoteToVault(notePath: string, content: string) {
   try {
-    const vaultDir = path.join(process.cwd(), "jarvis-vault");
-    let safePath = notePath.replace(/^(\/|\\)/, "").replace(/\.\./g, "");
+    const vaultDir = path.resolve(process.cwd(), "jarvis-vault");
+    if (!fs.existsSync(vaultDir)) {
+      fs.mkdirSync(vaultDir, { recursive: true });
+    }
+    
+    let safePath = notePath.replace(/^(\/|\\)/, "");
     if (!safePath.endsWith(".md")) {
        safePath += ".md";
     }
-    const fullPath = path.join(vaultDir, safePath);
+    const fullPath = path.resolve(vaultDir, safePath);
+    if (!fullPath.startsWith(vaultDir)) {
+      console.warn(`[JARVIS VAULT] Tentativa de escape do diretório do vault bloqueada: ${notePath}`);
+      return;
+    }
     const dir = path.dirname(fullPath);
     
     if (!fs.existsSync(dir)) {
@@ -309,6 +368,7 @@ process.on("SIGTERM", () => {
 let haWS: WebSocket | null = null;
 let haMessageId = 1;
 let reconnectTimeout: any = null;
+let haReconnectDelay = 15000;
 
 function connectHomeAssistantWS() {
   // Clear any pending reconnects
@@ -353,6 +413,7 @@ function connectHomeAssistantWS() {
         } else if (msg.type === "auth_ok") {
           console.log("[HA WS] Conectado e Autenticado com Sucesso!");
           db.homeAssistant.wsStatus = "connected";
+          haReconnectDelay = 15000; // Reset reconnection backoff delay on success
           saveDB();
 
           // Obter informações estáticas e estados iniciais de todos os gadgets
@@ -372,6 +433,11 @@ function connectHomeAssistantWS() {
         } else if (msg.type === "auth_invalid") {
           console.error("[HA WS] Erro crítico: Autenticação Rejeitada (Token inválido ou expirado).");
           db.homeAssistant.wsStatus = "error";
+          // Auth is invalid, do not reconnect automatically
+          if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = null;
+          }
           saveDB();
         } else if (msg.type === "result") {
           if (msg.success && Array.isArray(msg.result)) {
@@ -392,21 +458,23 @@ function connectHomeAssistantWS() {
     });
 
     haWS.on("close", () => {
-      console.warn("[HA WS] Conexão terminada. Tentando se reconectar em 15 segundos...");
+      console.warn(`[HA WS] Conexão terminada. Tentando se reconectar em ${haReconnectDelay / 1000} segundos...`);
       db.homeAssistant.wsStatus = "disconnected";
-      reconnectTimeout = setTimeout(connectHomeAssistantWS, 15000);
+      reconnectTimeout = setTimeout(connectHomeAssistantWS, haReconnectDelay);
+      haReconnectDelay = Math.min(haReconnectDelay * 2, 120000); // Exponential backoff capped at 2 minutes
     });
 
     haWS.on("error", (err: any) => {
-      console.error("[HA WS] Erro na transmissão de dados do socket:", err.message);
+      console.error("[HA WS] Erro na transmissão de dados do socket:", err?.message || err);
       db.homeAssistant.wsStatus = "error";
       // O evento close será acionado em seguida
     });
 
   } catch (err: any) {
-    console.error("[HA WS] Falha ao disparar o construtor WebSocket do Home Assistant:", err.message);
+    console.error("[HA WS] Falha ao disparar o construtor WebSocket do Home Assistant:", err?.message || err);
     db.homeAssistant.wsStatus = "error";
-    reconnectTimeout = setTimeout(connectHomeAssistantWS, 15000);
+    reconnectTimeout = setTimeout(connectHomeAssistantWS, haReconnectDelay);
+    haReconnectDelay = Math.min(haReconnectDelay * 2, 120000);
   }
 }
 
@@ -578,7 +646,7 @@ app.get('/health', (_req, res) => {
   });
 });
 
-app.post("/api/tts", async (req, res) => {
+app.post("/api/tts", rateLimiter(15), async (req, res) => {
   const { text, voiceId, service } = req.body;
   if (!text) {
     return res.status(400).json({ error: "No text provided" });
@@ -841,7 +909,7 @@ async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: strin
   }
 }
 
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", rateLimiter(15), async (req, res) => {
   const { message, history, file, model } = req.body;
   if (!message) {
     return res.status(400).json({ error: "Mensagem vazia." });
@@ -2560,27 +2628,31 @@ app.post("/api/system/update/run", (_req, res) => {
         updaterState.logs.push("[GIT] [PROCESSO] Efetuando pull das últimas mudanças do branch 'main'...");
         
         await new Promise<void>((resolve, reject) => {
+          const cleanToken = (updaterState.githubToken || "").replace(/[^a-zA-Z0-9_\-\/]/g, "");
+          const cleanRepo = (updaterState.githubRepo || "").replace(/[^a-zA-Z0-9_\-\/]/g, "");
+          
           let repoUrlWithAuth = "origin";
-          if (updaterState.githubToken) {
-            repoUrlWithAuth = `https://${updaterState.githubToken}@github.com/${updaterState.githubRepo}.git`;
+          if (cleanToken && cleanRepo) {
+            repoUrlWithAuth = `https://${cleanToken}@github.com/${cleanRepo}.git`;
           }
           
           const cmd = repoUrlWithAuth === "origin" ? "git pull origin main" : `git pull "${repoUrlWithAuth}" main`;
           exec(cmd, { timeout: 30000 }, (err, stdout, stderr) => {
+            const redact = (str: string) => cleanToken ? str.replace(new RegExp(cleanToken, "g"), "******") : str;
             if (err) {
-              const debugErr = stderr || err.message;
+              const debugErr = redact(stderr || err?.message || "");
               updaterState.logs.push(`[AVISO] git pull falhou: ${debugErr}`);
-              const fallbackCmd = updaterState.githubToken ? `git pull "${repoUrlWithAuth}"` : "git pull";
+              const fallbackCmd = cleanToken ? `git pull "${repoUrlWithAuth}"` : "git pull";
               updaterState.logs.push("[GIT] Tentando comando de pull sem amarrações...");
               exec(fallbackCmd, { timeout: 30000 }, (err2, stdout2, stderr2) => {
-                if (err2) reject(new Error("Falha no comando de pull do Git: " + (stderr2 || err2.message)));
+                if (err2) reject(new Error("Falha no comando de pull do Git: " + redact(stderr2 || err2?.message || "")));
                 else {
-                  updaterState.logs.push(stdout2 || "[GIT] Pull realizado com sucesso.");
+                  updaterState.logs.push(redact(stdout2) || "[GIT] Pull realizado com sucesso.");
                   resolve();
                 }
               });
             } else {
-              updaterState.logs.push(stdout || "[GIT] Mudanças locais sincronizadas com sucesso.");
+              updaterState.logs.push(redact(stdout) || "[GIT] Mudanças locais sincronizadas com sucesso.");
               resolve();
             }
           });

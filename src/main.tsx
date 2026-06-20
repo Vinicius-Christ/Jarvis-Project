@@ -38,6 +38,7 @@ Object.defineProperty(window, "fetch", {
 
 // Check if running on localhost container/development (bypasses auth usually on backend)
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+let globalAllowedEmail = "viniciusc.castro09@gmail.com";
 
 function GoogleLoginButton({ onSuccess, onError }: { onSuccess: (token: string, email: string) => void; onError: (msg: string) => void }) {
   const login = useGoogleLogin({
@@ -59,7 +60,7 @@ function GoogleLoginButton({ onSuccess, onError }: { onSuccess: (token: string, 
         }
 
         const profile = await checkRes.json();
-        if (profile.email !== "viniciusc.castro09@gmail.com") {
+        if (profile.email !== globalAllowedEmail) {
           onError(`Acesso Negado: O e-mail ${profile.email || "desconhecido"} não tem autorização.`);
           return;
         }
@@ -111,6 +112,9 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
         originalFetch("/api/public/config").then(r => r.json()).then(data => {
             if (data.googleClientId) {
                 setClientId(data.googleClientId);
+            }
+            if (data.allowedEmail) {
+                globalAllowedEmail = data.allowedEmail;
             }
         }).catch(e => console.error("Could not load config", e));
     }

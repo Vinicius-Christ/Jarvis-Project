@@ -304,8 +304,8 @@ export default function App() {
 
       // If there is an XML command embedded, synchronize it in backend
       if (data.text) {
-        // Find all matches of <command type="..." ... />
-        const cmdRegex = /<command\s+([^>]+)\/>/g;
+        // Find all matches of <command type="..." ... /> safely
+        const cmdRegex = /<command\s+([\s\S]*?)\/>/g;
         let match;
         while ((match = cmdRegex.exec(data.text)) !== null) {
           const attributesStr = match[1];

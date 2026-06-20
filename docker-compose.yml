@@ -8,7 +8,7 @@ services:
     image: chromadb/chroma:latest
     # container_name: jarvis_chromadb
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - chroma_data:/chroma/data
     environment:
@@ -60,11 +60,12 @@ services:
     image: postgres:15-alpine
     # container_name: jarvis_postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       - POSTGRES_USER=jarvis
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-jarvis_secure_pass}
       - POSTGRES_DB=jarvis_core
+      - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
@@ -77,7 +78,7 @@ services:
     image: redis:alpine
     # container_name: jarvis_redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     networks:
       - jarvis_network
     restart: unless-stopped

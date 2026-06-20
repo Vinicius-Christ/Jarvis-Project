@@ -31,11 +31,18 @@ O JARVIS é focado em processar sua rotina local através de contêineres otimiz
 
 ## 🚀 Instalação e Inicialização Automática
 
-Toda a infraestrutura do JARVIS v5.0 (Script Linux `deploy_jarvis.sh`, Containers Docker, Node.js API e integrações Múltiplas) está consolidada em um único e definitivo guia de passo a passo.
+Toda a infraestrutura do JARVIS v5.0 está consolidada para ambas as plataformas Linux e Windows:
 
-🔗 **[CLIQUE AQUI PARA ACESSAR O TUTORIAL COMPLETO DE INSTALAÇÃO](./TUTORIAL_COMPLETO_INSTALACAO_N8N.md)**
+### 🐧 Ambiente Linux (Recomendado)
+O script bash `deploy_jarvis.sh` automatiza a instalação completa no Linux (Docker, Containers, Node.js API e demais ferramentas).
+🔗 **[CLIQUE AQUI PARA ACESSAR O TUTORIAL COMPLETO DE INSTALAÇÃO DO LINUX](./TUTORIAL_COMPLETO_INSTALACAO_N8N.md)**
 
-Siga o arquivo acima para subir em alguns minutos o servidor no ambiente Linux.
+### 🪟 Ambiente Windows (Experimental / PowerShell)
+Para usuários do sistema Windows, disponibilizamos o script automatizado `AutoInstaller.ps1` em PowerShell. Ele configura o ambiente, instala o Obsidian via Winget, gerencia as dependências do Node.js e instala/compila o ecossistema.
+Para executar no PowerShell em modo Administrador:
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; .\AutoInstaller.ps1
+```
 
 ---
 

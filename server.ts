@@ -1280,10 +1280,14 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     }
 
     // Trigger real Google Sheets sync if user is logged in & has configured spreadsheet URL
-    if (db.googleSheetUrl && token) {
-      syncToGoogleSheets(db.googleSheetUrl, shName, newRows, token).catch(e => {
-        console.error("Async Google Sheets sync failed:", e);
-      });
+    if (db.googleSheetUrl) {
+      if (token) {
+        syncToGoogleSheets(db.googleSheetUrl, shName, newRows, token).catch(e => {
+          console.error("Async Google Sheets sync failed:", e);
+        });
+      } else {
+        console.warn(`[JARVIS] Planilha configurada, mas a alteração para a aba "${shName}" não pôde ser enviada ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.`);
+      }
     }
   }
   replyText = replyText.replace(sheetUpdateRegex, "").trim();
@@ -1898,6 +1902,21 @@ app.post("/api/update/finance", (req, res) => {
   };
   db.finances.push(newItem);
   saveDB();
+
+  // Sincronização automática para Google Sheets
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  if (db.googleSheetUrl) {
+    if (token) {
+      const rowStr = `Data: ${newItem.date} | Valor: R$ ${newItem.value.toFixed(2)} | Categoria: ${newItem.category} | Descrição: ${newItem.description}`;
+      syncToGoogleSheets(db.googleSheetUrl, "Finanças", [rowStr], token).catch(e => {
+        console.error("Auto Google Sheets sync for finance failed:", e);
+      });
+    } else {
+      console.warn("[JARVIS] Planilha configurada, mas a alteração de Finanças não pôde ser enviada ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.");
+    }
+  }
+
   res.json({ success: true, item: newItem });
 });
 
@@ -1918,11 +1937,27 @@ app.post("/api/update/agenda", (req, res) => {
     id: db.agenda.length + 1,
     title,
     datetime,
-    category,
+    category: category || "Trabalho",
     notes: notes || "Lançado via interface JARVIS Central."
   };
   db.agenda.push(newItem);
   saveDB();
+
+  // Sincronização automática para Google Sheets
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  if (db.googleSheetUrl) {
+    if (token) {
+      const dateFormatted = new Date(newItem.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const rowStr = `Data/Hora: ${dateFormatted} | Título: ${newItem.title} | Categoria: ${newItem.category} | Notas: ${newItem.notes}`;
+      syncToGoogleSheets(db.googleSheetUrl, "Agenda", [rowStr], token).catch(e => {
+        console.error("Auto Google Sheets sync for agenda failed:", e);
+      });
+    } else {
+      console.warn("[JARVIS] Planilha configurada, mas o novo compromisso de Agenda não pôde ser enviado ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.");
+    }
+  }
+
   res.json({ success: true, item: newItem });
 });
 

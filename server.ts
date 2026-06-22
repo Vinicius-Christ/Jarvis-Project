@@ -624,7 +624,11 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 3. Use comandos XML sem mencioná-los em voz alta. A UI vai extrai-los automaticamente. Responda o que for socialmente esperado ao final de concluir o que foi pedido.
    - Ex IoT (Modos): <command type="IoT" action="Modo Cinema" />
    - Ex IoT (Desligar): <command type="IoT" action="Desligar Luzes" />
-   - Ex PC: <command type="PC" workspace="study" />
+   - Ex PC (Workspace Servidor): <command type="PC" workspace="study" />
+   - Ex Ações PC Pessoal (Sempre que pedido para controlar a máquina local abrir app, pesquisar na web/google, ou tocar musica/spotify, use tags LocalPC com as actions "open_app", "search_google", "play_spotify")
+   - Ex Pesquisa Google / Web: <command type="LocalPC" action="search_google" target="receita de bolo" />
+   - Ex Tocar Spotify: <command type="LocalPC" action="play_spotify" target="nome da música" />
+   - Ex Abrir App Local: <command type="LocalPC" action="open_app" target="calculadora" />
 4. DIRETRIZ CRÍTICA DE CONSULTA (LEITURA) vs EXECUÇÃO (CRIAÇÃO/AGENDAMENTO):
    - Se o usuário estiver apenas CONSULTANDO, PERGUNTANDO ou LISTANDO (ex: "quais compromissos eu tenho hoje?", "o que tenho agendado?", "quais os meus gastos?", "mostre minha agenda"), responda apenas listando os itens reais existentes nas seções [SISTEMA DE CALENDÁRIO / AGENDA / COMPROMISSOS REAIS CADASTRADOS] e [SISTEMA FINANCEIRO / GASTOS / TRANSAÇÕES REAIS CADASTRADAS] fornecidas no prompt. NUNCA invente compromissos falsos ou de exemplo se as listas estiverem vazias, fale a verdade absoluta! NUNCA gere ou envie tags de comando como "<command type="Agenda" .../>" ou "<command type="Finance" .../>" durante uma simples consulta, pois gerar tais tags fará a aplicação cadastrá-las indevidamente como novos itens!
    - Só emita comando de inserção de agenda (<command type="Agenda" title="..." datetime="..." />) ou finanças se o usuário explicitamente e ativamente mandar você criar um novo registro (ex: "agende uma reunião amanhã às 14h", "crie o compromisso X", "lance despesa de Y").
@@ -1339,26 +1343,13 @@ app.post("/api/update/pc", (req, res) => {
     console.log(`[PC] Alternando workspace para: ${ws?.name || workspace}`);
     if (ws?.apps) {
       console.log(`[PC] Abrindo aplicativos: ${ws.apps.join(", ")}`);
-      // Simula a execução de aplicativos para windows
-      ws.apps.forEach(app => {
-        let cmd = `echo "Iniciando ${app}"`;
-        if (process.platform === "win32") {
-          // Basic heuristic to start a known app or open via URI
-          if (app.includes("Chrome")) cmd = `start chrome`;
-          else if (app.includes("VS Code")) cmd = `code`;
-          else if (app.includes("Notion")) cmd = `start notion:`;
-          else if (app.includes("Spotify")) cmd = `start spotify:`;
-          else cmd = `start "" "${app}"`;
-        }
-        exec(cmd, { cwd: process.cwd() }, (err) => {
-          if (err) console.error("Erro ao iniciar", app);
-        });
-      });
-    }
+      // A execução física de aplicativos do workspace não deve ocorrer no servidor.
+      // O App Cliente (Desktop) cuidará disso localmente usando as tool tags <command type="LocalPC" .../>
+      console.log(`[Servidor] Workspace definido no estado central: ${workspace}. Opcionalmente, um cliente desktop conectado pode reagir a isso.`);
 
-  }
-  res.json({ success: true, workspace: jarvisState.pcAutomation.activeWorkspace });
-});
+    }
+    res.json({ success: true, workspace: jarvisState.pcAutomation.activeWorkspace });
+  });
 
 app.post("/api/update/goal", async (req, res) => {
   const { limit, reason } = req.body;

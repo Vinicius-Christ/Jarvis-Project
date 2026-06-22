@@ -35,7 +35,7 @@ try {
     if (target && !target.startsWith("http")) target = "http://" + target;
     if (target) CONFIG.SERVER_URL = target;
   }
-} catch (e) {}
+} catch (e) { }
 
 // ============================================
 // STATE MANAGEMENT
@@ -55,8 +55,8 @@ let serverHealthy = false;
 const log = (message, type = 'info') => {
   const timestamp = new Date().toISOString();
   const prefix = `[${timestamp}]`;
-  
-  switch(type) {
+
+  switch (type) {
     case 'error':
       console.error(`${prefix} ❌ ${message}`);
       break;
@@ -122,7 +122,7 @@ const checkServerHealth = (url, retries = CONFIG.SERVER_HEALTH_CHECK_RETRIES) =>
 // ============================================
 
 const getTrayIcon = () => {
-    // Tentativa 1: Ícone da pasta dist
+  // Tentativa 1: Ícone da pasta dist
   const distIconPath = path.join(__dirname, 'dist', 'favicon.png');
   const fallbackIcon1Path = path.join(__dirname, 'dist', 'favicon.ico');
   if (fs.existsSync(distIconPath)) {
@@ -193,18 +193,18 @@ const discoverJarvisServer = async () => {
   };
 
   const candidates = [];
-  
+
   // 1. Tenta ambiente
   if (process.env.JARVIS_EXTERNAL_IP) {
-     candidates.push(process.env.JARVIS_EXTERNAL_IP);
+    candidates.push(process.env.JARVIS_EXTERNAL_IP);
   }
 
   // 2. Tenta mDNS
   candidates.push('http://jarvis.local:3000');
-  
+
   // 3. Tenta Tailscale
   candidates.push('http://jarvis.tailscale:3000');
-  
+
   // 4. Tenta último IP salvo
   let targetObj = null;
   try {
@@ -221,7 +221,7 @@ const discoverJarvisServer = async () => {
         targetObj = target;
       }
     }
-  } catch(e){}
+  } catch (e) { }
 
   for (let c of candidates) {
     try {
@@ -231,17 +231,17 @@ const discoverJarvisServer = async () => {
       if (isHealthy) {
         log(`Successfully connected to ${c}`, 'success');
         CONFIG.SERVER_URL = c;
-        
+
         // se o IP não tava no arquivo, salva
         if (c !== targetObj && c !== 'http://localhost:3000' && !c.includes('jarvis.local') && !c.includes('jarvis.tailscale')) {
-           try {
-             const outPath = app.getPath("exe") ? path.join(path.dirname(app.getPath("exe")), "jarvis-target.json") : path.join(app.getAppPath(), "jarvis-target.json");
-             fs.writeFileSync(outPath, JSON.stringify({ url: c }, null, 2));
-           } catch(ex) {}
+          try {
+            const outPath = app.getPath("exe") ? path.join(path.dirname(app.getPath("exe")), "jarvis-target.json") : path.join(app.getAppPath(), "jarvis-target.json");
+            fs.writeFileSync(outPath, JSON.stringify({ url: c }, null, 2));
+          } catch (ex) { }
         }
         return true;
       }
-    } catch(err) {
+    } catch (err) {
       log(`Invalid candidate URL: ${c}`, 'warn');
     }
   }
@@ -290,7 +290,7 @@ const startServerProcess = () => {
         if (!isQuitting) {
           log(`Server process exited with code ${code} and signal ${signal}`, 'warn');
           serverHealthy = false;
-          
+
           // Notificar usuário se servidor morreu inesperadamente
           if (mainWindow && !isQuitting) {
             mainWindow.webContents.send('server-crashed', { code, signal });
@@ -450,7 +450,7 @@ const createWindow = async () => {
     log('Loaded application URL', 'success');
   } catch (err) {
     log(`Failed to load URL: ${err.message}`, 'error');
-    
+
     // Show error page
     const errorHtml = `
       <!DOCTYPE html>
@@ -531,7 +531,7 @@ const createWindow = async () => {
       message: 'A aplicação não está respondendo',
       detail: 'Deseja aguardar ou sair?'
     });
-    
+
     if (choice === 1) {
       isQuitting = true;
       app.quit();
@@ -553,7 +553,7 @@ const createTray = () => {
 
   try {
     const iconPath = getTrayIcon();
-    
+
     if (iconPath) {
       tray = new Tray(iconPath);
     } else {
@@ -650,7 +650,7 @@ const setupIpcHandlers = () => {
   // Handler: Execute docker command (com validação)
   ipcMain.handle('docker-command', (event, command) => {
     const allowedCommands = ['pause', 'resume', 'restart'];
-    
+
     if (!allowedCommands.includes(command)) {
       return { error: 'Invalid command' };
     }
@@ -662,11 +662,11 @@ const setupIpcHandlers = () => {
     spawnSync('docker', ['compose', command], {
       cwd: app.getAppPath()
     });
-    
+
     return { success: true, command };
   });
 
-  
+
   ipcMain.handle('set-target-ip', async (event, ipStr) => {
     try {
       let targetFile = path.join(path.dirname(app.getPath("exe")), "jarvis-target.json");
@@ -675,16 +675,16 @@ const setupIpcHandlers = () => {
       fs.writeFileSync(targetFile, JSON.stringify({ url: u }, null, 2));
       CONFIG.SERVER_URL = u;
       return true;
-    } catch(e) {
+    } catch (e) {
       try {
-         let targetFile = path.join(app.getAppPath(), "jarvis-target.json");
-         let u = ipStr.trim();
-         if (!u.startsWith('http')) u = 'http://' + u;
-         fs.writeFileSync(targetFile, JSON.stringify({ url: u }, null, 2));
-         CONFIG.SERVER_URL = u;
-         return true;
-      } catch(e2) {
-         return false;
+        let targetFile = path.join(app.getAppPath(), "jarvis-target.json");
+        let u = ipStr.trim();
+        if (!u.startsWith('http')) u = 'http://' + u;
+        fs.writeFileSync(targetFile, JSON.stringify({ url: u }, null, 2));
+        CONFIG.SERVER_URL = u;
+        return true;
+      } catch (e2) {
+        return false;
       }
     }
   });
@@ -700,9 +700,9 @@ const setupIpcHandlers = () => {
           if (match) cpuUsage = parseInt(match[1]);
         }
         resolve({
-           cpu: cpuUsage,
-           os: process.platform,
-           appContext: "electron"
+          cpu: cpuUsage,
+          os: process.platform,
+          appContext: "electron"
         });
       });
     });
@@ -737,6 +737,55 @@ const setupIpcHandlers = () => {
       });
     });
   });
+
+  ipcMain.handle('execute-local-command', async (event, data) => {
+    const { action, target } = data;
+    const { shell } = require('electron');
+    const { exec } = require('child_process');
+
+    log(`executing local command: ${action} with target: ${target}`, 'info');
+
+    return new Promise((resolve, reject) => {
+      try {
+        if (action === 'search_google') {
+          shell.openExternal(`https://www.google.com/search?q=${encodeURIComponent(target)}`);
+          resolve({ success: true, message: `Pesquisando ${target} no Google.` });
+        }
+        else if (action === 'play_spotify' || action === 'search_spotify') {
+          // Open the Spotify App locally pre-filled with the search query
+          shell.openExternal(`spotify:search:${encodeURIComponent(target)}`);
+          resolve({ success: true, message: `Buscando ${target} no Spotify.` });
+        }
+        else if (action === 'open_app') {
+          let cmd = `start "" "${target}"`;
+          const tgtLower = target.toLowerCase();
+
+          // Basic heuristic map to avoid issues
+          if (tgtLower.includes("chrome") || tgtLower === "google chrome") cmd = `start chrome`;
+          else if (tgtLower.includes("code") || tgtLower.includes("vscode")) cmd = `code`;
+          else if (tgtLower.includes("notion")) cmd = `start notion:`;
+          else if (tgtLower.includes("spotify")) cmd = `start spotify:`;
+          else if (tgtLower.includes("calculadora")) cmd = `calc`;
+          else if (tgtLower.includes("bloco de notas") || tgtLower.includes("notepad")) cmd = `notepad`;
+
+          exec(cmd, { cwd: process.cwd() }, (err) => {
+            if (err) {
+              log(`Erro ao tentar abrir o app localmente: ${err.message}`, 'error');
+              resolve({ success: false, error: err.message });
+            } else {
+              resolve({ success: true, message: `Aplicativo aberto: ${target}` });
+            }
+          });
+        }
+        else {
+          resolve({ success: false, error: "Ação de PC local desconhecida." });
+        }
+      } catch (err) {
+        log(`Execution error: ${err.message}`, 'error');
+        resolve({ success: false, error: err.message });
+      }
+    });
+  });
 };
 
 // ============================================
@@ -763,9 +812,9 @@ if (!gotTheLock) {
 
     try {
       createSplashScreen();
-      
+
       await discoverJarvisServer();
-      
+
       const isLocalhost = CONFIG.SERVER_URL.includes('localhost') || CONFIG.SERVER_URL.includes('127.0.0.1');
       if (isLocalhost) {
         await startServerProcess();
@@ -773,7 +822,7 @@ if (!gotTheLock) {
       } else {
         log(`Using remote JARVIS Server at ${CONFIG.SERVER_URL}`, 'info');
       }
-      
+
       await createWindow();
       log('Main window created', 'success');
       createTray();

@@ -285,26 +285,47 @@ let db: DbSchema = {
   }
 };
 
-// Ensure data folder exists
-if (!fs.existsSync(path.join(process.cwd(), "data"))) {
-  fs.mkdirSync(path.join(process.cwd(), "data"));
-}
+// Instead of using JSON, we will use Prisma for persistence.
+// At initialization we load the global state from AppConfig
+const DB_STATE_KEY = "global_state";
 
-// Load from DB
-if (fs.existsSync(DB_FILE)) {
+async function loadDB() {
   try {
-    const fileContent = fs.readFileSync(DB_FILE, "utf-8");
-    const parsed = JSON.parse(fileContent);
-    db = { ...db, ...parsed }; // merge keys to prevent breaking if schema updates
-    if (!db.googleSheetUrl || db.googleSheetUrl.trim() === "") {
-      db.googleSheetUrl = "https://docs.google.com/spreadsheets/d/13wmGhejq3V78ZHSHl-SxayDZM7pk9s3qYRPVtZnbhgg/edit?usp=sharing";
+    const config = await prisma.appConfig.findUnique({ where: { key: DB_STATE_KEY } });
+    if (config) {
+      const parsed = JSON.parse(config.value);
+      db = { ...db, ...parsed }; // merge keys to prevent breaking if schema updates
     }
   } catch (err: any) {
-    console.error("Falha ao ler db.json, usando padrao:", err?.message || err);
+    console.error("Falha ao ler o SQLite, usando configuracao padrao:", err?.message || err);
   }
+
+  // Load specific tables to sync memory
+  try {
+    const finances = await prisma.finance.findMany();
+    if (finances.length > 0) db.finances = finances as any;
+    
+    const agenda = await prisma.agenda.findMany();
+    if (agenda.length > 0) db.agenda = agenda as any;
+    
+    const convs = await prisma.conversation.findMany();
+    if (convs.length > 0) db.conversations = convs as any;
+
+    const ha = await prisma.homeAssistantState.findFirst();
+    if (ha) {
+      db.homeAssistant.ip = ha.ip;
+      db.homeAssistant.token = ha.token;
+      db.homeAssistant.ambientPreset = ha.ambientPreset;
+      db.homeAssistant.wsStatus = ha.wsStatus;
+      if (ha.lights) db.homeAssistant.lights = JSON.parse(ha.lights);
+      if (ha.ac) db.homeAssistant.ac = JSON.parse(ha.ac);
+      if (ha.devices) db.homeAssistant.devices = JSON.parse(ha.devices);
+      if (ha.hiddenDevices) db.homeAssistant.hiddenDevices = JSON.parse(ha.hiddenDevices);
+      if (ha.modesConfig) db.homeAssistant.modesConfig = JSON.parse(ha.modesConfig);
+    }
+  } catch(e) {}
 }
 
-// Auto-save function - Optimized to be asynchronous and non-blocking with a serialized queue
 let saveTimeout: null | NodeJS.Timeout = null;
 
 function saveDB() {
@@ -312,23 +333,43 @@ function saveDB() {
     clearTimeout(saveTimeout);
   }
   
-  saveTimeout = setTimeout(() => {
+  saveTimeout = setTimeout(async () => {
     saveTimeout = null;
-    fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), "utf8", (err) => {
-      if (err) {
-        console.error("Falha ao salvar db.json assincronamente:", err?.message || err);
+    try {
+      await prisma.appConfig.upsert({
+        where: { key: DB_STATE_KEY },
+        update: { value: JSON.stringify({ ...db, finances: [], agenda: [], conversations: [], homeAssistant: {} }) },
+        create: { key: DB_STATE_KEY, value: JSON.stringify({ ...db, finances: [], agenda: [], conversations: [], homeAssistant: {} }) }
+      });
+      
+      const ha = db.homeAssistant;
+      const haFirst = await prisma.homeAssistantState.findFirst();
+      const haData = {
+        ip: ha.ip,
+        token: ha.token,
+        ambientPreset: ha.ambientPreset,
+        wsStatus: ha.wsStatus,
+        lights: JSON.stringify(ha.lights),
+        ac: JSON.stringify(ha.ac),
+        devices: JSON.stringify(ha.devices),
+        hiddenDevices: JSON.stringify(ha.hiddenDevices),
+        modesConfig: JSON.stringify(ha.modesConfig)
+      };
+      
+      if (haFirst) {
+        await prisma.homeAssistantState.update({ where: { id: haFirst.id }, data: haData });
+      } else {
+        await prisma.homeAssistantState.create({ data: haData });
       }
-    });
+    } catch (err: any) {
+      console.error("Falha ao salvar no Prisma SQLite assincronamente:", err?.message || err);
+    }
   }, 1000); // 1000ms debouncer
 }
 
-// Fallback synchronous save on shutdown or SIGTERM
 function saveDBSync() {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-  } catch (err: any) {
-    console.error("Falha ao salvar db.json sincronamente na finalização:", err?.message || err);
-  }
+  // Sync wrapper not really needed or replace with async wait before exit
+  // To avoid unhandled promises on exit, we skip this in purely Prisma model
 }
 
 // Write the note to physical disk in Windows
@@ -604,8 +645,7 @@ function callHAService(entity_id: string, service: string, domain: string, servi
   return false;
 }
 
-// Iniciar conexão com o Home Assistant em segundo plano
-setTimeout(connectHomeAssistantWS, 1000);
+// A conexão com o HA WS será iniciada no startServer() após o BD estar pronto
 
 
 // Main multi-persona system prompts configurations
@@ -2789,6 +2829,9 @@ app.post("/api/generate/docs", (_req, res) => {
 
 // Initialize Vite server or static handling
 async function startServer() {
+  await loadDB();
+  connectHomeAssistantWS(); // Now we can safely connect after DB rules are loaded
+
   if (process.env.NODE_ENV !== "production") {
     const { createServer } = await import("vite");
     const vite = await createServer({

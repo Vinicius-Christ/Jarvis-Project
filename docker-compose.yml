@@ -16,9 +16,7 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
     volumes:
       - n8n_data:/home/node/.n8n
-      - C:/jarvis-vault:/data/vault:ro # Mount Obsidian vault (Apenas Leitura para Segurança)
-    depends_on:
-      - db
+      - ${OBSIDIAN_VAULT_PATH:-C:/jarvis-vault}:/data/vault:ro # Mount Obsidian vault (Apenas Leitura para Segurança)
     networks:
       - jarvis_network
     restart: unless-stopped
@@ -35,26 +33,6 @@ services:
       - TZ=America/Sao_Paulo
     volumes:
       - ha_config:/config
-    networks:
-      - jarvis_network
-    restart: unless-stopped
-    depends_on:
-      - db
-
-  # PostgreSQL - Banco de Dados para armazenar Financeiros, Agenda e Históricos do App
-  db:
-    image: postgres:15-alpine
-    # container_name: jarvis_postgres
-    ports:
-      - "127.0.0.1:5432:5432"
-    environment:
-      - POSTGRES_USER=jarvis
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-jarvis_secure_pass}
-      - POSTGRES_DB=jarvis_core
-      - PGDATA=/var/lib/postgresql/data/pgdata
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - jarvis_network
     restart: unless-stopped
@@ -76,4 +54,3 @@ networks:
 volumes:
   n8n_data:
   ha_config:
-  pg_data:

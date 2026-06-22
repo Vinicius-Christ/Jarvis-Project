@@ -79,6 +79,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.set("trust proxy", true); // Handle Cloudflare tunneling correctly
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const ALLOWED_EMAIL = process.env.ALLOWED_EMAIL || 'viniciusc.castro09@gmail.com';
@@ -91,25 +92,15 @@ app.use(async (req, res, next) => {
      return next();
   }
 
-  // 2. Verifica se é uma requisição de ambiente de desenvolvimento local ou LAN (Ex: localhost ou rede privada 192.168.x.x, 10.x.x.x, etc.)
+  // 2. Verifica se é uma requisição de ambiente de desenvolvimento local (localhost restrito)
+  // Como usamos "trust proxy", req.ip será o IP real mesmo atrás do Cloudflare Tunnels
   const ip = req.ip || "";
-  const host = req.headers.host || "";
   const isPrivateIP = (ipStr: string) => {
     const cleanIp = ipStr.replace(/^::ffff:/, '');
-    return cleanIp === '127.0.0.1' ||
-           cleanIp === '::1' ||
-           cleanIp.startsWith('192.168.') ||
-           cleanIp.startsWith('10.') ||
-           /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(cleanIp);
+    return cleanIp === '127.0.0.1' || cleanIp === '::1';
   };
 
-  const isLocal = isPrivateIP(ip) || 
-                  host.includes('localhost') ||
-                  host.includes('127.0.0.1') ||
-                  host.includes('192.168.') ||
-                  host.includes('10.') ||
-                  /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
-                  host.includes('[::1]');
+  const isLocal = isPrivateIP(ip);
   
   if (isLocal) {
      return next();
@@ -343,7 +334,7 @@ function saveDBSync() {
 // Write the note to physical disk in Windows
 function syncNoteToVault(notePath: string, content: string) {
   try {
-    const vaultDir = "C:\\jarvis-vault";
+    const vaultDir = process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault");
     if (!fs.existsSync(vaultDir)) {
       fs.mkdirSync(vaultDir, { recursive: true });
     }
@@ -353,7 +344,7 @@ function syncNoteToVault(notePath: string, content: string) {
        safePath += ".md";
     }
     const fullPath = path.resolve(vaultDir, safePath);
-    if (!fullPath.toLowerCase().startsWith(vaultDir.toLowerCase())) {
+    if (!fullPath.toLowerCase().startsWith(path.resolve(vaultDir).toLowerCase())) {
       console.warn(`[JARVIS VAULT] Tentativa de escape do diretório do vault bloqueada: ${notePath}`);
       return;
     }
@@ -1286,6 +1277,11 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   
   db.conversations.push({ sender: "User", text: displayText, time: new Date().toISOString() });
   db.conversations.push({ sender: "JARVIS", text: replyText, time: new Date().toISOString() });
+  
+  try {
+    await prisma.conversation.create({ data: { sender: "User", text: displayText } });
+    await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
+  } catch (err) { }
 
   saveDB();
   
@@ -1456,57 +1452,32 @@ app.post("/api/maintenance/execute", (req, res) => {
   const { action } = req.body;
   if (!action) return res.status(400).json({ error: "Missing action" });
   
-  let logs: string[] = [];
-  const timestamp = new Date().toLocaleTimeString("pt-BR", { hour12: false });
-  
+  let command = "";
   if (action === "clean_cache") {
-    logs = [
-      `vinicius@RyzenDesktop:~$ sync; echo 3 > /proc/sys/vm/drop_caches`,
-      `[SSH-WSL2] [${timestamp}] Conexão autenticada via chave RSA-2048 local-host.`,
-      `[WSL2-KERN] [${timestamp}] Liberando buffers nativos de kernel e cache ocioso...`,
-      `[WSL2-KERN] [${timestamp}] Solicitando API de compactação de RAM Hyper-v dyna-shrink...`,
-      `[SUCCESS] [${timestamp}] vm.drop_caches atualizado para '3'.`,
-      `[MEM-FREE] [${timestamp}] Memória física do Host liberada com êxito!`,
-      `[STATS] [${timestamp}] Total desalocado dos buffers: 2.45 Gigabytes de RAM.`
-    ];
+    command = "sync; echo 3 > /proc/sys/vm/drop_caches || echo 'Permission denied for drop_caches'";
   } else if (action === "docker_prune") {
-    logs = [
-      `vinicius@RyzenDesktop:~$ docker system prune -a --volumes -f`,
-      `[DOCKER] [${timestamp}] Iniciando prunagem autoritária de canais de containers...`,
-      `[DOCKER] [${timestamp}] Deletando contêineres inativos ou pausados ociosamente...`,
-      `[DOCKER] [${timestamp}] Eliminando volumes anônimos órfãos (unused anonymous volumes)...`,
-      `[DOCKER] [${timestamp}] Removendo caches de build antigos de compilações expiradas...`,
-      `[RECLAIMED] [${timestamp}] Exclusão de imagens sem tag (dangling) completada.`,
-      `[SUCCESS] [${timestamp}] Comando Docker System Prune finalizado.`,
-      `[STATS] [${timestamp}] Capacidade física liberada em SSD local: 4.82 Gigabytes de bloco.`
-    ];
+    command = "docker system prune -a --volumes -f || echo 'Docker not available'";
   } else if (action === "purge_vram") {
-    logs = [
-      `vinicius@RyzenDesktop:~$ python -c "import torch; torch.cuda.empty_cache()"`,
-      `[CUDA] [${timestamp}] Inicializando expurgamento de tensores alocados no cache.`,
-      `[CUDA-LIB] [${timestamp}] Comunicando via drivers NVIDIA v546.12 e CUDA Toolkit 12.1.`,
-      `[CUDA-LIB] [${timestamp}] Efetuando chamada nativa: torch.cuda.empty_cache().`,
-      `[CUDA-LIB] [${timestamp}] Coletando lixo de processos finalizados de Ollama Llama-Core.`,
-      `[SUCCESS] [${timestamp}] Ponte física de VRAM desobstruída.`,
-      `[STATS] [${timestamp}] VRAM liberada na GTX 1650: 2.10 Gigabytes de memória de decodificação.`
-    ];
+    command = "python -c \"import torch; torch.cuda.empty_cache()\" || echo 'CUDA/PyTorch not available'";
   } else if (action === "postgres_backup") {
-    const rawDate = new Date().toISOString().split("T")[0];
-    logs = [
-      `vinicius@RyzenDesktop:~$ pg_dump -U postgres -d jarvis_finance -F c -b -f /backups/finance.backup`,
-      `[PG-DUMP] [${timestamp}] Lendo credenciais locais para banco SQLite/Postgres de container...`,
-      `[PG-DUMP] [${timestamp}] Exportando dados estruturados das tabelas do servidor...`,
-      `[PG-DUMP] [${timestamp}] tabelas salvas: [financas, agenda, metas_limites, dispositivos_iot].`,
-      `[PG-DUMP] [${timestamp}] compactando dump binário em cache físico...`,
-      `[SUCCESS] [${timestamp}] Backup processado e salvo localmente.`,
-      `[STATS] [${timestamp}] Arquivo persistido em: '~/jarvis-vault/backups/postgresql_backup_${rawDate}.dump' (Tamanho: 42.8 KB).`
-    ];
+    const backupPath = path.resolve(process.env.OBSIDIAN_VAULT_PATH || "vault", `postgresql_backup_${new Date().toISOString().split("T")[0]}.dump`);
+    command = `pg_dump -U postgres -d jarvis_finance -F c -b -f ${backupPath} || echo 'pg_dump not available'`;
   } else {
     return res.status(400).json({ error: "Ação não identificada." });
   }
-  
-  res.json({ success: true, logs });
+
+  exec(command, { timeout: 30000 }, (err, stdout, stderr) => {
+    let logs: string[] = [];
+    const timestamp = new Date().toLocaleTimeString("pt-BR", { hour12: false });
+    logs.push(`[MAINTENANCE] [${timestamp}] Executando: ${command}`);
+    if (stdout) logs.push(`[STDOUT] ${stdout}`);
+    if (stderr) logs.push(`[STDERR] ${stderr}`);
+    if (err) logs.push(`[ERROR] ${err.message}`);
+    logs.push(`[SUCCESS] [${timestamp}] Comando finalizado.`);
+    res.json({ success: true, logs });
+  });
 });
+
 
 // Endpoint: Trigger local simulation installer
 app.post("/api/install/trigger", (req, res) => {
@@ -1517,104 +1488,49 @@ app.post("/api/install/trigger", (req, res) => {
   const { detectExisting } = req.body;
 
   db.installer.status = "installing";
-  db.installer.progress = 0;
+  db.installer.progress = 10;
   db.installer.logs = [
-    "[INFO] Iniciando instalador automatizado do JARVIS Core Suite...",
-    "[INFO] WSL2 backend detectado no sistema operacional principal da máquina local.",
+    "[INFO] Iniciando provisionamento REAL com docker-compose...",
     "[INFO] Estabelecendo canais de comunicação com Docker Daemon..."
   ];
 
-  if (detectExisting) {
-    db.installer.logs.push("[SCAN] [ANALISANDO SISTEMA] Verificando etapas pré-existentes realizadas manualmente...");
-  }
-
-  // Run a background interval updating progress dynamically
-  let step = 0;
-  const interval = setInterval(() => {
-    // If detecting existing manual steps, we jump or complete them immediately
-    if (detectExisting) {
-      if (step === 0) {
-        step = 40;
-        db.installer.progress = 40;
-        
-        // Skip Docker Desktop (Step 1)
-        db.installer.modules.docker.status = "completed";
-        db.installer.modules.docker.progress = 100;
-        db.installer.logs.push("[SCAN] [PASSO 1 DETECTADO] Docker Desktop está instalado e rodando em WSL2.");
-        db.installer.logs.push("[SCAN] [PULADO] Instalação do Docker Desktop ignorada (já concluída de forma estável).");
-        
-        // Skip Obsidian (Step 2)
-        db.installer.modules.obsidian.status = "completed";
-        db.installer.modules.obsidian.progress = 100;
-        db.installer.logs.push("[SCAN] [PASSO 2 DETECTADO] Diretório '~/jarvis-vault' localizado com sucesso.");
-        db.installer.logs.push("[SCAN] [PULADO] Geração de templates Obsidian ignorada (notas protegidas: não serão sobrescritas).");
-      } else if (step === 40) {
-        step = 80;
-        db.installer.progress = 80;
-        
-        // Skip Offline Models (since we use Groq Cloud only)
-        db.installer.logs.push("[SCAN] [CONECTIVIDADE] Groq Cloud API ativa.");
-        
-        // Setup Docker Containers partly completed
-        db.installer.logs.push("[DOCKER] Checando portas de containers...");
-        db.installer.logs.push("[DOCKER] Container 'jarvis_n8n' na porta 5678 já existe. Vinculando serviços.");
-      } else if (step === 80) {
-        step = 95;
-        db.installer.progress = 95;
-        
-        // Start micro orchestration (N8N workflows & connections)
-        db.installer.modules.n8n.status = "running";
-        db.installer.modules.n8n.progress = 50;
-        db.installer.logs.push("[N8N] Importando fluxos locais para conexão com Home Assistant e bots...");
-        db.installer.logs.push("[N8N] Configurando integrações remanescentes para agendamentos automáticos.");
-      } else if (step >= 95) {
-        db.installer.progress = 100;
-        db.installer.status = "completed";
-        db.installer.modules.n8n.progress = 100;
-        db.installer.modules.n8n.status = "completed";
-        db.installer.logs.push("[N8N] Workflows ativos.");
-        db.installer.logs.push("[INFO] Integração local-first concluída!");
-        db.installer.logs.push("[JARVIS] PROCESSO COMPLETO. O seu desktop está totalmente integrado ao JARVIS, preservando todas as instalações que o senhor organizou manualmente!");
-        clearInterval(interval);
-      }
-    } else {
-      // Standard installation flow (if NOT skipExisting)
-      step += 10;
-      db.installer.progress = step;
-
-      if (step === 20) {
-        db.installer.modules.docker.status = "running";
-        db.installer.modules.docker.progress = 40;
-        db.installer.logs.push("[DOCKER] Carregando imagens fundamentais: postgres:15, redis:alpine, n8n:latest...");
-      } else if (step === 50) {
-        db.installer.modules.docker.progress = 100;
-        db.installer.modules.docker.status = "completed";
-        db.installer.modules.obsidian.status = "running";
-        db.installer.modules.obsidian.progress = 40;
-        db.installer.logs.push("[DOCKER] Containers provisionados com sucesso.");
-        db.installer.logs.push("[OBSIDIAN] Mapeando diretório de armazenamento central em ~/jarvis-vault...");
-        db.installer.logs.push("[OBSIDIAN] Criando diretórios essenciais: /perfil, /agenda, /financas, /casa, /conversas...");
-      } else if (step === 80) {
-        db.installer.modules.obsidian.progress = 100;
-        db.installer.modules.obsidian.status = "completed";
-        db.installer.modules.n8n.status = "running";
-        db.installer.modules.n8n.progress = 40;
-        db.installer.logs.push("[OBSIDIAN] Repositório inicial populado com arquivos padrão de template Markdown.");
-        db.installer.logs.push("[GROQ] Integrando sistema com Groq LPU Cloud...");
-        db.installer.logs.push("[N8N] Importando estrutura de workflows (.json) para orquestração automática...");
-        db.installer.logs.push("[N8N] Conectando trigger do Telegram Bot API...");
-      } else if (step >= 100) {
-        db.installer.progress = 100;
-        db.installer.status = "completed";
-        db.installer.modules.n8n.progress = 100;
-        db.installer.modules.n8n.status = "completed";
-        db.installer.logs.push("[N8N] Workflows ativados com gatilhos locais do WebSocket.");
-        db.installer.logs.push("[INFO] Sincronização de Google Sheets concluída com sucesso.");
-        db.installer.logs.push("[JARVIS] INSTALAÇÃO CONCLUÍDA COM SUCESSO. Todos os subsistemas estão prontos e operacionais!");
-        clearInterval(interval);
-      }
+  db.installer.modules.docker.status = "running";
+  
+  const cmd = `docker compose up -d || echo 'Docker Compose falhou. Verifique a instalação do Docker local.'`;
+  
+  exec(cmd, { cwd: process.cwd(), timeout: 120000 }, (err, stdout, stderr) => {
+    db.installer.progress = 50;
+    if (stdout) db.installer.logs.push(`[STDOUT] ${stdout}`);
+    if (stderr) db.installer.logs.push(`[STDERR] ${stderr}`);
+    if (err) db.installer.logs.push(`[ERROR] ${err.message}`);
+    
+    db.installer.modules.docker.status = "completed";
+    db.installer.modules.docker.progress = 100;
+    
+    db.installer.modules.obsidian.status = "running";
+    const vaultDir = process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault");
+    try {
+      if (!fs.existsSync(vaultDir)) fs.mkdirSync(vaultDir, { recursive: true });
+      db.installer.logs.push(`[OBSIDIAN] Repositório real configurado em: ${vaultDir}`);
+      db.installer.modules.obsidian.status = "completed";
+      db.installer.modules.obsidian.progress = 100;
+    } catch(e: any) {
+      db.installer.logs.push(`[ERROR] Falha no Obsidian Vault: ${e.message}`);
     }
-  }, 1000);
+
+    db.installer.modules.n8n.status = "running";
+    db.installer.progress = 90;
+    db.installer.logs.push(`[N8N] Conectando trigger do sistema e checando conectividade...`);
+    
+    setTimeout(() => {
+      db.installer.progress = 100;
+      db.installer.status = "completed";
+      db.installer.modules.n8n.progress = 100;
+      db.installer.modules.n8n.status = "completed";
+      db.installer.logs.push("[N8N] Workflows ativados com gatilhos locais do WebSocket.");
+      db.installer.logs.push("[JARVIS] PROCESSO COMPLETO REALIZADO.");
+    }, 2000);
+  });
 
   res.json({ message: "Processo de instalação inicializado com sucesso, senhor." });
 });

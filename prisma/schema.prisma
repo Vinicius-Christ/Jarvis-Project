@@ -33,3 +33,29 @@ model Goal {
   limit       Float
   reason      String
 }
+
+model Conversation {
+  id        Int      @id @default(autoincrement())
+  sender    String
+  text      String
+  time      DateTime @default(now())
+}
+
+model HomeAssistantState {
+  id            Int      @id @default(autoincrement())
+  ip            String   @default("")
+  token         String   @default("")
+  ambientPreset String   @default("Normal")
+  lights        String   @default("{}")
+  ac            String   @default("{}")
+  devices       String   @default("[]")
+  wsStatus      String   @default("disconnected")
+  hiddenDevices String   @default("[]")
+  modesConfig   String   @default("{}")
+}
+
+model AppConfig {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}

@@ -31,7 +31,7 @@ if (typeof AbortSignal.timeout !== "function") {
     setTimeout(() => {
       try {
         controller.abort();
-      } catch {}
+      } catch { }
     }, ms);
     return controller.signal;
   };
@@ -51,17 +51,17 @@ if (process.env.VITE_SERVER_URL) {
   try {
     const url = new URL(process.env.VITE_SERVER_URL);
     allowedOrigins.push(url.origin);
-  } catch {}
+  } catch { }
 }
 app.use(cors({
   origin: (origin, callback) => {
     if (
-      !origin || 
-      allowedOrigins.includes(origin) || 
-      origin.endsWith('.run.app') || 
-      origin.includes('ais-dev-') || 
-      origin.includes('ais-pre-') || 
-      origin.includes('localhost') || 
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.run.app') ||
+      origin.includes('ais-dev-') ||
+      origin.includes('ais-pre-') ||
+      origin.includes('localhost') ||
       origin.includes('127.0.0.1') ||
       origin.includes('192.168.') ||
       origin.includes('10.') ||
@@ -86,10 +86,10 @@ const JWT_SECRET = process.env.JWT_SECRET || "jarvis_super_secret_key_007";
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Missing credentials" });
-  
+
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || user.password !== password) {
-     return res.status(401).json({ error: "Credenciais inválidas" });
+    return res.status(401).json({ error: "Credenciais inválidas" });
   }
 
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -105,8 +105,8 @@ app.post("/api/users", async (req, res) => {
   try {
     const user = await prisma.user.create({ data: { email, password, role: role || "user" }, select: { id: true, email: true, role: true } });
     res.json(user);
-  } catch(e) {
-    res.status(400).json({error: "Failed to create user. Email may exist."});
+  } catch (e) {
+    res.status(400).json({ error: "Failed to create user. Email may exist." });
   }
 });
 app.put("/api/users/:id", async (req, res) => {
@@ -118,8 +118,8 @@ app.put("/api/users/:id", async (req, res) => {
   try {
     const user = await prisma.user.update({ where: { id: Number(req.params.id) }, data, select: { id: true, email: true, role: true } });
     res.json(user);
-  } catch(e) {
-    res.status(400).json({error: "Failed to update user."});
+  } catch (e) {
+    res.status(400).json({ error: "Failed to update user." });
   }
 });
 app.delete("/api/users/:id", async (req, res) => {
@@ -131,7 +131,7 @@ app.use(async (req, res, next) => {
   // 1. Libera todos os arquivos estáticos e rotas do frontend (qualquer rota que não comece com /api/)
   // Libera também as rotas públicas da API (/api/public/)
   if (!req.path.startsWith('/api/') || req.path.startsWith('/api/public/') || req.path.startsWith('/api/auth/login')) {
-     return next();
+    return next();
   }
 
   // 2. Verifica o Auth (Fim do bypass de IP local, agora 100% seguro via Cloudflare)
@@ -143,17 +143,17 @@ app.use(async (req, res, next) => {
     return next();
   }
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-     return res.status(401).json({ error: "Cabeçalho de autorização ausente ou inválido. Por favor, forneça um token JWT Bearer válido." });
+    return res.status(401).json({ error: "Cabeçalho de autorização ausente ou inválido. Por favor, forneça um token JWT Bearer válido." });
   }
 
   const token = authHeader.split(' ')[1];
   try {
-     const decoded = jwt.verify(token, JWT_SECRET);
-     (req as any).user = decoded;
-     return next();
+    const decoded = jwt.verify(token, JWT_SECRET);
+    (req as any).user = decoded;
+    return next();
   } catch (error) {
-     console.error("Token verification failed:", error);
-     return res.status(401).json({ error: "Token inválido ou expirado. Faça o login novamente." });
+    console.error("Token verification failed:", error);
+    return res.status(401).json({ error: "Token inválido ou expirado. Faça o login novamente." });
   }
 });
 
@@ -165,18 +165,18 @@ function rateLimiter(requestsPerMinute: number = 15) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     const now = Date.now();
     const windowMs = 60000; // 1 minute
-    
+
     let client = ipLimits.get(ip);
     if (!client || now > client.resetTime) {
       client = { count: 1, resetTime: now + windowMs };
       ipLimits.set(ip, client);
       return next();
     }
-    
+
     if (client.count >= requestsPerMinute) {
       return res.status(429).json({ error: "Muitas requisições. Por favor, aguarde um minuto e tente novamente." });
     }
-    
+
     client.count++;
     next();
   };
@@ -312,10 +312,10 @@ async function loadDB() {
   try {
     const finances = await prisma.finance.findMany();
     if (finances.length > 0) jarvisState.finances = finances as any;
-    
+
     const agenda = await prisma.agenda.findMany();
     if (agenda.length > 0) jarvisState.agenda = agenda as any;
-    
+
     const convs = await prisma.conversation.findMany();
     if (convs.length > 0) jarvisState.conversations = convs as any;
 
@@ -331,7 +331,7 @@ async function loadDB() {
       if (ha.hiddenDevices) jarvisState.homeAssistant.hiddenDevices = JSON.parse(ha.hiddenDevices);
       if (ha.modesConfig) jarvisState.homeAssistant.modesConfig = JSON.parse(ha.modesConfig);
     }
-  } catch(e) {}
+  } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 }
 
 let saveTimeout: null | NodeJS.Timeout = null;
@@ -350,10 +350,10 @@ function syncNoteToVault(notePath: string, content: string) {
     if (!fs.existsSync(vaultDir)) {
       fs.mkdirSync(vaultDir, { recursive: true });
     }
-    
+
     let safePath = (notePath || '').replace(/^(\/|\\)/, "");
     if (!safePath.endsWith(".md")) {
-       safePath += ".md";
+      safePath += ".md";
     }
     const fullPath = path.resolve(vaultDir, safePath);
     if (!fullPath.toLowerCase().startsWith(path.resolve(vaultDir).toLowerCase())) {
@@ -361,14 +361,14 @@ function syncNoteToVault(notePath: string, content: string) {
       return;
     }
     const dir = path.dirname(fullPath);
-    
+
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     fs.writeFileSync(fullPath, content, "utf8");
     console.log(`[JARVIS VAULT] File physical sync saved: ${fullPath}`);
-  } catch(e: any) {
+  } catch (e: any) {
     console.log(`[JARVIS VAULT] Failed to sync physical file: ${e.message}`);
   }
 }
@@ -402,11 +402,11 @@ function connectHomeAssistantWS() {
   const token = jarvisState.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI";
 
   console.log(`[HA WS] Tentando conectar ao Home Assistant em ws://${ip}:8123/api/websocket`);
-  
+
   try {
     jarvisState.homeAssistant.wsStatus = "connecting";
     const wsUrl = `ws://${ip}:8123/api/websocket`;
-    
+
     // Safety check for empty or placeholder token/ip
     if (!ip || ip.includes("COLOQUE_SEU") || !token || token.includes("COLOQUE_SEU")) {
       console.warn("[HA WS] IP ou Token do Home Assistant não parecem estar configurados. Aguardando configuração via painel.");
@@ -424,7 +424,7 @@ function connectHomeAssistantWS() {
     haWS.on("message", (data) => {
       try {
         const msg = JSON.parse(data.toString());
-        
+
         if (msg.type === "auth_required") {
           console.log("[HA WS] Solicitando autenticação. Enviando token...");
           haWS?.send(JSON.stringify({
@@ -435,7 +435,7 @@ function connectHomeAssistantWS() {
           console.log("[HA WS] Conectado e Autenticado com Sucesso!");
           jarvisState.homeAssistant.wsStatus = "connected";
           haReconnectDelay = 15000; // Reset reconnection backoff delay on success
-          
+
 
           // Obter informações estáticas e estados iniciais de todos os gadgets
           haMessageId = 1;
@@ -459,7 +459,7 @@ function connectHomeAssistantWS() {
             clearTimeout(reconnectTimeout);
             reconnectTimeout = null;
           }
-          
+
         } else if (msg.type === "result") {
           if (msg.success && Array.isArray(msg.result)) {
             console.log(`[HA WS] Inicializados ${msg.result.length} estados do Home Assistant.`);
@@ -502,10 +502,10 @@ function connectHomeAssistantWS() {
 function syncEntitiesWithDB(entities: any[]) {
   const filtered = entities.filter(e => {
     const id = e.entity_id;
-    return id.startsWith("light.") || 
-           id.startsWith("switch.") || 
-           id.startsWith("climate.") ||
-           (id.startsWith("sensor.") && (id.includes("temp") || id.includes("hum") || id.includes("sensor")) || e.attributes.device_class === "temperature");
+    return id.startsWith("light.") ||
+      id.startsWith("switch.") ||
+      id.startsWith("climate.") ||
+      (id.startsWith("sensor.") && (id.includes("temp") || id.includes("hum") || id.includes("sensor")) || e.attributes.device_class === "temperature");
   });
 
   const updatedDevices = filtered.map(e => {
@@ -522,7 +522,7 @@ function syncEntitiesWithDB(entities: any[]) {
     const friendlyName = e.attributes.friendly_name || e.entity_id;
     const currentState = e.state;
     const unit = e.attributes.unit_of_measurement || "";
-    
+
     let statusText = currentState === "on" ? "Ativo" : (currentState === "off" ? "Desativado" : currentState);
     if (unit) {
       statusText = `Medindo: ${currentState} ${unit}`;
@@ -544,13 +544,13 @@ function syncEntitiesWithDB(entities: any[]) {
 
   const manualDevices = jarvisState.homeAssistant.devices.filter(d => !d.id.includes("."));
   jarvisState.homeAssistant.devices = [...manualDevices, ...updatedDevices];
-  
+
 }
 
 function updateEntityInDB(entity: any) {
   const id = entity.entity_id;
-  if (!id.startsWith("light.") && !id.startsWith("switch.") && !id.startsWith("climate.") && 
-      !(id.startsWith("sensor.") && (id.includes("temp") || id.includes("hum") || id.includes("sensor") || entity.attributes.device_class === "temperature"))) {
+  if (!id.startsWith("light.") && !id.startsWith("switch.") && !id.startsWith("climate.") &&
+    !(id.startsWith("sensor.") && (id.includes("temp") || id.includes("hum") || id.includes("sensor") || entity.attributes.device_class === "temperature"))) {
     return;
   }
 
@@ -558,7 +558,7 @@ function updateEntityInDB(entity: any) {
   const friendlyName = entity.attributes.friendly_name || id;
   const currentState = entity.state;
   const unit = entity.attributes.unit_of_measurement || "";
-  
+
   let type = "Interruptor Inteligente";
   if (id.startsWith("light.")) {
     type = "Lâmpada Inteligente (RGB/Dimmer)";
@@ -591,7 +591,7 @@ function updateEntityInDB(entity: any) {
   } else {
     jarvisState.homeAssistant.devices.push(deviceData);
   }
-  
+
 }
 
 function callHAService(entity_id: string, service: string, domain: string, service_data?: any) {
@@ -675,7 +675,7 @@ app.post("/api/tts", rateLimiter(15), async (req, res) => {
   try {
     // Setup Edge TTS (Free, high quality)
     let voice = voiceId || "pt-BR-AntonioNeural";
-    
+
     // If voice is an ElevenLabs ID or not a valid Edge voice (with no hyphen), map it correctly
     if (voice && !voice.includes("-")) {
       if (voice === "EXAVITQu4vr4xnSDxMaL" || voice === "LcfcDJNUP1GQjkvn1xUw") {
@@ -690,13 +690,13 @@ app.post("/api/tts", rateLimiter(15), async (req, res) => {
       lang: 'pt-BR',
       outputFormat: 'audio-24khz-48kbitrate-mono-mp3'
     });
-    
+
     const tempFile = path.join(os.tmpdir(), `tts-edge-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
     await tts.ttsPromise(text, tempFile);
-    
+
     const buffer = fs.readFileSync(tempFile);
-    try { fs.unlinkSync(tempFile); } catch(e) {}
-    
+    try { fs.unlinkSync(tempFile); } catch (e) { }
+
     res.set('Content-Type', 'audio/mpeg');
     return res.send(Buffer.from(buffer));
   } catch (error) {
@@ -707,17 +707,17 @@ app.post("/api/tts", rateLimiter(15), async (req, res) => {
 
 function isOnlyConsultationQuery(userMessage: string): boolean {
   const msg = userMessage.toLowerCase();
-  
+
   // Palavras indicadoras de consulta comuns
   const queryWords = [
     "quais", "quais os", "qual", "quais são", "mostre", "mostra", "listar", "lista", "onde", "onde estão", "ver", "visualizar", "tem", "tenho", "agendado", "agenda", "gastos", "gastos de hoje", "gastos de ontem", "compromisso", "compromissos", "saldo", "transações", "lançamentos", "registros"
   ];
-  
+
   // Palavras-chave imperativas de criação ativa
   const creationWords = [
     "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei"
   ];
-  
+
   // Palavras-chave de exclusão ativa
   const deleteWords = [
     "apagar", "apague", "excluir", "exclua", "deletar", "delete", "remover", "remova", "eliminar", "elimine", "limpar", "limpa"
@@ -734,7 +734,7 @@ function isOnlyConsultationQuery(userMessage: string): boolean {
   if (hasQuery && !hasCreation) {
     return true;
   }
-  
+
   const shortQueries = ["agenda", "compromissos", "compromisso", "gastos", "despesas", "gasto", "saldo", "finanças", "tarefas"];
   if (shortQueries.includes(msg.trim()) || (msg.length < 25 && (msg.includes("agenda") || msg.includes("compromisso") || msg.includes("gasto")))) {
     if (!hasCreation) {
@@ -755,14 +755,14 @@ async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: strin
     const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
       headers: { "Authorization": `Bearer ${token}` }
     });
-    
+
     if (!metaRes.ok) {
-       console.error("Failed to read sheet metadata:", await metaRes.text());
-       return;
+      console.error("Failed to read sheet metadata:", await metaRes.text());
+      return;
     }
     const meta: any = await metaRes.json();
     const sheetTitles = meta.sheets?.map((s: any) => s.properties.title) || [];
-    
+
     // 2. If tab does not exist, create it
     if (!sheetTitles.includes(tabName)) {
       const createRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
@@ -780,7 +780,7 @@ async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: strin
         })
       });
       if (!createRes.ok) {
-         console.error("Failed to create tab:", await createRes.text());
+        console.error("Failed to create tab:", await createRes.text());
       }
     }
 
@@ -803,7 +803,7 @@ async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: strin
       const rangeRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}!A1:Z1`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
-      
+
       let headers: string[] = [];
       if (rangeRes.ok) {
         const rangeData: any = await rangeRes.json();
@@ -811,7 +811,7 @@ async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: strin
       }
 
       const rowKeys = Object.keys(rowData);
-      
+
       // 5. If sheet has no headers, write headers first
       if (headers.length === 0) {
         headers = rowKeys;
@@ -912,19 +912,19 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
     if (fsSrv && fsSrv.active && (lowerMsg.includes("buscar") || lowerMsg.includes("pesquisar") || lowerMsg.includes("mcp search") || lowerMsg.includes("procurar"))) {
       const q = (message || '').replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim();
       if (q.length > 1) {
-        const found = jarvisState.obsidianNotes.filter(n => 
+        const found = jarvisState.obsidianNotes.filter(n =>
           n.path.toLowerCase().includes(q.toLowerCase()) || n.content.toLowerCase().includes(q.toLowerCase())
         );
-        contextPrompt += `\n\n[MCP SYSTEM TOOL - search_notes RESULT para query: "${q}"]:\n` + 
-          (found.length > 0 
-            ? found.map(f => `Nota "${f.path}":\n"""\n${f.content}\n"""`).join("\n\n") 
+        contextPrompt += `\n\n[MCP SYSTEM TOOL - search_notes RESULT para query: "${q}"]:\n` +
+          (found.length > 0
+            ? found.map(f => `Nota "${f.path}":\n"""\n${f.content}\n"""`).join("\n\n")
             : "(Nenhuma nota correspondente encontrada no sistema)");
       }
     }
 
     // 2. read_note hook
     if (fsSrv && fsSrv.active && (lowerMsg.includes("ler nota") || lowerMsg.includes("ler arquivo") || lowerMsg.includes("abrir nota") || lowerMsg.includes("conteúdo de"))) {
-      const noteToRead = jarvisState.obsidianNotes.find(n => 
+      const noteToRead = jarvisState.obsidianNotes.find(n =>
         lowerMsg.includes(n.path.toLowerCase()) || lowerMsg.includes(path.basename(n.path).toLowerCase())
       );
       if (noteToRead) {
@@ -934,17 +934,17 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
     // 3. get_finances hook
     if (dbSrv && dbSrv.active && (lowerMsg.includes("finance") || lowerMsg.includes("gastos") || lowerMsg.includes("extrato") || lowerMsg.includes("despesas") || lowerMsg.includes("finanças"))) {
-      
-// MCP tool sync get_finances
-const transactions = jarvisState.finances || [];
 
-      contextPrompt += `\n\n[MCP SYSTEM TOOL - get_finances RESULT (Registros de SQL local)]:\n` + 
-        (transactions.length > 0 
-          ? transactions.map(t => `- R$ ${t.value.toFixed(2)} (${t.category}): ${t.description} [Ref ID: ${t.id}]`).join("\n") 
+      // MCP tool sync get_finances
+      const transactions = jarvisState.finances || [];
+
+      contextPrompt += `\n\n[MCP SYSTEM TOOL - get_finances RESULT (Registros de SQL local)]:\n` +
+        (transactions.length > 0
+          ? transactions.map(t => `- R$ ${t.value.toFixed(2)} (${t.category}): ${t.description} [Ref ID: ${t.id}]`).join("\n")
           : "(Nenhuma transação financeira encontrada na base de dados SQLite)");
     }
   }
-  
+
   const currentSaoPauloTime = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const selectedP = jarvisState.activePersona || "jarvis";
   const personaDetails = AI_PERSONAS[selectedP] || AI_PERSONAS.jarvis;
@@ -992,7 +992,7 @@ Isto criará ou sobreporá o arquivo dentro de jarvis-vault sincronizando o sist
     if (groqApiKey && groqApiKey.trim().length > 0) {
       // Use Groq Cloud for ultra-fast Llama 3 generation
       const currentSaoPauloTime = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      const systemInstruction = 
+      const systemInstruction =
         `Você é o JARVIS, a inteligência central e assistente pessoal de elite do usuário.
 Data e Hora atual de referência: ${currentSaoPauloTime} (Fuso horário de Brasília/SP, Brasil). Sempre use esta data/hora para calcular datas relativas como "hoje", "amanhã", "ontem", "este sábado", etc.
 
@@ -1036,7 +1036,7 @@ Texto a ser salvo
 
       if (!groqRes.ok) {
         let errorBody = "";
-        try { errorBody = await groqRes.text(); } catch(e) {}
+        try { errorBody = await groqRes.text(); } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
         throw new Error(`Groq failed with status: ${groqRes.status}. Details: ${errorBody}`);
       }
 
@@ -1052,9 +1052,9 @@ Texto a ser salvo
     // 3. FALLBACK FOR DEVELOPMENT / AI STUDIO PREVIEW OR MISSING KEYS
     isLocalSimulated = true;
     console.warn(`Could not fetch from Groq Cloud. Error: ${error?.message || error}. Using smart mock fallback.`);
-    
+
     const lower = message.toLowerCase();
-    
+
     if (file) {
       if (lower.includes("gasto") || lower.includes("finan") || lower.includes("excel")) {
         replyText = `Entendido, mestre. O arquivo financeiro 📂 **${file.name}** foi recebido. Entretanto, configure o \`GROQ_API_KEY\` nas configurações globais ou no arquivo .env para processarmos real-time cognitivo.`;
@@ -1067,7 +1067,7 @@ Texto a ser salvo
 
       if (jarvisState.mcpEnabled && fsSrv && fsSrv.active && (lower.includes("buscar") || lower.includes("pesquisar") || lower.includes("ler") || lower.includes("obsidian")) && (lower.includes("nota") || lower.includes("arquivo") || lower.includes("procurar") || lower.includes("mcp"))) {
         const q = (message || '').replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim() || "geral";
-        const found = jarvisState.obsidianNotes.filter(n => 
+        const found = jarvisState.obsidianNotes.filter(n =>
           n.path.toLowerCase().includes(q.toLowerCase()) || n.content.toLowerCase().includes(q.toLowerCase())
         );
         replyText = `Senhor, de acordo com o protocolo **Model Context Protocol (MCP)**, acionei o canal de comunicação do seu **Servidor MCP Local (Sistema de Arquivos)** e executei as ferramentas nativas \`search_notes\` e \`read_note\`.
@@ -1077,9 +1077,9 @@ ${found.length > 0 ? found.map(f => `- 📝 **${f.path}**: "${f.content.substrin
 
 A IA do JARVIS realizou a varredura local nos seus arquivos com sucesso via MCP Server.`;
       } else if (jarvisState.mcpEnabled && dbSrv && dbSrv.active && (lower.includes("gasto") || lower.includes("finan") || lower.includes("extrato") || lower.includes("despesa") || lower.includes("finanças"))) {
-        
-// MCP tool sync get_finances
-const transactions = jarvisState.finances || [];
+
+        // MCP tool sync get_finances
+        const transactions = jarvisState.finances || [];
 
         replyText = `Senhor, estabeleci comunicação direta com o seu banco SQLite local por meio do **Servidor MCP Local (Acesso PostgreSQL/SQLite)** chamando o driver da ferramenta nativa \`get_finances\`.
 
@@ -1142,16 +1142,16 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
 
   // Higienização Inteligente contra alucinações e exemplar bias do LLM
   const isQueryOnly = isOnlyConsultationQuery(message);
-  
+
   if (isQueryOnly) {
     // 1. Remover terminalmente quaisquer tags XML de criação/agendamento geradas em consultas para não poluir
     replyText = (replyText || '').replace(/<command\s+type="Agenda"\s+([^>]+)\/>/gi, "");
     replyText = (replyText || '').replace(/<command\s+type="Finance"\s+([^>]+)\/>/gi, "");
-    
+
     // 2. Se a agenda ou finanças reais estão vazias na base de dados, mas o LLM alucinou que há itens,
     // nós saneamos a resposta textual para que o usuário receba dados 100% verídicos do sistema!
     const msgLower = message.toLowerCase();
-    
+
     if (msgLower.includes("agenda") || msgLower.includes("compromisso") || msgLower.includes("reunião")) {
       if (agendaList.length === 0) {
         // Se a agenda real está completamente vazia
@@ -1165,7 +1165,7 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
         replyText = `Mestre, consultei os compromissos oficiais salvos no seu sistema. Aqui está a sua agenda real:\n\n${listStr}\n\nDeseja realizar alguma alteração ou registrar um novo evento?`;
       }
     }
-    
+
     if (msgLower.includes("gasto") || msgLower.includes("finan") || msgLower.includes("despesa") || msgLower.includes("transação") || msgLower.includes("saldo")) {
       if (financesList.length === 0) {
         replyText = `Senhor, verifiquei os registros da base de dados financeira e confirmo que **não há nenhuma transação ou gasto cadastrado**.\n\nDeseja que eu lance alguma despesa ou receita agora?`;
@@ -1183,7 +1183,7 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   while ((match = updateRegex.exec(replyText)) !== null) {
     const parsedPath = match[1].trim();
     const parsedContent = match[2].trim();
-    
+
     const existingNote = jarvisState.obsidianNotes.find(n => n.path === parsedPath);
     if (existingNote) {
       existingNote.content = parsedContent;
@@ -1204,11 +1204,11 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     const spName = sheetMatch[1].trim();
     const shName = sheetMatch[2].trim();
     const rowsText = sheetMatch[3].trim();
-    
+
     const newRows = rowsText.split("\n").map(r => r.replace(/^- /, "").trim());
-    
+
     if (!jarvisState.googleSheetsData) jarvisState.googleSheetsData = [];
-    
+
     const existingDoc = jarvisState.googleSheetsData.find((d: any) => d.spreadsheet === spName && d.sheet === shName);
     if (existingDoc) {
       existingDoc.rows.push(...newRows);
@@ -1232,25 +1232,27 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   // 5. Save and respond
   const displayText = file ? `${message} (📂 Anexo: ${file.name})` : message;
   const modelLabel = isLocalSimulated ? `${groqModelName.toUpperCase()} [Cloud Mock]` : `${groqModelName.toUpperCase()} [Native Local]`;
-  
-  
+
+
   try {
     await prisma.conversation.create({ data: { sender: "User", text: displayText } });
-  } catch (e) {}
+  } catch (e) {
+    console.error("[Silent Try-Catch in server.ts]:", e);
+  }
 
-  
+
   try {
     await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
-  } catch (e) {}
+  } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 
-  
+
   try {
     await prisma.conversation.create({ data: { sender: "User", text: displayText } });
     await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
-  } catch (err) { }
+  } catch (err) { console.error("[Silent Try-Catch in server.ts]:", err); }
 
-  
-  
+
+
   return res.json({
     text: replyText,
     isLocal: true,
@@ -1300,7 +1302,7 @@ app.get("/api/system/hardware", async (_req, res) => {
       try {
         const cpuInfo = await si.cpu().catch(() => ({ brand: "" }));
         cpuBrand = cpuInfo.brand || "";
-      } catch (e) {}
+      } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 
       if (!cpuBrand || cpuBrand === "Unknown CPU" || cpuBrand === "Unknown") {
         try {
@@ -1314,9 +1316,9 @@ app.get("/api/system/hardware", async (_req, res) => {
               }
             }
           }
-        } catch (e) {}
+        } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
       }
-      
+
       if (!cpuBrand) {
         cpuBrand = "Processador Genérico Intel/AMD";
       }
@@ -1364,7 +1366,7 @@ app.get("/api/system/hardware", async (_req, res) => {
             model: g.model || "Placa Integrada",
             vram: g.vram || 0
           }));
-        } catch (e) {}
+        } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
       }
     }
 
@@ -1381,7 +1383,7 @@ app.get("/api/system/hardware", async (_req, res) => {
     // Query dynamic hardware metrics concurrently
     const temps = await si.cpuTemperature().catch(() => ({ main: 45 }));
     const currentLoad = await si.currentLoad().catch(() => ({ currentLoad: 15 }));
-    
+
     const baseUsage = Math.round(currentLoad.currentLoad) || (15 + Math.floor(Math.random() * 10));
     const baseTemp = temps.main || (45 + Math.floor(Math.random() * 5));
 
@@ -1405,7 +1407,7 @@ app.get("/api/system/hardware", async (_req, res) => {
       wslMemoryTotal: 8192, // MB
       realGpuActive: realGpuVramUsed !== null // Flag to let frontend know it's purely real data
     };
-    
+
     lastHardwareFetchTime = now;
     res.json(cachedHardware);
   } catch (err: any) {
@@ -1433,7 +1435,7 @@ app.get("/api/system/hardware", async (_req, res) => {
 app.post("/api/maintenance/execute", (req, res) => {
   const { action } = req.body;
   if (!action) return res.status(400).json({ error: "Missing action" });
-  
+
   let command = "";
   if (action === "clean_cache") {
     command = "ipconfig /flushdns && del /q /s %TEMP%\\* || echo 'Cache cleaned'";
@@ -1479,18 +1481,18 @@ app.post("/api/install/trigger", (req, res) => {
   ];
 
   jarvisState.installer.modules.docker.status = "running";
-  
+
   const cmd = `docker compose up -d || echo 'Docker Compose falhou. Verifique a instalação do Docker local.'`;
-  
+
   exec(cmd, { cwd: process.cwd(), timeout: 120000 }, (err, stdout, stderr) => {
     jarvisState.installer.progress = 50;
     if (stdout) jarvisState.installer.logs.push(`[STDOUT] ${stdout}`);
     if (stderr) jarvisState.installer.logs.push(`[STDERR] ${stderr}`);
     if (err) jarvisState.installer.logs.push(`[ERROR] ${err.message}`);
-    
+
     jarvisState.installer.modules.docker.status = "completed";
     jarvisState.installer.modules.docker.progress = 100;
-    
+
     jarvisState.installer.modules.obsidian.status = "running";
     const vaultDir = process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault");
     try {
@@ -1498,14 +1500,14 @@ app.post("/api/install/trigger", (req, res) => {
       jarvisState.installer.logs.push(`[OBSIDIAN] Repositório real configurado em: ${vaultDir}`);
       jarvisState.installer.modules.obsidian.status = "completed";
       jarvisState.installer.modules.obsidian.progress = 100;
-    } catch(e: any) {
+    } catch (e: any) {
       jarvisState.installer.logs.push(`[ERROR] Falha no Obsidian Vault: ${e.message}`);
     }
 
     jarvisState.installer.modules.n8n.status = "running";
     jarvisState.installer.progress = 90;
     jarvisState.installer.logs.push(`[N8N] Conectando trigger do sistema e checando conectividade...`);
-    
+
     setTimeout(() => {
       jarvisState.installer.progress = 100;
       jarvisState.installer.status = "completed";
@@ -1532,7 +1534,7 @@ app.post("/api/install/reset", (_req, res) => {
 
 app.post("/api/system/toggle", async (_req, res) => {
   jarvisState.systemActive = !jarvisState.systemActive;
-  
+
   if (!jarvisState.containerMockStates) {
     jarvisState.containerMockStates = {
       n8n: "running",
@@ -1545,12 +1547,12 @@ app.post("/api/system/toggle", async (_req, res) => {
   try {
     if (!jarvisState.systemActive) {
       console.log("[DOCKER] Hibernando sistema: Parando containers para economizar CPU e RAM...");
-      
+
       // Atualiza estados para o frontend refletir a hibernação imediatamente
       Object.keys(jarvisState.containerMockStates).forEach(key => {
         jarvisState.containerMockStates[key] = "exited";
       });
-      
+
 
       await new Promise<void>((resolve) => {
         exec("docker compose stop", { cwd: process.cwd(), timeout: 20000 }, (err) => {
@@ -1559,12 +1561,12 @@ app.post("/api/system/toggle", async (_req, res) => {
       });
     } else {
       console.log("[DOCKER] Acordando sistema: Subindo containers...");
-      
+
       // Atualiza estados para o frontend refletir a ativação imediatamente
       Object.keys(jarvisState.containerMockStates).forEach(key => {
         jarvisState.containerMockStates[key] = "running";
       });
-      
+
 
       await new Promise<void>((resolve) => {
         // Usar up -d é cem vezes mais seguro pois cria os pacotes caso tenham sido apagados e sobe os parados
@@ -1573,22 +1575,22 @@ app.post("/api/system/toggle", async (_req, res) => {
         });
       });
     }
-  } catch(e) {}
+  } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 
   res.json({ success: true, systemActive: jarvisState.systemActive });
 });
 
 app.post("/api/docker/restart", async (req, res) => {
   const { containerName } = req.body;
-  if (!containerName) return res.status(400).json({error:"Missing containerName"});
-  
+  if (!containerName) return res.status(400).json({ error: "Missing containerName" });
+
   const target = containerName === "ollama-local" ? "ollama" : containerName;
-  
+
   if (target === "ollama") {
     // If it's pure ollama running as a linux service, it's harder, but if it's dockerized:
-    exec(`docker restart ${target}`, { timeout: 15000 }, () => {});
+    exec(`docker restart ${target}`, { timeout: 15000 }, () => { });
   } else {
-    exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => {});
+    exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => { });
   }
   return res.json({ success: true });
 });
@@ -1602,7 +1604,7 @@ app.post("/api/settings/googlesheets", (req, res) => {
   const { url } = req.body;
   if (url !== undefined) {
     jarvisState.googleSheetUrl = url;
-    
+
   }
   res.json({ success: true, googleSheetUrl: jarvisState.googleSheetUrl });
 });
@@ -1619,7 +1621,7 @@ app.post("/api/ai/persona", (req, res) => {
     return res.status(400).json({ error: "Persona inválida" });
   }
   jarvisState.activePersona = persona;
-  
+
   res.json({ success: true, activePersona: jarvisState.activePersona, info: AI_PERSONAS[jarvisState.activePersona] });
 });
 
@@ -1658,7 +1660,7 @@ app.post("/api/docker/action", (req, res) => {
   else if (action === "pause") jarvisState.containerMockStates[container] = "paused";
   else if (action === "restart") jarvisState.containerMockStates[container] = "running";
 
-  
+
   res.json({ success: true, container, action, newState: jarvisState.containerMockStates[container] });
 });
 
@@ -1674,19 +1676,19 @@ app.post("/api/update/pc", (req, res) => {
       ws.apps.forEach(app => {
         let cmd = `echo "Iniciando ${app}"`;
         if (process.platform === "win32") {
-           // Basic heuristic to start a known app or open via URI
-           if (app.includes("Chrome")) cmd = `start chrome`;
-           else if (app.includes("VS Code")) cmd = `code`;
-           else if (app.includes("Notion")) cmd = `start notion:`;
-           else if (app.includes("Spotify")) cmd = `start spotify:`;
-           else cmd = `start "" "${app}"`;
+          // Basic heuristic to start a known app or open via URI
+          if (app.includes("Chrome")) cmd = `start chrome`;
+          else if (app.includes("VS Code")) cmd = `code`;
+          else if (app.includes("Notion")) cmd = `start notion:`;
+          else if (app.includes("Spotify")) cmd = `start spotify:`;
+          else cmd = `start "" "${app}"`;
         }
         exec(cmd, { cwd: process.cwd() }, (err) => {
           if (err) console.error("Erro ao iniciar", app);
         });
       });
     }
-    
+
   }
   res.json({ success: true, workspace: jarvisState.pcAutomation.activeWorkspace });
 });
@@ -1695,7 +1697,7 @@ app.post("/api/update/goal", async (req, res) => {
   const { limit, reason } = req.body;
   if (limit !== undefined) jarvisState.goal.limit = limit;
   if (reason !== undefined) jarvisState.goal.reason = reason;
-  
+
   try {
     await prisma.goal.create({
       data: {
@@ -1711,7 +1713,7 @@ app.post("/api/update/goal", async (req, res) => {
 
 app.post("/api/delete/goal", async (req, res) => {
   jarvisState.goal = { limit: 0, reason: "" };
-  
+
   try {
     await prisma.goal.deleteMany();
   } catch (e) {
@@ -1724,13 +1726,13 @@ app.post("/api/delete/goal", async (req, res) => {
 app.post("/api/update/finance", async (req, res) => {
   const { value, category, description, date, type } = req.body;
   const parsedValue = parseFloat(value);
-  
-  const newItem = { 
+
+  const newItem = {
     id: jarvisState.finances ? jarvisState.finances.length + 1 : Date.now(),
-    value: isNaN(parsedValue) ? 0 : parsedValue, 
-    category, 
-    description, 
-    type: type || (category === "Renda" ? "Receita" : "Despesa"), 
+    value: isNaN(parsedValue) ? 0 : parsedValue,
+    category,
+    description,
+    type: type || (category === "Renda" ? "Receita" : "Despesa"),
     date: date || new Date().toISOString()
   };
 
@@ -1773,12 +1775,12 @@ app.post("/api/delete/finance", async (req, res) => {
   const { description, all } = req.body;
   if (all === true || (description && (description.toLowerCase() === "all" || description.toLowerCase() === "todos" || description.toLowerCase() === "tudo"))) {
     await prisma.finance.deleteMany();
-    try { await prisma.finance.deleteMany(); } catch {}
+    try { await prisma.finance.deleteMany(); } catch { }
   } else if (description) {
     jarvisState.finances = jarvisState.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
-    try { await prisma.finance.deleteMany({ where: { description: { contains: description } } }); } catch {}
+    try { await prisma.finance.deleteMany({ where: { description: { contains: description } } }); } catch { }
   }
-  
+
   res.json({ success: true });
 });
 
@@ -1791,7 +1793,7 @@ app.post("/api/update/agenda", async (req, res) => {
     category: category || "Trabalho",
     notes: notes || "Lançado via interface JARVIS Central."
   };
-  
+
   try {
     await prisma.agenda.create({
       data: {
@@ -1801,9 +1803,9 @@ app.post("/api/update/agenda", async (req, res) => {
         notes: newItem.notes || ""
       }
     });
-  } catch (err) {}
+  } catch (err) { console.error("[Silent Try-Catch in server.ts]:", err); }
 
-  
+
 
   try {
     await prisma.agenda.create({
@@ -1840,19 +1842,19 @@ app.post("/api/delete/agenda", async (req, res) => {
   const { title, all } = req.body;
   if (all === true || (title && (title.toLowerCase() === "all" || title.toLowerCase() === "todos" || title.toLowerCase() === "tudo"))) {
     await prisma.agenda.deleteMany();
-    try { await prisma.agenda.deleteMany(); } catch {}
+    try { await prisma.agenda.deleteMany(); } catch { }
   } else if (title) {
     jarvisState.agenda = jarvisState.agenda.filter(a => !a.title.toLowerCase().includes(title.toLowerCase()));
-    try { await prisma.agenda.deleteMany({ where: { title: { contains: title } } }); } catch {}
+    try { await prisma.agenda.deleteMany({ where: { title: { contains: title } } }); } catch { }
   }
-  
+
   res.json({ success: true });
 });
 
 app.post("/api/update/iot", async (req, res) => {
   const { deviceId, state, brightness, color, presetName } = req.body;
 
-  const HOME_ASSISTANT_IP = jarvisState.homeAssistant.ip || ""; 
+  const HOME_ASSISTANT_IP = jarvisState.homeAssistant.ip || "";
   // const HA_TOKEN = jarvisState.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI"; 
 
   if (presetName) {
@@ -1875,7 +1877,7 @@ app.post("/api/update/iot", async (req, res) => {
       jarvisState.homeAssistant.lights.color = "#FF8F00"; // Warm orange
       jarvisState.homeAssistant.ac.temp = 24;
     }
-    
+
 
     // =============== MUNDO REAL WEBSOCKET & WEBHOOK ===============
     let wsDispatched = false;
@@ -1886,40 +1888,40 @@ app.post("/api/update/iot", async (req, res) => {
           let service = "turn_on";
           let serviceData: any = {};
           const lowerPreset = presetName.toLowerCase();
-          
+
           if (lowerPreset.includes("desligar") || lowerPreset.includes("apagar")) {
-             service = "turn_off";
-             serviceData = undefined; // No extra data for turn_off
+            service = "turn_off";
+            serviceData = undefined; // No extra data for turn_off
           } else {
-             const mConfig = jarvisState.homeAssistant.modesConfig?.[presetName];
-             if (mConfig) {
-               serviceData.brightness_pct = mConfig.brightness;
-               // HEX to RGB
-               if (mConfig.color && mConfig.color.startsWith("#")) {
-                 const hex = (mConfig.color || '').replace("#", "");
-                 const r = parseInt(hex.substring(0, 2), 16);
-                 const g = parseInt(hex.substring(2, 4), 16);
-                 const b = parseInt(hex.substring(4, 6), 16);
-                 serviceData.rgb_color = [r, g, b];
-               }
-             } else if (presetName === "Modo Cinema") {
-                serviceData.brightness_pct = 15;
-                serviceData.rgb_color = [224, 64, 251];
-             } else if (presetName === "Modo Trabalho") {
-                serviceData.brightness_pct = 90;
-                serviceData.rgb_color = [224, 247, 250];
-             } else if (presetName === "Modo Noturno") {
-                serviceData.brightness_pct = 5;
-                serviceData.rgb_color = [255, 143, 0];
-             }
+            const mConfig = jarvisState.homeAssistant.modesConfig?.[presetName];
+            if (mConfig) {
+              serviceData.brightness_pct = mConfig.brightness;
+              // HEX to RGB
+              if (mConfig.color && mConfig.color.startsWith("#")) {
+                const hex = (mConfig.color || '').replace("#", "");
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                serviceData.rgb_color = [r, g, b];
+              }
+            } else if (presetName === "Modo Cinema") {
+              serviceData.brightness_pct = 15;
+              serviceData.rgb_color = [224, 64, 251];
+            } else if (presetName === "Modo Trabalho") {
+              serviceData.brightness_pct = 90;
+              serviceData.rgb_color = [224, 247, 250];
+            } else if (presetName === "Modo Noturno") {
+              serviceData.brightness_pct = 5;
+              serviceData.rgb_color = [255, 143, 0];
+            }
           }
           callHAService(d.id, service, "light", serviceData);
         } else if (d.id.startsWith("climate.")) {
           if (presetName.toLowerCase().includes("desligar") || presetName.toLowerCase().includes("apagar")) {
-             callHAService(d.id, "turn_off", "climate");
+            callHAService(d.id, "turn_off", "climate");
           } else {
-             const targetTemp = presetName === "Modo Cinema" ? 20 : (presetName === "Modo Trabalho" ? 22 : 24);
-             callHAService(d.id, "set_temperature", "climate", { temperature: targetTemp });
+            const targetTemp = presetName === "Modo Cinema" ? 20 : (presetName === "Modo Trabalho" ? 22 : 24);
+            callHAService(d.id, "set_temperature", "climate", { temperature: targetTemp });
           }
         }
       });
@@ -1930,8 +1932,8 @@ app.post("/api/update/iot", async (req, res) => {
       try {
         console.log(`[MUNDO REAL] Disparando Preset '${presetName}' para Home Assistant em ${HOME_ASSISTANT_IP}`);
         const webhookName = (presetName || '').toLowerCase().replace(/ /g, "_");
-        await fetch(`http://${HOME_ASSISTANT_IP}:8123/api/webhook/${webhookName}`, { method: "POST" }).catch(() => {});
-      } catch(e) {}
+        await fetch(`http://${HOME_ASSISTANT_IP}:8123/api/webhook/${webhookName}`, { method: "POST" }).catch(() => { });
+      } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
     }
     // ==============================================================
 
@@ -1945,26 +1947,26 @@ app.post("/api/update/iot", async (req, res) => {
       if (brightness !== undefined) dev.brightness = brightness;
       dev.status = dev.state === "on" ? "Ativo" : "Desativado";
       if (dev.brightness !== undefined) {
-          dev.status += ` (${dev.brightness}%)`;
+        dev.status += ` (${dev.brightness}%)`;
       }
 
       // =============== MUNDO REAL (WEBSOCKET FIRST, FALLBACK TO WEBHOOK) ===============
       const domain = deviceId.split(".")[0] || "light";
       const service = state === "on" ? "turn_on" : "turn_off";
       const serviceData = brightness !== undefined ? { brightness_pct: brightness } : undefined;
-      
+
       const wsSuccessful = callHAService(deviceId, service, domain, serviceData);
 
       if (!wsSuccessful) {
         try {
           console.log(`[MUNDO REAL] Fallback: Alterando '${dev.name}' para estado: ${dev.state} local em ${HOME_ASSISTANT_IP}`);
           const realTargetUrl = dev.targetUrl.replace(/192\.168\.\d+\.\d+/g, HOME_ASSISTANT_IP);
-          await fetch(`${realTargetUrl}/api/webhook/action_${dev.id}`, { 
-             method: "POST", 
-             headers: { "Content-Type": "application/json" },
-             body: JSON.stringify({ state: dev.state, brightness: dev.brightness })
-          }).catch(() => {});
-        } catch(e) {}
+          await fetch(`${realTargetUrl}/api/webhook/action_${dev.id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ state: dev.state, brightness: dev.brightness })
+          }).catch(() => { });
+        } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
       }
       // ==============================================================
     }
@@ -1975,7 +1977,7 @@ app.post("/api/update/iot", async (req, res) => {
     if (state !== undefined) jarvisState.homeAssistant.lights.state = state;
   }
 
-  
+
   res.json({ success: true, homeState: jarvisState.homeAssistant });
 });
 
@@ -1985,13 +1987,13 @@ app.post("/api/homeassistant/config", (req, res) => {
   if (token !== undefined) jarvisState.homeAssistant.token = token;
   if (hiddenDevices !== undefined) jarvisState.homeAssistant.hiddenDevices = hiddenDevices;
   if (modesConfig !== undefined) jarvisState.homeAssistant.modesConfig = { ...jarvisState.homeAssistant.modesConfig, ...modesConfig };
-  
+
 
   // Reset socket connection on config change if IP/token changed
   if ((ip !== undefined || token !== undefined) && haWS) {
     try {
       haWS.close();
-    } catch(e) {}
+    } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
   }
   setTimeout(connectHomeAssistantWS, 1000);
 
@@ -2033,7 +2035,7 @@ app.get("/api/config/tokens", (_req, res) => {
 
 app.post("/api/config/tokens", (req, res) => {
   const { githubToken, haToken, telegramToken, googleClientId } = req.body;
-  
+
   // Save internal DB tokens
   if (githubToken !== undefined) {
     jarvisState.githubToken = githubToken;
@@ -2042,7 +2044,7 @@ app.post("/api/config/tokens", (req, res) => {
   if (haToken !== undefined) {
     jarvisState.homeAssistant.token = haToken;
   }
-  
+
 
   // Create or Update .env file with the requested env tokens
   const envUpdates: Record<string, string> = {};
@@ -2068,7 +2070,7 @@ app.post("/api/mcp/toggle", (req, res) => {
   const srv = jarvisState.mcpServers.find(s => s.id === id);
   if (srv) {
     srv.active = !srv.active;
-    
+
     console.log(`[MCP Server] Servidor '${srv.name}' alterado para estado: ${srv.active ? "Ativo" : "Inativo"}`);
   }
   res.json({ success: true, mcpServers: jarvisState.mcpServers });
@@ -2076,12 +2078,12 @@ app.post("/api/mcp/toggle", (req, res) => {
 
 app.post("/api/mcp", (req, res) => {
   const { jsonrpc, id, method, params } = req.body;
-  
+
   if (jsonrpc !== "2.0") {
-    return res.status(400).json({ 
-      jsonrpc: "2.0", 
-      id: id || null, 
-      error: { code: -32600, message: "Invalid Request: JSON-RPC version must be 2.0" } 
+    return res.status(400).json({
+      jsonrpc: "2.0",
+      id: id || null,
+      error: { code: -32600, message: "Invalid Request: JSON-RPC version must be 2.0" }
     });
   }
 
@@ -2094,7 +2096,7 @@ app.post("/api/mcp", (req, res) => {
       { id: "github", name: "Integração GitHub Host", desc: "Permite que a IA liste seus repositórios, abra PRs e revise código usando suas credenciais locais.", active: false },
       { id: "db", name: "Acesso PostgreSQL Nativo", desc: "Fornece metadados do schema e permite que a IA crie queries seguras atreladas ao banco em execução no Docker.", active: false },
     ];
-    
+
   }
 
   switch (method) {
@@ -2182,18 +2184,18 @@ app.post("/api/mcp", (req, res) => {
     case "tools/call": {
       const { name, arguments: toolArgs } = params || {};
       if (!name) {
-        return res.json({ 
-          jsonrpc: "2.0", 
-          id, 
-          error: { code: -32602, message: "Argumentos inválidos: 'name' é obrigatório" } 
+        return res.json({
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32602, message: "Argumentos inválidos: 'name' é obrigatório" }
         });
       }
 
       try {
         if (name === "search_notes") {
           const q = (toolArgs?.query || "").toLowerCase();
-          const found = jarvisState.obsidianNotes.filter(n => 
-             n.path.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
+          const found = jarvisState.obsidianNotes.filter(n =>
+            n.path.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
           );
           return res.json({
             jsonrpc: "2.0",
@@ -2202,14 +2204,14 @@ app.post("/api/mcp", (req, res) => {
               content: [
                 {
                   type: "text",
-                  text: `Resultados encontrados (${found.length}):\n` + 
-                        found.map(f => `- **${f.path}**: ${f.content.substring(0, 100)}...`).join("\n")
+                  text: `Resultados encontrados (${found.length}):\n` +
+                    found.map(f => `- **${f.path}**: ${f.content.substring(0, 100)}...`).join("\n")
                 }
               ]
             }
           });
-        } 
-        
+        }
+
         if (name === "read_note") {
           const notePath = toolArgs?.path;
           const note = jarvisState.obsidianNotes.find(n => n.path === notePath || n.path.endsWith(notePath));
@@ -2235,15 +2237,15 @@ app.post("/api/mcp", (req, res) => {
           const notePath = toolArgs?.path;
           const content = toolArgs?.content;
           const existingIdx = jarvisState.obsidianNotes.findIndex(n => n.path === notePath);
-          
+
           if (existingIdx >= 0) {
             jarvisState.obsidianNotes[existingIdx].content = content;
           } else {
             jarvisState.obsidianNotes.push({ path: notePath, content: content });
           }
-          
+
           syncNoteToVault(notePath, content);
-          
+
           return res.json({
             jsonrpc: "2.0",
             id,
@@ -2254,9 +2256,9 @@ app.post("/api/mcp", (req, res) => {
         }
 
         if (name === "get_finances") {
-          
-// MCP tool sync get_finances
-const transactions = jarvisState.finances || [];
+
+          // MCP tool sync get_finances
+          const transactions = jarvisState.finances || [];
 
           return res.json({
             jsonrpc: "2.0",
@@ -2266,7 +2268,7 @@ const transactions = jarvisState.finances || [];
                 {
                   type: "text",
                   text: `Transações encontradas (${transactions.length}):\n` +
-                        transactions.map(t => `- R$ ${t.value.toFixed(2)} (${t.category}): ${t.description}`).join("\n")
+                    transactions.map(t => `- R$ ${t.value.toFixed(2)} (${t.category}): ${t.description}`).join("\n")
                 }
               ]
             }
@@ -2295,15 +2297,15 @@ app.get("/api/system/health", async (_req, res) => {
     // Test Docker
     const startDocker = Date.now();
     try {
-       await new Promise<void>((resolve, reject) => {
-          exec("docker info", { timeout: 2000 }, (err) => {
-             if (err) reject(err);
-             else resolve();
-          });
-       });
-       dockerStatus = "online";
-       dockerLatency = Date.now() - startDocker;
-    } catch(e) {}
+      await new Promise<void>((resolve, reject) => {
+        exec("docker info", { timeout: 2000 }, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      dockerStatus = "online";
+      dockerLatency = Date.now() - startDocker;
+    } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 
     // Test Groq Cloud Connectivity
     const startGroq = Date.now();
@@ -2315,19 +2317,19 @@ app.get("/api/system/health", async (_req, res) => {
           signal: AbortSignal.timeout(2500)
         } as any);
         if (gRes.ok) {
-           groqStatus = "online";
-           groqLatency = Date.now() - startGroq;
+          groqStatus = "online";
+          groqLatency = Date.now() - startGroq;
         } else {
-           groqStatus = "invalid_key";
-           groqLatency = Date.now() - startGroq;
+          groqStatus = "invalid_key";
+          groqLatency = Date.now() - startGroq;
         }
       } else {
-         groqStatus = "missing_key";
+        groqStatus = "missing_key";
       }
-    } catch(e) {}
+    } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 
     const localDbLatency = Math.floor(Math.random() * 5) + 1; // 1-5ms
-    
+
     // Sincronizar estados dos containers Docker
     const containerStates: Record<string, string> = {
       n8n: "running",
@@ -2357,9 +2359,9 @@ app.get("/api/system/health", async (_req, res) => {
             resolve();
           });
         });
-      } catch (e) {}
+      } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
     }
-    
+
     res.json({
       docker: { status: dockerStatus, latency: dockerLatency },
       groq: { status: groqStatus, latency: groqLatency },
@@ -2400,7 +2402,7 @@ let updaterState = {
 // If repo is configured in db, load it
 if (!jarvisState.githubRepo) {
   jarvisState.githubRepo = "Vinicius-Christ/Jarvis-Project-";
-  
+
 } else {
   updaterState.githubRepo = jarvisState.githubRepo;
 }
@@ -2422,11 +2424,11 @@ function copyFolderRecursiveSync(src: string, dest: string) {
   for (const entry of entries) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
-    
+
     if (entry.name === "data" || entry.name === ".env" || entry.name === "node_modules" || entry.name === ".git") {
       continue; // Skip user database, env settings, packages and local git config
     }
-    
+
     if (entry.isDirectory()) {
       copyFolderRecursiveSync(srcPath, destPath);
     } else {
@@ -2451,23 +2453,23 @@ app.post("/api/system/update/config", (req, res) => {
     jarvisState.githubToken = githubToken;
     updaterState.githubToken = githubToken;
   }
-  
+
   res.json({ success: true, githubRepo: updaterState.githubRepo, githubToken: updaterState.githubToken });
 });
 
 app.get("/api/system/update/check", async (_req, res) => {
   updaterState.status = "checking";
   updaterState.logs = ["[UPDATE] Buscando atualizações no repositório remoto: " + updaterState.githubRepo];
-  
+
   try {
     const localCommit = getLocalCommitSync();
     updaterState.localCommit = localCommit;
-    
+
     const repoMatch = updaterState.githubRepo.split("/");
     if (repoMatch.length !== 2) {
       throw new Error("Formato de repositório inválido. Use 'usuario/nome-repo'.");
     }
-    
+
     // Config User-Agent header and standard timeout with optional token authorization
     const headers: Record<string, string> = {
       "User-Agent": "JARVIS-Core-Suite-v5.0-Updater",
@@ -2484,23 +2486,23 @@ app.get("/api/system/update/check", async (_req, res) => {
         signal: AbortSignal.timeout(10000)
       } as any
     );
-    
+
     if (!commitRes.ok) {
       throw new Error(`Git remoto não pôde ser lido. Status: ${commitRes.status}`);
     }
-    
+
     const commitData = (await commitRes.json()) as any;
     const remoteFullCommit = commitData.sha || "";
     const remoteCommit = remoteFullCommit.substring(0, 7) || "unknown";
     const commitMsg = commitData.commit?.message || "Sem descrição de alteração.";
-    
+
     updaterState.remoteCommit = remoteCommit;
     updaterState.remoteMessage = commitMsg;
-    
+
     updaterState.logs.push(`[UPDATE] Hash local: ${localCommit}`);
     updaterState.logs.push(`[UPDATE] Hash remoto: ${remoteCommit}`);
     updaterState.logs.push(`[UPDATE] Feed do commit: "${commitMsg}"`);
-    
+
     if (localCommit === remoteCommit) {
       updaterState.status = "up-to-date";
       updaterState.logs.push("[UPDATE] O seu Jarvis já possui todas as atualizações sincronizadas, senhor.");
@@ -2512,7 +2514,7 @@ app.get("/api/system/update/check", async (_req, res) => {
     updaterState.status = "error";
     updaterState.logs.push(`[ERRO] Falha ao verificar atualizações: ${error.message}`);
   }
-  
+
   res.json(updaterState);
 });
 
@@ -2540,16 +2542,16 @@ app.post("/api/system/update/run", (_req, res) => {
       if (useGit) {
         updaterState.progress = 20;
         updaterState.logs.push("[GIT] [PROCESSO] Efetuando pull das últimas mudanças do branch 'main'...");
-        
+
         await new Promise<void>((resolve, reject) => {
           const cleanToken = (updaterState.githubToken || "").replace(/[^a-zA-Z0-9_\-\/]/g, "");
           const cleanRepo = (updaterState.githubRepo || "").replace(/[^a-zA-Z0-9_\-\/]/g, "");
-          
+
           let repoUrlWithAuth = "origin";
           if (cleanToken && cleanRepo) {
             repoUrlWithAuth = `https://${cleanToken}@github.com/${cleanRepo}.git`;
           }
-          
+
           const cmd = repoUrlWithAuth === "origin" ? "git pull origin main" : `git pull "${repoUrlWithAuth}" main`;
           exec(cmd, { timeout: 30000 }, (err, stdout, stderr) => {
             const redact = (str: string) => cleanToken ? str.replace(new RegExp(cleanToken, "g"), "******") : str;
@@ -2578,12 +2580,12 @@ app.post("/api/system/update/run", (_req, res) => {
         const tempExtractDir = path.join(process.cwd(), "temp_extract");
 
         // If we have a token, we download from api.github.com/repos/.../zipball/main
-        const zipUrl = updaterState.githubToken 
+        const zipUrl = updaterState.githubToken
           ? `https://api.github.com/repos/${updaterState.githubRepo}/zipball/main`
           : `https://github.com/${updaterState.githubRepo}/archive/refs/heads/main.zip`;
 
         updaterState.logs.push(`[WEB] Efetuando download de ZIP seguro da stack: ${zipUrl.replace(updaterState.githubToken, "TOKEN_REDACTED")}`);
-        
+
         // Clean old updates temp files
         if (fs.existsSync(tempZipFile)) fs.unlinkSync(tempZipFile);
         if (fs.existsSync(tempExtractDir)) fs.rmSync(tempExtractDir, { recursive: true, force: true });
@@ -2646,9 +2648,9 @@ app.post("/api/system/update/run", (_req, res) => {
 
       // 2. Perform library checkout packages update (npm install)
       updaterState.progress = 70;
-      
+
       const isDevEnv = fs.existsSync(path.join(process.cwd(), "package.json"));
-      
+
       if (isDevEnv) {
         updaterState.logs.push("[NPM] [PROCESSO] Sincronizando novas dependências via 'npm install'...");
         await new Promise<void>((resolve, reject) => {
@@ -2683,7 +2685,7 @@ app.post("/api/system/update/run", (_req, res) => {
       updaterState.status = "completed";
       updaterState.logs.push("[SUCCESS] Sincronização concluída com êxito, senhor!");
       updaterState.logs.push("[REBOOT] Reiniciando servidor local do JARVIS em 3 segundos para aplicar as atualizações físicas...");
-      
+
       setTimeout(() => {
         console.log("[RESTART] Jarvis reiniciando via auto-update...");
         process.exit(0);
@@ -2707,7 +2709,7 @@ app.post("/api/update/obsidian", (req, res) => {
   } else {
     jarvisState.obsidianNotes.push({ path: notePath, content });
   }
-  
+
   syncNoteToVault(notePath, content);
   res.json({ success: true, notePath });
 });
@@ -2715,12 +2717,12 @@ app.post("/api/update/obsidian", (req, res) => {
 app.post("/api/delete/obsidian", (req, res) => {
   const { path: notePath } = req.body;
   jarvisState.obsidianNotes = jarvisState.obsidianNotes.filter(n => n.path !== notePath);
-  
+
   const absolutePath = path.resolve(process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault"), notePath);
   if (fs.existsSync(absolutePath)) {
     try {
       fs.unlinkSync(absolutePath);
-    } catch(e) {
+    } catch (e) {
       console.error("Erro ao deletar arquivo fisico do obsidian", e);
     }
   }
@@ -2747,31 +2749,31 @@ app.post("/api/iot/add", (req, res) => {
   };
 
   jarvisState.homeAssistant.devices.push(newDevice);
-  
+
   res.json({ success: true, device: newDevice, devices: jarvisState.homeAssistant.devices });
 });
 
 // Endpoint: Query real Docker Container Logs
 app.get("/api/docker/logs", (req, res) => {
   const container = (req.query.container as string) || "all";
-  
+
   if (container === "all" || container === "n8n") {
-     const filter = container !== "all" ? container : "";
-     exec(`docker compose logs ${filter} --tail 25`, { cwd: process.cwd(), timeout: 5000 }, (err, stdout, _stderr) => {
-        if (err && !stdout) {
-           return res.json({ logs: ["[ERRO] Não foi possível ler logs do docker compose local. O docker daemon está rodando?"] });
-        }
-        res.json({ logs: stdout.split('\n').filter(Boolean) });
-     });
+    const filter = container !== "all" ? container : "";
+    exec(`docker compose logs ${filter} --tail 25`, { cwd: process.cwd(), timeout: 5000 }, (err, stdout, _stderr) => {
+      if (err && !stdout) {
+        return res.json({ logs: ["[ERRO] Não foi possível ler logs do docker compose local. O docker daemon está rodando?"] });
+      }
+      res.json({ logs: stdout.split('\n').filter(Boolean) });
+    });
   } else if (container === "ollama-local") {
-     exec(`docker logs ollama --tail 25`, { timeout: 5000 }, (err, stdout, stderr) => {
-        if (err && !stdout) {
-           return res.json({ logs: ["[ERRO] Não foi possível ler logs do contêiner 'ollama'. Ele está rodando via Docker?"] });
-        }
-        res.json({ logs: (stdout + "\n" + stderr).split('\n').filter(Boolean) });
-     });
+    exec(`docker logs ollama --tail 25`, { timeout: 5000 }, (err, stdout, stderr) => {
+      if (err && !stdout) {
+        return res.json({ logs: ["[ERRO] Não foi possível ler logs do contêiner 'ollama'. Ele está rodando via Docker?"] });
+      }
+      res.json({ logs: (stdout + "\n" + stderr).split('\n').filter(Boolean) });
+    });
   } else {
-     res.json({ logs: [] });
+    res.json({ logs: [] });
   }
 });
 

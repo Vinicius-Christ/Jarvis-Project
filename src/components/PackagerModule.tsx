@@ -7,63 +7,57 @@ export default function PackagerModule() {
   const [version, setVersion] = useState('5.0.0');
   const [enableStartup, setEnableStartup] = useState(true);
 
-  const linuxScript = `#!/bin/bash
-# install_and_daemonize_jarvis.sh
-# Script gerador de Systemd Service para o ${appName} v${version}
+  const psScript = `# install_and_daemonize_jarvis.ps1
+# Script gerador de Startup Service para o ${appName} v${version} no Servidor Windows
 
-if [ "$EUID" -ne 0 ]; then
-  echo -e "\\e[33mAVISO: Execute como root (sudo ./deploy_jarvis.sh)\\e[0m"
-  exit 1
-fi
+Write-Host "Verificando permissões de administrador..."
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "Por favor, execute como Administrador." -ForegroundColor Yellow
+    Exit
+}
 
-APP_DIR="/opt/jarvis"
-echo "Copiando arquivos do JARVIS para $APP_DIR..."
-mkdir -p "$APP_DIR"
-cp -r ./* "$APP_DIR"
-cd "$APP_DIR"
+$APP_DIR = "C:\\JARVIS"
+Write-Host "Copiando arquivos do JARVIS para $APP_DIR..."
+if (-not (Test-Path -Path $APP_DIR)) {
+    New-Item -ItemType Directory -Path $APP_DIR -Force | Out-Null
+}
+Copy-Item -Path ".*\\*" -Destination $APP_DIR -Recurse -Force
 
-echo "Instalando dependências de produção do servidor CJS..."
-# Dependências necessárias para o backend rodar nativamente (como node-edge-tts)
+Set-Location -Path $APP_DIR
+
+Write-Host "Instalando dependências de produção do servidor CJS..."
 npm install --production
 
-# Criar o serviço Systemd
-SERVICE_FILE="/etc/systemd/system/jarvis.service"
+# Criar script de inicialização
+$SCRIPT_FILE = "C:\\JARVIS\\start.bat"
+$BAT_CONTENT = @"
+@echo off
+set NODE_ENV=production
+set PORT=3000
+node server.cjs
+"@
 
-echo "Gerando \${SERVICE_FILE}..."
-cat <<EOT > "\${SERVICE_FILE}"
-[Unit]
-Description=${appName} Backend Service
-After=network.target docker.service
-Requires=docker.service
+Set-Content -Path $SCRIPT_FILE -Value $BAT_CONTENT
 
-[Service]
-Type=simple
-User=root
-WorkingDirectory=$APP_DIR
-Environment="NODE_ENV=production"
-Environment="PORT=3000"
-# Executa o servidor CJS compilado silenciosamente
-ExecStart=/usr/bin/node $APP_DIR/server.cjs --background
-Restart=on-failure
-RestartSec=5
+${enableStartup ? `
+Write-Host "Criando atalho de inicialização no Windows..."
+$WshShell = New-Object -comObject WScript.Shell
+$Shortcut = $WshShell.CreateShortcut("$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\JarvisBackend.lnk")
+$Shortcut.TargetPath = $SCRIPT_FILE
+$Shortcut.WorkingDirectory = $APP_DIR
+$Shortcut.WindowStyle = 7
+$Shortcut.Save()
+` : ''}
 
-[Install]
-${enableStartup ? 'WantedBy=multi-user.target' : ''}
-EOT
+Write-Host "Iniciando o JARVIS..."
+Start-Process -FilePath $SCRIPT_FILE -WindowStyle Hidden
+Write-Host "JARVIS instalado e operante na porta 3000." -ForegroundColor Green
 
-echo "Recarregando daemons..."
-systemctl daemon-reload
-
-${enableStartup ? 'echo "Ativando inicialização com o sistema..." && systemctl enable jarvis.service' : ''}
-
-echo "Iniciando o JARVIS..."
-systemctl start jarvis.service
-systemctl status jarvis.service --no-pager
-
-echo "LevantandoContainers Docker (Chroma, etc)..."
+Write-Host "Levantando Containers Docker..."
 docker compose up -d
 
-echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:3000\\e[0m"
+Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" -ForegroundColor Green
 `;
 
   const handleBuild = () => {
@@ -75,9 +69,9 @@ echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:30
 
   const downloadScript = () => {
     const element = document.createElement("a");
-    const file = new Blob([linuxScript], {type: 'text/plain'});
+    const file = new Blob([psScript], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = "deploy_jarvis.sh";
+    element.download = "deploy_jarvis.ps1";
     document.body.appendChild(element); // Required for this to work in FireFox
     element.click();
   };
@@ -90,8 +84,8 @@ echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:30
       <div className="flex items-center gap-3 mb-6 border-b border-zinc-800 pb-4">
         <Package className="text-cyan-400 w-6 h-6 transition-opacity duration-300" />
         <div>
-          <h2 className="text-lg font-bold text-[var(--brand-light)] font-mono tracking-wide">COMPILADOR & DEPLOY NATIVO LINUX</h2>
-          <p className="text-[11px] text-zinc-400 font-sans">Gere scripts bash para empacotar o executável Node.js/CJS do JARVIS como um serviço background via Systemd no seu Servidor Linux.</p>
+          <h2 className="text-lg font-bold text-[var(--brand-light)] font-mono tracking-wide">COMPILADOR & DEPLOY NATIVO WINDOWS</h2>
+          <p className="text-[11px] text-zinc-400 font-sans">Gere scripts powershell para empacotar o executável Node.js/CJS do JARVIS como um serviço startup no seu Servidor Windows.</p>
         </div>
       </div>
 
@@ -126,9 +120,9 @@ echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:30
                 className="w-4 h-4 rounded mt-0.5 border-zinc-800 bg-zinc-900 text-cyan-500 focus:ring-cyan-500/20"
               />
               <div>
-                <span className="text-xs font-bold text-zinc-300 block uppercase tracking-wide group-hover:text-cyan-400 transition-colors">Iniciar automaticamente com o Sistema (Systemd)</span>
+                <span className="text-xs font-bold text-zinc-300 block uppercase tracking-wide group-hover:text-cyan-400 transition-colors">Iniciar automaticamente com o Sistema (Startup)</span>
                 <span className="text-[10px] text-zinc-500 font-mono block mt-0.5 leading-relaxed">
-                  Registra um <code className="text-zinc-400">.service</code> no systemd do Linux que inicializa o JARVIS invisivelmente em segundo plano (porta 3000) no momento em que o servidor ligar.
+                  Registra um atalho no Inicializar do Windows que inicializa o JARVIS invisivelmente em segundo plano (porta 3000) no momento em que o servidor ligar.
                 </span>
               </div>
             </label>
@@ -142,13 +136,13 @@ echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:30
               <li className="flex items-start gap-2">
                 <span className="text-cyan-500 font-bold">1.</span>
                 <span>
-                  Copie o script gerado <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">deploy_jarvis.sh</code> para o diretório <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">dist/</code> do seu projeto compilado.
+                  Copie o script gerado <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">deploy_jarvis.ps1</code> para o diretório <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">dist/</code> do seu projeto compilado.
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-cyan-500 font-bold">2.</span>
                 <span>
-                  Execute o bash script gerado como Root (sudo) no Linux. Ele moverá os arquivos para a pasta <code className="text-zinc-200">/opt/jarvis</code>.
+                  Execute o script powershell gerado como Administrador no Windows. Ele moverá os arquivos para a pasta <code className="text-zinc-200">C:\JARVIS</code>.
                 </span>
               </li>
               <li className="flex items-start gap-2">
@@ -172,7 +166,7 @@ echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:30
               className="flex items-center gap-2 bg-zinc-900 border border-zinc-750 hover:bg-zinc-800 text-zinc-300 px-4 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              Baixar .SH Script
+              Baixar .PS1 Script
             </button>
           </div>
         </div>
@@ -182,7 +176,7 @@ echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:30
           <div className="bg-zinc-900/40 rounded-t-xl px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
              <div className="flex items-center gap-2">
                <TerminalSquare className="w-4 h-4 text-cyan-400" />
-               <span className="text-xs font-mono font-bold text-zinc-400">deploy_jarvis.sh</span>
+               <span className="text-xs font-mono font-bold text-zinc-400">deploy_jarvis.ps1</span>
              </div>
              <div className="flex gap-1.5">
                <div className="w-2 h-2 rounded-full bg-zinc-800 border border-zinc-700"></div>
@@ -191,7 +185,7 @@ echo -e "\\e[32mImplantação finalizada com sucesso! Acesse http://localhost:30
              </div>
           </div>
           <div className="p-4 flex-1 font-mono text-[10px] leading-relaxed text-zinc-300 bg-zinc-950 overflow-y-auto max-h-96 md:max-h-none h-80 flex flex-col">
-             <pre className="whitespace-pre-wrap">{linuxScript}</pre>
+             <pre className="whitespace-pre-wrap">{psScript}</pre>
           </div>
         </div>
       </div>

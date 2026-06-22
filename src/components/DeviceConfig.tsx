@@ -520,14 +520,21 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                   </button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => loginGoogle()}
-                  className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold tracking-wider rounded uppercase hover:bg-emerald-500/10 transition flex items-center justify-center gap-1.5 cursor-pointer text-[10px] shadow-lg animate-pulse"
-                >
-                  <ArrowUpRight className="h-3.5 w-3.5 text-white" />
-                  CONECTAR CONTA GOOGLE
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => loginGoogle()}
+                    className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold tracking-wider rounded uppercase hover:bg-emerald-500/10 transition flex items-center justify-center gap-1.5 cursor-pointer text-[10px] shadow-lg animate-pulse"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5 text-white" />
+                    CONECTAR CONTA GOOGLE
+                  </button>
+                  {window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && (
+                    <div className="bg-amber-950/30 border border-amber-900/45 text-amber-300/90 font-mono text-[9px] p-2.5 rounded-xl leading-relaxed mt-1">
+                      ⚠️ <strong>Limitação do Google:</strong> O Google OAuth não aceita IPs privados (como <code>{window.location.hostname}</code>). Para autenticar com sucesso, abra o sistema em <strong>http://localhost:3000</strong> ou <strong>http://127.0.0.1:3000</strong> e conecte lá. O login persistirá.
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -603,9 +610,9 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               <div className="flex gap-2.5 items-start">
                 <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5.5 w-5.5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
                 <div>
-                  <span className="font-semibold block text-white text-[11px]">Sincronização Física Real do Obsidian Vault com ChromaDB</span>
+                  <span className="font-semibold block text-white text-[11px]">Sincronização Física Real do Obsidian Vault no Contexto</span>
                   <p className="text-[11px] text-zinc-400">
-                    O n8n rodando no Docker possui um nó gatilho chamado <code className="text-pink-400 font-mono">Local File Trigger</code> que monitora a sua pasta <code className="text-yellow-400 font-mono">~/jarvis-vault</code> no Linux. Sempre que você alterar suas anotações ou depositar notas financeiras, o n8n dividirá e processará a busca vetorial via nomic-embed, gravando automaticamente no ChromaDB.
+                    O ecossistema detecta as anotações geradas via aplicativo Obsidian salvas em texto puro Markdown na pasta <code className="text-yellow-400 font-mono">C:\jarvis-vault</code> no Windows e constrói o prompt injetando-os perfeitamente junto ao modelo local e online, orquestrando um RAG nativo e sem dependência extra.
                   </p>
                 </div>
               </div>
@@ -665,9 +672,9 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     Ligando o Túnel no seu Computador
                   </h5>
                   <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
-                    <li>O site agora mostra um código de instalação. Olhe as caixinhas de sistema em cima e clique em <strong>Debian</strong> (ou a distribuição Linux que você está usando).</li>
+                    <li>O site agora mostra um código de instalação. Olhe as caixinhas de sistema em cima e clique em <strong>Windows</strong>.</li>
                     <li>No quadrado cinza embaixo, olhe pro lado direito dele e <b>clique no desenho de 2 folhinhas</b>. Isso vai "Copiar" esse script grandão para a memória.</li>
-                    <li>Abra o terminal do seu servidor Linux (SSH) como root/sudo.</li>
+                    <li>Abra o PowerShell no seu Servidor Windows como Administrador.</li>
                     <li>Cole o comando completo e aperte <strong>"ENTER"</strong> no teclado. Ele irá baixar o pacote e instalar o cloudflared daemon.</li>
                     <li>Espere baixar e instalar. Volte pro site do Cloudflare: se lá embaixo estiver escrito <strong><span className="text-emerald-400">Connected</span></strong> (Conectado), sorria! Você conseguiu fazer o túnel! Clique em <strong>Next</strong>.</li>
                   </ul>

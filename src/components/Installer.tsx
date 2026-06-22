@@ -92,7 +92,7 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
           <div className="grid grid-cols-2 gap-1 px-1 text-[9px] text-zinc-400">
             <div className="flex items-center gap-1">
               <span className={`h-1.5 w-1.5 rounded-full ${modules.docker.progress >= 20 ? "bg-[var(--brand-light)] " : "bg-zinc-800"}`}></span>
-              <span>Vector DB Chroma</span>
+              <span>Proxy / Gateway</span>
             </div>
             <div className="flex items-center gap-1">
               <span className={`h-1.5 w-1.5 rounded-full ${modules.docker.progress >= 50 ? "bg-[var(--brand-light)] animate-ping" : "bg-zinc-800"}`}></span>
@@ -158,7 +158,7 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
               </span>
             </div>
             <div className="flex justify-between items-center bg-black/40 px-2 py-0.5 rounded border border-zinc-900/50">
-              <span>nomic-embed-text (Groq)</span>
+              <span>Módulo Extração Contexto Local</span>
               <span className="text-lime-400">
                  Cloud API RAG
               </span>
@@ -176,7 +176,7 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
             <strong className="block text-[11px] text-[var(--brand-light)]">Cérebro Obsidian Vault (RAG Ingestion Automatizada):</strong>
             <span className="text-[10px] text-zinc-400 leading-relaxed block">
               {modules.obsidian.status === "completed" 
-                ? "✓ 5 arquivos Markdown gerados e sincronizados com ChromaDB local." 
+                ? "✓ 5 arquivos Markdown gerados e detectados para injestão no RAG." 
                 : modules.obsidian.status === "running"
                   ? "Moldando /perfil, /financas, /casa e rotinas no diretório de conhecimento..."
                   : "Aguardando estruturação do diretório de notas."}
@@ -241,18 +241,6 @@ export default React.memo(function Installer({ installerState, onRefresh }: Inst
   const dockerComposeYaml = `version: "3.8"
 
 services:
-  # ChromaDB - Vector database for RAG
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: jarvis_chromadb
-    ports:
-      - "8000:8000"
-    volumes:
-      - chroma_data:/chroma/data
-    environment:
-      - ALLOW_RESET=TRUE
-    restart: unless-stopped
-
   # n8n - Automation & Workflow engine
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -266,7 +254,7 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
     volumes:
       - n8n_data:/home/node/.n8n
-      - ./jarvis-vault:/data/vault:ro # Mount Obsidian vault (Read-Only)
+      - C:/jarvis-vault:/data/vault:ro # Mount Obsidian vault (Read-Only)
     restart: unless-stopped
 
   # Home Assistant - Smart Home IoT hub
@@ -306,70 +294,58 @@ services:
     restart: unless-stopped
 
 volumes:
-  chroma_data:
   n8n_data:
   ha_config:
   pg_data:
 `;
 
-  // Real Linux Bash Script to install everything automatically
-  const bashScript = `#!/bin/bash
-# install_jarvis_suite.sh
-# Script de Instalação e Configuração Automatizada do Ecossistema JARVIS v5.0
-# Execute este arquivo localmente no terminal do Linux como root ou sudo
+  // Script de Instalação e Configuração para Windows (PowerShell)
+  const psScript = `# install_jarvis_suite.ps1
+# Script de Instalação e Configuração Automatizada do Ecossistema JARVIS v5.0 para Servidor Windows
+# Execute localmente no PowerShell como Administrador
 
-echo -e "\\e[36m=========================================================\\e[0m"
-echo -e "\\e[36m          JARVIS AUTOMATED INSTALLER (LINUX)             \\e[0m"
-echo -e "\\e[36m=========================================================\\e[0m"
-echo "Este script irá instalar o Docker e estruturar o Obsidian no seu Servidor Linux."
+Write-Host "=========================================================" -ForegroundColor Cyan
+Write-Host "         JARVIS AUTOMATED INSTALLER (WINDOWS)            " -ForegroundColor Cyan
+Write-Host "=========================================================" -ForegroundColor Cyan
+Write-Host "Criando estrutura do Obsidian no Servidor Windows..."
 
-# 1. Verificar privilégios de root
-if [ "$EUID" -ne 0 ]; then
-  echo -e "\\e[33mAVISO: Por favor, execute este script como root (sudo ./install_jarvis_suite.sh) para instalar os softwares.\\e[0m"
-  exit 1
-fi
+# 1. Verificar privilégios de Administrador
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "AVISO: Por favor, execute este script como Administrador para configurar o sistema corretamente." -ForegroundColor Yellow
+    Exit
+}
 
-# 2. Atualizar repositórios e instalar dependências essenciais
-echo -e "\\e[33m[1/5] Atualizando pacotes APT e instalando utilitários essenciais...\\e[0m"
-apt-get update && apt-get install -y curl wget git jq unzip nodejs npm
+# 2. Estruturar o Obsidian Vault no Windows
+Write-Host "[1/2] Estruturando Vault do Sistema no drive C:\\jarvis-vault..." -ForegroundColor Yellow
+$VaultPath = "C:\\jarvis-vault"
 
-# 3. Instalar softwares (Docker)
-echo -e "\\e[33m[2/5] Baixando e Instalando Softwares Core no Servidor...\\e[0m"
+$directories = @(
+    "perfil", "agenda", "financas", "casa", "conversas", "aprendizados", "arquivos-indexados", "rotinas-pc"
+)
 
-# Instalar Docker
-echo -e "\\e[36mInstalando Docker Engine...\\e[0m"
-if ! command -v docker &> /dev/null; then
-  curl -fsSL https://get.docker.com -o get-docker.sh
-  sh get-docker.sh
-  usermod -aG docker $SUDO_USER
-else
-  echo "Docker já instalado."
-fi
+foreach ($dir in $directories) {
+    $path = Join-Path -Path $VaultPath -ChildPath $dir
+    if (-not (Test-Path -Path $path)) {
+        New-Item -ItemType Directory -Path $path -Force | Out-Null
+    }
+}
 
-# 4. Criar estrutura do Obsidian Vault
-echo -e "\\e[33m[3/5] Estruturando Vault do Sistema no diretório ~/jarvis-vault...\\e[0m"
-VAULT_PATH="/home/$SUDO_USER/jarvis-vault"
-if [ -z "$SUDO_USER" ]; then VAULT_PATH="$HOME/jarvis-vault"; fi
-
-mkdir -p "$VAULT_PATH"/{perfil,agenda,financas,casa,conversas,aprendizados,arquivos-indexados,rotinas-pc}
-
-# Criar arquivo de Perfil do Usuário padrão com dados estruturados
-cat <<EOT > "$VAULT_PATH/perfil/usuario.md"
+# 3. Criar arquivo de Perfil do Usuário
+$profileContent = @"
 # Perfil do Usuário
 
 Nome: Usuário Mestre
 Tom preferido: Respeitoso, inteligente, direto, estilo Mordomo / JARVIS
 Horário produtivo principal: 19:00 - 23:00
 Foco atual: Automação residencial de luzes e ar condicionado, e controle financeiro pessoal.
-EOT
+"@
 
-chown -R $SUDO_USER:$SUDO_USER "$VAULT_PATH"
-echo -e "\\e[90mDiretórios criados em $VAULT_PATH\\e[0m"
+$userFilePath = Join-Path -Path $VaultPath -ChildPath "perfil\\usuario.md"
+Set-Content -Path $userFilePath -Value $profileContent -Encoding UTF8
 
-echo -e "\\e[32m[4/5] Ambiente configurado para Deploy Automático.\\e[0m"
-
-echo -e "\\e[32m[5/5] Docker Instalado!\\e[0m"
-echo -e "\\e[32mInstalação concluída com sucesso! Para aplicar os grupos do Docker, faça logout e login novamente.\\e[0m"
+Write-Host "Diretórios criados em $VaultPath" -ForegroundColor DarkGray
+Write-Host "[2/2] Estrutura configurada com sucesso!" -ForegroundColor Green
 `;
 
   return (
@@ -433,7 +409,7 @@ echo -e "\\e[32mInstalação concluída com sucesso! Para aplicar os grupos do D
                 />
                 <label htmlFor="detect-existing-check" className="text-xs text-zinc-300 font-sans leading-relaxed cursor-pointer select-none">
                   <span className="font-semibold text-white block">Reutilizar e Pular Passos Manuais Concluídos (Etapas 1 a 4)</span>
-                  Identifiquei que você já iniciou a configuração manual do ecossistema. Ative esta opção para que o instalador do JARVIS faça um scanner de ambiente, preserve as pastas <code className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-[var(--brand-light,rgba(6,182,212))] font-mono text-[10px]">~/jarvis-vault</code> e contêineres Docker, evitando downloads lentos e sobrescritas de arquivos!
+                  Identifiquei que você já iniciou a configuração manual do ecossistema. Ative esta opção para que o instalador do JARVIS faça um scanner de ambiente, preserve as pastas <code className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-[var(--brand-light,rgba(6,182,212))] font-mono text-[10px]">C:\jarvis-vault</code> e contêineres Docker, evitando downloads lentos e sobrescritas de arquivos!
                 </label>
               </div>
             </div>
@@ -556,7 +532,7 @@ echo -e "\\e[32mInstalação concluída com sucesso! Para aplicar os grupos do D
                 <div className="flex gap-2.5 items-start bg-zinc-950/30 p-2.5 rounded-lg border border-zinc-900">
                   <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5 w-5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
                   <div>
-                    <strong className="text-zinc-200">Prepare o Ambiente Linux:</strong> Abra o Terminal do Servidor Linux e execute o script bash auto-instalador como sudo. Ele instalará Docker e Obsidian no Linux nativamente. Em seguida adicione a Groq API Key nas opções e pronto, o sistema rodará 100% cloud-LLM usando Node/Systemd.
+                    <strong className="text-zinc-200">Prepare o Ambiente Windows:</strong> Abra o PowerShell do Servidor Windows como Administrador e execute o script auto-instalador. Ele instalará as pastas do Obsidian nativamente e configurará a base. Em seguida suba os serviços no Docker e pronto.
                   </div>
                 </div>
                 <div className="flex gap-2.5 items-start bg-zinc-950/30 p-2.5 rounded-lg border border-zinc-900">
@@ -596,9 +572,9 @@ echo -e "\\e[32mInstalação concluída com sucesso! Para aplicar os grupos do D
             {activeTab === "script" && (
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-mono text-zinc-500">Linux Bash Auto-Installer</span>
+                  <span className="text-[10px] font-mono text-zinc-500">Windows PowerShell Auto-Installer</span>
                   <button
-                    onClick={() => handleCopy(bashScript)}
+                    onClick={() => handleCopy(psScript)}
                     className="flex items-center gap-1 text-[10px] font-mono text-[var(--brand-light)] hover:text-white transition cursor-pointer"
                   >
                     {copiedText ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -606,7 +582,7 @@ echo -e "\\e[32mInstalação concluída com sucesso! Para aplicar os grupos do D
                   </button>
                 </div>
                 <pre className="bg-black/50 p-3 rounded-lg overflow-x-auto text-[9px] font-mono text-zinc-400 h-64 leading-tight select-text scrollbar-thin scrollbar-thumb-zinc-800">
-                  {bashScript}
+                  {psScript}
                 </pre>
               </div>
             )}

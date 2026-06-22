@@ -42,7 +42,6 @@ import JarvisAssistant from "./components/JarvisAssistant";
 import LogsDocker from "./components/LogsDocker";
 import DeviceConfig from "./components/DeviceConfig";
 import SystemUpdater from "./components/SystemUpdater";
-import ChromaInspector from "./components/ChromaInspector";
 import CUDATelemetryHUD from "./components/CUDATelemetryHUD";
 import SSHDiagnostics from "./components/SSHDiagnostics";
 import MCPSettings from "./components/MCPSettings";
@@ -102,7 +101,6 @@ export default function App() {
     | "obsidian"
     | "logs"
     | "updates"
-    | "chromadb"
     | "cudautil"
     | "mcp"
     | "tokens"
@@ -1524,10 +1522,6 @@ export default function App() {
                         <span>Status de Conexão</span>
                         <span className="text-[var(--brand-primary)]">Túnel Ativo</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>ChromaDB Port</span>
-                        <span className="text-zinc-300">8000</span>
-                      </div>
                     </div>
                   </div>
 
@@ -2213,16 +2207,6 @@ export default function App() {
                   </div>
                   <div className="flex flex-col p-2 gap-1 font-mono text-xs">
                     <button
-                      onClick={() => setSettingsTab("chromadb")}
-                      className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${
-                        settingsTab === "chromadb"
-                          ? "bg-cyan-500/20 text-cyan-400 font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)] border border-cyan-500/30"
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
-                      }`}
-                    >
-                      🧠 Memória ChromaDB
-                    </button>
-                    <button
                       onClick={() => setSettingsTab("obsidian")}
                       className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${
                         settingsTab === "obsidian"
@@ -2390,8 +2374,6 @@ export default function App() {
                   </div>
                 )}
 
-                {settingsTab === "chromadb" && <ChromaInspector />}
-
                 {settingsTab === "mcp" && <MCPSettings />}
 
                 {settingsTab === "cudautil" && <CUDATelemetryHUD />}
@@ -2414,18 +2396,18 @@ export default function App() {
                 {/* Quick specifications left menu */}
                 <div className="holographic-card p-5 space-y-4">
                   <h3 className="text-xs font-mono font-bold tracking-wider text-[var(--brand-light)] uppercase border-l border-[var(--brand-primary)] pl-2">
-                    Guia Definitivo: Deploy Completo (Linux)
+                    Guia Definitivo: Deploy Completo (Windows)
                   </h3>
 
                   <div className="font-sans text-[11px] space-y-4">
                     <div>
                       <strong className="text-white block mb-1 text-xs">
-                        1. Deploy Inicial no Servidor (Linux/WSL)
+                        1. Deploy Inicial no Servidor (Windows)
                       </strong>
                       <p className="text-zinc-500 mb-2 leading-relaxed">
-                        Abra o terminal do seu servidor. Atualize o repositório com <code className="bg-zinc-950 px-1 py-0.5 rounded text-white font-mono">git pull</code>. Em seguida, na aba lateral "Implantação/Setup", clique em "Baixar .SH Script". Envie este script para a raiz do projeto no servidor e execute: <br/>
-                        <code className="bg-zinc-950 px-1 py-0.5 rounded text-[var(--brand-light)] font-mono">sudo bash deploy_jarvis.sh</code><br/>
-                        Isso instalará as dependências do Node, o Docker e iniciará o backend. Acesse a porta <strong>3000</strong> no navegador.
+                        Abra o PowerShell do seu servidor. Atualize o repositório com <code className="bg-zinc-950 px-1 py-0.5 rounded text-white font-mono">git pull</code>. Em seguida, na aba lateral "Instalador", baixe o AutoInstaller.ps1 e execute como Administrador. <br/>
+                        <code className="bg-zinc-950 px-1 py-0.5 rounded text-[var(--brand-light)] font-mono">./AutoInstaller.ps1</code><br/>
+                        Isso configurará a pasta do Obsidian. Depois suba os serviços no Docker e inicie o backend usando Node. Acesse a porta <strong>3000</strong> no navegador.
                       </p>
                     </div>
                     <div>
@@ -2433,7 +2415,7 @@ export default function App() {
                         2. Banco de Dados e Containers
                       </strong>
                       <p className="text-zinc-500 mb-2 leading-relaxed">
-                        O script <code className="text-zinc-400 font-mono">.sh</code> roda o comando <code className="text-[10px] text-zinc-400 bg-zinc-950 px-1">docker compose up -d</code> que "levanta" as bases de dados nos bastidores. O banco de dados PostgreSQL guardará suas memórias de longo prazo nativamente e o servidor Vector ChromaDB processará a linguagem em RAG - tudo já orquestrado internamente para não haver necessidade de configuração manual.
+                        O script <code className="text-zinc-400 font-mono">.ps1</code> gerencia a ativação que "levanta" as bases de dados nos bastidores. O banco de dados PostgreSQL guardará suas tabelas relacionais de longo prazo nativamente e o repositório Obsidian atuará injetando contexto no RAG do modelo principal - tudo já orquestrado internamente para não haver necessidade de configuração manual extra.
                       </p>
                     </div>
                     <div>
@@ -2457,7 +2439,7 @@ export default function App() {
                         5. Conectando a Segunda Memória (Obsidian)
                       </strong>
                       <p className="text-zinc-500 leading-relaxed">
-                        Agora instale o <a href="https://obsidian.md" target="_blank" className="text-rose-400 underline">Obsidian</a> no seu PC e crie um cofre vazio. No JARVIS, vá em <strong>Configurações Globais</strong>, procure "Caminho do Vault" e indique o path (ex <code className="text-[10px] text-zinc-400">/home/user/documentos/jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
+                        Agora instale o <a href="https://obsidian.md" target="_blank" className="text-rose-400 underline">Obsidian</a> no seu PC usando a pasta que configuramos (ex <code className="text-[10px] text-zinc-400">C:\jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
                       </p>
                     </div>
                   </div>
@@ -2519,15 +2501,13 @@ export default function App() {
                           {hardwareStats?.cpu || "Notebook (Servidor)"}.
                         </li>
                         <li>
-                          Usa o gerenciador <strong>apt de pacotes</strong> do
-                          Linux (Debian/Ubuntu) para instalar o Docker CLI e Docker Compose de forma
-                          silenciosa.
+                          Usa o <strong>PowerShell</strong> do Windows para instalar a estrutura do cofre e criar atalhos.
                         </li>
                         <li>
                           Cria a estrutura de pastas do seu Obsidian Vault no
                           caminho físico{" "}
                           <code className="text-yellow-400 text-[10px]">
-                            ~/jarvis-vault
+                            C:\jarvis-vault
                           </code>
                           .
                         </li>
@@ -2563,7 +2543,7 @@ export default function App() {
                         </div>
                         <div className="bg-zinc-950 p-2.5 rounded border border-zinc-900">
                           <strong className="text-[var(--brand-light)] block mb-0.5">
-                            RAG & Google Sheets / ChromaDB
+                            RAG & Google Sheets / Contexto
                           </strong>
                           O n8n monitora o ecossistema. Qualquer transação ou anotação
                           é processada e estruturada para sincronização e vetorização.
@@ -2636,7 +2616,7 @@ export default function App() {
             <span>SISTEMA: ONLINE</span>
             <span>SINAL TELEGRAM BOT: AGUARDANDO POLCHING</span>
             <span>DOCKER SUBNET: 172.18.0.0/16</span>
-            <span>LOCAL DEPLOYS: ~/jarvis-vault</span>
+            <span>LOCAL DEPLOYS: C:\jarvis-vault</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

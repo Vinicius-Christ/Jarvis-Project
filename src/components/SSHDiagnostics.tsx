@@ -24,9 +24,9 @@ interface ActionConfig {
 
 export default function SSHDiagnostics() {
   const [logs, setLogs] = useState<string[]>([
-    "vinicius@RyzenDesktop:~$ _",
-    "[SSH] Aguardando acionamento tático...",
-    "Sistemas operacionais de automação ativos sobre WSL2 Debian local host."
+    "PS C:\\Users\\Admin> _",
+    "[POWERSHELL] Aguardando acionamento tático...",
+    "Sistemas operacionais de automação ativos sobre Windows local host."
   ]);
   const [runningAction, setRunningAction] = useState<string | null>(null);
   const [terminalSearch, setTerminalSearch] = useState("");
@@ -35,7 +35,7 @@ export default function SSHDiagnostics() {
     {
       id: "clean_cache",
       name: "Limpar Cache de RAM",
-      description: "Libera caches inativos de inodes e dentry no kernel Linux/WSL2.",
+      description: "Libera caches inativos de processos em espera no Windows.",
       icon: Cpu,
       color: "border-cyan-800 text-cyan-400 bg-cyan-950/20 hover:border-cyan-500"
     },

@@ -204,7 +204,6 @@ app.get("/api/public/config", (req, res) => {
 const DB_FILE = path.join(process.cwd(), "data", "db.json");
 
 export interface DbSchema {
-  chromaMemories: any[];
   githubRepo: string;
   githubToken: string;
   systemActive: boolean;
@@ -244,14 +243,12 @@ export interface DbSchema {
 
 // Define basic initial DB
 let db: DbSchema = {
-  chromaMemories: [] as any[],
   githubRepo: "",
   githubToken: "",
   googleSheetUrl: "https://docs.google.com/spreadsheets/d/13wmGhejq3V78ZHSHl-SxayDZM7pk9s3qYRPVtZnbhgg/edit?usp=sharing",
   systemActive: true,
   activePersona: "friday",
   containerMockStates: {
-    chromadb: "running",
     n8n: "running",
     homeassistant: "running",
     postgres: "running",
@@ -353,10 +350,10 @@ function saveDBSync() {
   }
 }
 
-// Write the note to physical disk in Linux if `jarvis-vault` mapped
+// Write the note to physical disk in Windows
 function syncNoteToVault(notePath: string, content: string) {
   try {
-    const vaultDir = path.resolve(process.cwd(), "jarvis-vault");
+    const vaultDir = "C:\\jarvis-vault";
     if (!fs.existsSync(vaultDir)) {
       fs.mkdirSync(vaultDir, { recursive: true });
     }
@@ -366,7 +363,7 @@ function syncNoteToVault(notePath: string, content: string) {
        safePath += ".md";
     }
     const fullPath = path.resolve(vaultDir, safePath);
-    if (!fullPath.startsWith(vaultDir)) {
+    if (!fullPath.toLowerCase().startsWith(vaultDir.toLowerCase())) {
       console.warn(`[JARVIS VAULT] Tentativa de escape do diretório do vault bloqueada: ${notePath}`);
       return;
     }
@@ -1039,14 +1036,13 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
    - Ex Apagar Meta Financeira: <command type="GoalDelete" />
    - Ex Apagar Nota do Cérebro: <command type="ObsidianDelete" path="/caminho/do/arquivo.md" />
 7. Seja técnico, mas breve.
-8. Integração com Google Sheets (Base de Memória Central): Agora o cérebro de longo prazo será relacional no Google Sheets. Crie suas próprias relações de tabelas. Para salvar informações permanentemente, use o formato estruturado:
-\`\`\`sheets-update
-spreadsheet: Memória Central
-sheet: <nome-da-aba, ex: Regras, Finanças, Preferências>
-rows:
-- Coluna1: Valor1 | Coluna2: Valor2
+8. Integração com Obsidian (Cérebro Central): Guarde as informações permanentes (como regras, gostos do usuário) em arquivos Markdown. Para atualizar a memória, use a seguinte sintaxe invisível:
+\`\`\`obsidian-update
+path: /caminho/do/arquivo.md
+content:
+Conteúdo salvo em markdown
 \`\`\`
-Isto criará abas e preencherá as colunas dinamicamente, substituindo a antiga integração Obsidian.
+Isto criará ou sobreporá o arquivo dentro de jarvis-vault sincronizando o sistema RAG do próprio banco interno.
 `;
   contextPrompt += `Mensagem do Usuário: ${message}`;
   let replyText = "";
@@ -1075,15 +1071,14 @@ DIRETRIZES CRÍTICAS PARA RECONHECIMENTO DE COMPROMISSOS E FINANÇAS REAIS:
    - Para apagar um compromisso específico pelo título: <command type="AgendaDelete" title="Nome do Evento" />
    - Para apagar TODAS as finanças, emita: <command type="FinanceDelete" all="true" />
    - Para apagar uma finança específica pela descrição: <command type="FinanceDelete" description="Descrição do Gasto" />
-5. INTEGRAÇÃO GOOGLE SHEETS: Quando o usuário mandar anotar ou salvar compromissos, tarefas, receitas, despesas ou regras, use a estrutura abaixo para criar e sincronizar de verdade as abas e colunas da planilha vazia:
-\`\`\`sheets-update
-spreadsheet: Memória Central
-sheet: <nome-da-aba, ex: Regras, Finanças, Preferências, Agenda>
-rows:
-- Coluna1: Valor1 | Coluna2: Valor2 | ...
+5. INTEGRAÇÃO OBSIDIAN (CÉREBRO): Guarde conhecimentos, resumos e gostos do usuário gerando arquivos markdown dentro de jarvis-vault. Para escrever ou subscrever algo, gere invisivelmente:
+\`\`\`obsidian-update
+path: /assunto/arquivo.md
+content:
+Texto a ser salvo
 \`\`\`
-- Use nomes lógicos para as páginas/abas (ex: "Finanças" para transações e despesas, "Agenda" para compromissos, "Preferências" para regras gerais).
-- O sistema criará as abas e colunas correspondentes dinamicamente se a planilha estiver vazia.
+- Use diretórios lógicos (ex: /financas/historico.md, /regras/comportamento.md).
+- O sistema escreverá no HD e lerá no RAG, ligando os nós como neurônios.
 6. Tom de voz: Aja de forma fluida, inteligente, prestativa e formal (tratando por "senhor" ou "Mestre"). Evite rodeios e narrações burocráticas sobre as tags XML. Emita apenas os comandos úteis de forma limpa e invisível.`;
 
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -1320,17 +1315,8 @@ let staticHardware: { cpu: string; gpus: any[] } | null = null;
 let cachedHardware: any = null;
 let lastHardwareFetchTime = 0;
 
-// Initialize chromaMemories if not present in db
-if (!db.chromaMemories) {
-  db.chromaMemories = [
-    { id: "mem_1", text: "Usuário prefere a temperatura do ar-condicionado em 22°C para focar.", category: "Preferência", timestamp: new Date(Date.now() - 36000000).toISOString(), tokens: 14, embeddingUrl: "nomic-embed-text" },
-    { id: "mem_2", text: "Aniversário do usuário é no dia 12 de Outubro.", category: "Pessoal", timestamp: new Date(Date.now() - 30000000).toISOString(), tokens: 9, embeddingUrl: "nomic-embed-text" },
-    { id: "mem_3", text: "O servidor Proxmox hospeda instâncias secundárias do Home Assistant e Postgres.", category: "Infraestrutura", timestamp: new Date(Date.now() - 25000000).toISOString(), tokens: 18, embeddingUrl: "nomic-embed-text" },
-    { id: "mem_4", text: "A placa gráfica NVIDIA GTX 1650 é usada para inferência CUDA local pesada.", category: "Hardware", timestamp: new Date(Date.now() - 20000000).toISOString(), tokens: 15, embeddingUrl: "nomic-embed-text" },
-    { id: "mem_5", text: "Usuário prefere respostas concisas e tratamento profissional formal (Senhor).", category: "Instrução", timestamp: new Date(Date.now() - 10000000).toISOString(), tokens: 12, embeddingUrl: "nomic-embed-text" }
-  ];
-  saveDB();
-}
+// Initialize db entries as needed
+
 
 app.get("/api/system/hardware", async (_req, res) => {
   const now = Date.now();
@@ -1475,67 +1461,6 @@ app.get("/api/system/hardware", async (_req, res) => {
   }
 });
 
-// ChromaDB Vector Memories endpoints
-app.get("/api/chroma/memories", (_req, res) => {
-  if (!db.chromaMemories) {
-    db.chromaMemories = [];
-  }
-  res.json(db.chromaMemories);
-});
-
-app.post("/api/chroma/memories", (req, res) => {
-  const { text, category } = req.body;
-  if (!text) return res.status(400).json({ error: "Missing memory text" });
-  
-  const newMemory = {
-    id: `mem_${Date.now()}`,
-    text,
-    category: category || "Geral",
-    timestamp: new Date().toISOString(),
-    tokens: Math.floor(text.split(/\s+/).length * 1.3),
-    embeddingUrl: "nomic-embed-text"
-  };
-  
-  if (!db.chromaMemories) db.chromaMemories = [];
-  db.chromaMemories.push(newMemory);
-  saveDB();
-  res.json({ success: true, memory: newMemory });
-});
-
-app.put("/api/chroma/memories/:id", (req, res) => {
-  const { id } = req.params;
-  const { text, category } = req.body;
-  
-  if (!db.chromaMemories) db.chromaMemories = [];
-  const memory = db.chromaMemories.find((m: any) => m.id === id);
-  if (!memory) return res.status(404).json({ error: "Memory not found" });
-  
-  if (text !== undefined) {
-    memory.text = text;
-    memory.tokens = Math.floor(text.split(/\s+/).length * 1.3);
-  }
-  if (category !== undefined) memory.category = category;
-  memory.timestamp = new Date().toISOString();
-  
-  saveDB();
-  res.json({ success: true, memory });
-});
-
-app.delete("/api/chroma/memories/:id", (req, res) => {
-  const { id } = req.params;
-  if (!db.chromaMemories) db.chromaMemories = [];
-  
-  const initialLength = db.chromaMemories.length;
-  db.chromaMemories = db.chromaMemories.filter((m: any) => m.id !== id);
-  
-  if (db.chromaMemories.length === initialLength) {
-    return res.status(404).json({ error: "Memory not found" });
-  }
-  
-  saveDB();
-  res.json({ success: true });
-});
-
 // Maintenance controls execution SSH
 app.post("/api/maintenance/execute", (req, res) => {
   const { action } = req.body;
@@ -1642,7 +1567,7 @@ app.post("/api/install/trigger", (req, res) => {
         
         // Setup Docker Containers partly completed
         db.installer.logs.push("[DOCKER] Checando portas de containers...");
-        db.installer.logs.push("[DOCKER] Container 'jarvis_chromadb' na porta 8000 já existe. Vinculando serviços.");
+        db.installer.logs.push("[DOCKER] Container 'jarvis_n8n' na porta 5678 já existe. Vinculando serviços.");
       } else if (step === 80) {
         step = 95;
         db.installer.progress = 95;
@@ -1720,7 +1645,6 @@ app.post("/api/system/toggle", async (_req, res) => {
   
   if (!db.containerMockStates) {
     db.containerMockStates = {
-      chromadb: "running",
       n8n: "running",
       homeassistant: "running",
       postgres: "running",
@@ -1832,7 +1756,6 @@ app.post("/api/docker/action", (req, res) => {
   // Sincronizar o estado simulado local para que o preview na nuvem funcione perfeitamente
   if (!db.containerMockStates) {
     db.containerMockStates = {
-      chromadb: "running",
       n8n: "running",
       homeassistant: "running",
       postgres: "running",
@@ -2479,7 +2402,6 @@ app.get("/api/system/health", async (_req, res) => {
     
     // Sincronizar estados dos containers Docker
     const containerStates: Record<string, string> = {
-      chromadb: "running",
       n8n: "running",
       homeassistant: "running",
       postgres: "running",
@@ -2497,7 +2419,6 @@ app.get("/api/system/health", async (_req, res) => {
                 if (parts.length >= 2) {
                   const name = parts[0];
                   const state = parts[1]; // 'running', 'paused', 'exited'
-                  if (name.includes("chromadb")) containerStates.chromadb = state;
                   if (name.includes("n8n")) containerStates.n8n = state;
                   if (name.includes("homeassistant")) containerStates.homeassistant = state;
                   if (name.includes("postgres")) containerStates.postgres = state;
@@ -2524,7 +2445,6 @@ app.get("/api/system/health", async (_req, res) => {
       groq: { status: "offline", latency: 0 },
       localDb: { status: "online", latency: 1 },
       containers: {
-        chromadb: "exited",
         n8n: "exited",
         homeassistant: "exited",
         postgres: "exited",
@@ -2907,7 +2827,7 @@ app.post("/api/iot/add", (req, res) => {
 app.get("/api/docker/logs", (req, res) => {
   const container = (req.query.container as string) || "all";
   
-  if (container === "all" || container === "n8n" || container === "chromadb") {
+  if (container === "all" || container === "n8n") {
      const filter = container !== "all" ? container : "";
      exec(`docker compose logs ${filter} --tail 25`, { cwd: process.cwd(), timeout: 5000 }, (err, stdout, _stderr) => {
         if (err && !stdout) {

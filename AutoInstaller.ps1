@@ -87,12 +87,12 @@ Write-Status "✅ Dependências instaladas" $SuccessColor
 # 5. CRIAR DIRETÓRIOS DO VAULT
 # ============================================
 Write-Status "Criando diretórios base e Obsidian Vault..." $InfoColor
-@('data', 'logs', 'jarvis-vault') | ForEach-Object {
+@('data', 'logs', 'C:\jarvis-vault') | ForEach-Object {
     if (-not (Test-Path $_)) {
         New-Item -ItemType Directory -Path $_ | Out-Null
     }
 }
-$dirs = @("jarvis-vault\perfil", "jarvis-vault\agenda", "jarvis-vault\financas", "jarvis-vault\casa", "jarvis-vault\conversas", "jarvis-vault\aprendizados")
+$dirs = @("C:\jarvis-vault\perfil", "C:\jarvis-vault\agenda", "C:\jarvis-vault\financas", "C:\jarvis-vault\casa", "C:\jarvis-vault\conversas", "C:\jarvis-vault\aprendizados")
 foreach ($dir in $dirs) {
     if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Force -Path $dir | Out-Null
@@ -106,7 +106,7 @@ Nome: Master
 Tom preferido: Inteligente, refinado, estilo JARVIS
 Resumo: Inicializado pelo instalador JARVIS System Suite v5.0
 "@
-Set-Content -Path "jarvis-vault\perfil\usuario.md" -Value $profileContent
+Set-Content -Path "C:\jarvis-vault\perfil\usuario.md" -Value $profileContent
 
 Write-Status "✅ Obsidian Vault criado e semeado" $SuccessColor
 

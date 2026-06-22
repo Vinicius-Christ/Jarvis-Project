@@ -3,20 +3,6 @@
 # Execute este arquivo com o comando: docker compose up -d
 
 services:
-  # ChromaDB - Banco de Dados Vetorial para armazenar os embeddings (RAG) do Obsidian
-  chromadb:
-    image: chromadb/chroma:latest
-    # container_name: jarvis_chromadb
-    ports:
-      - "127.0.0.1:8000:8000"
-    volumes:
-      - chroma_data:/chroma/data
-    environment:
-      - ALLOW_RESET=TRUE
-    networks:
-      - jarvis_network
-    restart: unless-stopped
-
   # n8n - Motor de Automações, Workflows e Conexão de Nós para Orquestrar a IA
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -30,7 +16,7 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
     volumes:
       - n8n_data:/home/node/.n8n
-      - ./jarvis-vault:/data/vault:ro # Mount Obsidian vault (Apenas Leitura para Segurança)
+      - C:/jarvis-vault:/data/vault:ro # Mount Obsidian vault (Apenas Leitura para Segurança)
     depends_on:
       - db
     networks:
@@ -88,7 +74,6 @@ networks:
     driver: bridge
 
 volumes:
-  chroma_data:
   n8n_data:
   ha_config:
   pg_data:

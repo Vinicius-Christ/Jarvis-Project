@@ -1,6 +1,6 @@
 # JARVIS Core Suite v5.0 — Sistema de Assistente Pessoal Cloud-Minds e Local-Storage
 
-Este repositório contém o código-fonte, a documentação e os scripts de deploy do **JARVIS** (Just A Rather Very Intelligent System). O ecossistema é projetado primariamente com as execuções pesadas extraídas para computação LPU em nuvem, deixando seu servidor linux / app super leve e instantâneo. A privacidade permanece no fato de seu histórico e vector database estarem guardados no armazenamento local no seu próprio servidor de forma orquestrada. 
+Este repositório contém o código-fonte, a documentação e os scripts de deploy do **JARVIS** (Just A Rather Very Intelligent System). O ecossistema é projetado primariamente com as execuções pesadas extraídas para computação LPU em nuvem, deixando seu servidor Windows super leve e instantâneo. A privacidade permanece no fato de seu histórico e vector database estarem guardados no armazenamento local no seu próprio servidor de forma orquestrada. 
 
 O software atua como a interface central do usuário (Aplicativo Web UI App-Like) onde se manipula a IA, além de agir como **Instalador e Configurador Automatizado** de todo o ecossistema e ferramentas satélites necessárias.
 
@@ -20,25 +20,21 @@ O JARVIS é focado em processar sua rotina local através de contêineres otimiz
    - Utiliza **ChromaDB** rodando em container Docker como banco de dados vetorial.
    - Toda vez que notas são inseridas no Vault pessoal, elas são dividas em vetores localmente para as buscas semânticas mantendo tudo em um ecossistema super acoplado.
 
-3. **Base de Memória Mutável (Obsidian Vault)**
-   - Toda a memória de longo prazo do JARVIS é guardada em arquivos Markdown legíveis em formato texto normal em uma pasta `~/jarvis-vault` no Linux.
-   - Você pode ler diretamente, auditar o que o assistente aprendeu ou auditar preferências abrindo o App nativo do Obsidian e roteando ao Vault no Linux (Samba Network / SFTP). O backend sincroniza os arquivos automaticamente.
+3. **Base de Memória Mutável (Obsidian Vault Windows)**
+   - Toda a memória de longo prazo do JARVIS é guardada em arquivos Markdown legíveis em formato texto normal em uma pasta `C:\jarvis-vault` no Windows.
+   - Você pode ler diretamente, auditar o que o assistente aprendeu ou auditar preferências abrindo o App nativo do Obsidian e roteando ao Vault no Windows. O backend sincroniza os arquivos automaticamente.
 
 4. **Automação Automática e Scripts de Deploy**
-   - Na própria UI do JARVIS está embarcado o roteador visual para baixar seu script bash (`deploy_jarvis.sh`). Execute-o para instalar via comando único o Docker, levantar o App, contêineres e bancos de forma isolada!
+   - Na própria UI do JARVIS está embarcado os geradores de instaladores como o script poweshell (`AutoInstaller.ps1`). Execute-o para instalar estrutras, levantar o App, contêineres e bancos de forma isolada!
 
 ---
 
 ## 🚀 Instalação e Inicialização Automática
 
-Toda a infraestrutura do JARVIS v5.0 está consolidada para ambas as plataformas Linux e Windows:
+Toda a infraestrutura do JARVIS v5.0 está consolidada na plataforma Windows:
 
-### 🐧 Ambiente Linux (Recomendado)
-O script bash `deploy_jarvis.sh` automatiza a instalação completa no Linux (Docker, Containers, Node.js API e demais ferramentas).
-🔗 **[CLIQUE AQUI PARA ACESSAR O TUTORIAL COMPLETO DE INSTALAÇÃO DO LINUX](./TUTORIAL_COMPLETO_INSTALACAO_N8N.md)**
-
-### 🪟 Ambiente Windows (Experimental / PowerShell)
-Para usuários do sistema Windows, disponibilizamos o script automatizado `AutoInstaller.ps1` em PowerShell. Ele configura o ambiente, instala o Obsidian via Winget, gerencia as dependências do Node.js e instala/compila o ecossistema.
+### 🪟 Ambiente Windows (Recomendado)
+Para usuários do sistema Windows, disponibilizamos o script automatizado `AutoInstaller.ps1` em PowerShell. Ele configura o ambiente da sua máquina, estruturando sua máquina.
 Para executar no PowerShell em modo Administrador:
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; .\AutoInstaller.ps1

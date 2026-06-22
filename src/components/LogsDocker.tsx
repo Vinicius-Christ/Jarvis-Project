@@ -11,7 +11,6 @@ export default React.memo(function LogsDocker() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   
   const [containerStatuses, setContainerStatuses] = useState<Record<string, string>>({
-    chromadb: "running",
     n8n: "running",
     homeassistant: "running",
     postgres: "running",
@@ -22,7 +21,6 @@ export default React.memo(function LogsDocker() {
 
   const containerOptions = [
     { id: "all", label: "Todos os Containers", color: "border-[var(--brand-primary)]/40 text-[var(--brand-light)]" },
-    { id: "chromadb", label: "ChromaDB (Vector DB)", color: "border-blue-500/40 text-blue-400" },
     { id: "n8n", label: "n8n (Orquestrador)", color: "border-pink-500/40 text-pink-400" },
     { id: "homeassistant", label: "Home Assistant (Core)", color: "border-teal-500/40 text-teal-400" },
     { id: "postgres", label: "PostgreSQL (Finance/Agenda)", color: "border-[var(--brand-primary)]/40 text-[var(--brand-light)]" },
@@ -30,7 +28,6 @@ export default React.memo(function LogsDocker() {
   ];
 
   const containersList = [
-    { id: "chromadb", name: "ChromaDB", desc: "Base de dados vetorizados de aprendizados.", port: "8000" },
     { id: "n8n", name: "n8n Workflows", desc: "Orquestrador de gatilhos do Telegram e automações.", port: "5678" },
     { id: "homeassistant", name: "Home Assistant", desc: "Ponte local de IoT e sensores locais.", port: "8123" },
     { id: "postgres", name: "PostgreSQL", desc: "Banco estruturado principal do financeiro.", port: "5432" },
@@ -448,8 +445,7 @@ export default React.memo(function LogsDocker() {
                   let colorClass = "text-zinc-300";
                   
                   // Colorize logs based on context/container prefixes
-                  if (log.includes("[CHROMADB]")) colorClass = "text-blue-400 font-semibold";
-                  else if (log.includes("[N8N]")) colorClass = "text-pink-400 font-semibold";
+                  if (log.includes("[N8N]")) colorClass = "text-pink-400 font-semibold";
                   else if (log.includes("[HOMEASSISTANT]")) colorClass = "text-teal-400 font-semibold";
                   else if (log.includes("[POSTGRES]")) colorClass = "text-[var(--brand-light)] font-semibold";
                   else if (log.includes("[REDIS]")) colorClass = "text-red-400 font-semibold";
@@ -523,7 +519,7 @@ export default React.memo(function LogsDocker() {
       <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div className="flex items-center gap-2.5 text-xs text-zinc-400">
           <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-          <span>Monitorando subnet interna do docker do desktop na interface linux host bridge.</span>
+          <span>Monitorando subnet interna do docker do desktop.</span>
         </div>
         <span className="text-[10px] font-mono text-zinc-500">
           Docker Subnet: 172.18.0.0/16

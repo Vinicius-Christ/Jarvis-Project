@@ -164,7 +164,7 @@ export function HardwareProcessingMonitor({ hardwareStats, setActiveTab, setSett
             >
               GPU VRAM (
               {hardwareStats?.gpuModel
-                ? hardwareStats.gpuModel.replace("NVIDIA GeForce", "").trim()
+                ? (hardwareStats.gpuModel || '').replace("NVIDIA GeForce", "").trim()
                 : "Detectando..."}
               )
             </span>
@@ -209,7 +209,7 @@ export function HardwareProcessingMonitor({ hardwareStats, setActiveTab, setSett
             >
               CPU (
               {hardwareStats?.cpu
-                ? hardwareStats.cpu.replace("(TM)", "").replace("(R)", "").trim()
+                ? (hardwareStats.cpu || '').replace("(TM)", "").replace("(R)", "").trim()
                 : "Detectando..."}
               )
             </span>

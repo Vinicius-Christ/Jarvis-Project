@@ -7,8 +7,6 @@ export default function TokensManager() {
     githubToken: "",
     haToken: "",
     telegramToken: "",
-    elevenlabsToken: "",
-    openaiToken: "",
     googleClientId: ""
   });
   const [loading, setLoading] = useState(true);
@@ -150,7 +148,7 @@ export default function TokensManager() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl">
+            <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl lg:col-span-2">
               <label className="block text-[11px] uppercase font-bold text-cyan-400 font-mono mb-1.5">Telegram Bot Token</label>
               <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Ativa a interface via Telegram com as workflows do N8N incluídas no JARVIS. Criado e fornecido pelo @BotFather.</p>
               <input
@@ -160,32 +158,6 @@ export default function TokensManager() {
                 onChange={handleChange}
                 placeholder="123456789:ABCDefGHI_jkl12..."
                 className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-cyan-500 transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_var(--brand-glow)]"
-              />
-            </div>
-
-            <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl">
-              <label className="block text-[11px] uppercase font-bold text-rose-400 font-mono mb-1.5">ElevenLabs API Key (Opcional - Vozes Naturais)</label>
-              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Deixa as respostas e leituras de notificações do sistema e da assistente em PT-BR extremamente realistas. A voz offline ou Node Edge TTS servirão como fallback.</p>
-              <input
-                type="password"
-                name="elevenlabsToken"
-                value={tokens.elevenlabsToken}
-                onChange={handleChange}
-                placeholder="sk_xxxxxxxxxxxxxxxxxxxx..."
-                className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-rose-500 transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-              />
-            </div>
-
-            <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl lg:col-span-2">
-              <label className="block text-[11px] uppercase font-bold text-emerald-400 font-mono mb-1.5">OpenAI API Key (Opcional - Alternativa Voz TTS)</label>
-              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Opcionalmente, pode-se utilizar a infraestrutura TTS da OpenAI em vez da sintética offline (se o ElevenLabs não estiver configurado).</p>
-              <input
-                type="password"
-                name="openaiToken"
-                value={tokens.openaiToken}
-                onChange={handleChange}
-                placeholder="sk-xxxxxxxxxxxxxxxxxxxx..."
-                className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-emerald-500 transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
               />
             </div>
 

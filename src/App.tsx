@@ -26,6 +26,8 @@ import {
   Code,
   Trash2,
   Table,
+  LogOut,
+  Users
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -49,6 +51,7 @@ import SSHDiagnostics from "./components/SSHDiagnostics";
 import FinanceDashboard from "./components/FinanceDashboard";
 import MCPSettings from "./components/MCPSettings";
 import TokensManager from "./components/TokensManager";
+import UserManager from "./components/UserManager";
 
 const HOLO_THEMES = {
   cyan: {
@@ -107,6 +110,7 @@ export default function App() {
     | "cudautil"
     | "mcp"
     | "tokens"
+    | "users"
     | "packager"
   >("general");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -819,6 +823,20 @@ export default function App() {
           >
             <Info className="h-4 w-4 shrink-0" />
             {isSidebarOpen && <span>Documentação</span>}
+          </button>
+          
+          <div className="flex-1 mt-4"></div>
+          
+          <button
+            onClick={() => {
+              localStorage.removeItem("jarvis_token");
+              window.location.reload();
+            }}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer w-full text-red-500 hover:bg-red-500/10 hover:text-red-400"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {isSidebarOpen && <span>Sair</span>}
           </button>
         </nav>
 
@@ -1576,6 +1594,16 @@ export default function App() {
                     >
                       🔐 Senhas & Tokens
                     </button>
+                    <button
+                      onClick={() => setSettingsTab("users")}
+                      className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${
+                        settingsTab === "users"
+                          ? "bg-emerald-500/20 text-emerald-400 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] border border-emerald-500/30"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                      }`}
+                    >
+                      👥 Usuários Pessoas
+                    </button>
                   </div>
 
                   {/* Category: WORKSPACE & IA */}
@@ -1756,6 +1784,8 @@ export default function App() {
                 {settingsTab === "cudautil" && <CUDATelemetryHUD />}
 
                 {settingsTab === "tokens" && <TokensManager />}
+                
+                {settingsTab === "users" && <UserManager />}
                 </div>
               </div>
             )}

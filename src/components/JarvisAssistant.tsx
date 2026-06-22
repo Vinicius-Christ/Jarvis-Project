@@ -213,7 +213,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           // Interceptador simples para testes locais (PC App)
           const lowerTxt = transcript.toLowerCase();
           if ((lowerTxt.startsWith("abrir ") || lowerTxt.startsWith("abra ")) && window.electronAPI) {
-             const site = lowerTxt.replace("abrir ", "").replace("abra ", "").trim();
+             const site = (lowerTxt || '').replace("abrir ", "").replace("abra ", "").trim();
              let url = "";
              if (site.includes("youtube")) url = "https://youtube.com";
              else if (site.includes("google")) url = "https://google.com";
@@ -418,22 +418,15 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
     if (!voiceEnabled) return;
     
     // Clean up XML commands tags before text to speech
-    const cleanText = text.replace(/<command[^>]*\/>/g, "").trim();
+    const cleanText = (text || '').replace(/<command[^>]*\/>/g, "").trim();
     if (!cleanText) return;
 
     window.speechSynthesis.cancel();
     setAppState("speaking");
 
     try {
-      // If user selected premium_api, try use elevenlabs / openai
-      if (engineType === "premium_api" || engineType === "microsoft_edge_tts") {
-        // Map persona to ElevenLabs standard voice ids
-        let voiceId = "21m00Tcm4TlvDq8ikWAM"; // default ElevenLabs 
-        if (activePersona === "jarvis") voiceId = "bVMeCyTHy58xNoL34h3p";
-        else if (activePersona === "friday") voiceId = "EXAVITQu4vr4xnSDxMaL";
-        else if (activePersona === "glados") voiceId = "LcfcDJNUP1GQjkvn1xUw";
-        else if (activePersona === "hal9000") voiceId = "N2lVS1w4EtoT3dr4eOWO";
-
+      // Trigger node edge TTS
+      if (engineType === "microsoft_edge_tts") {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3500);
 
@@ -443,8 +436,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           signal: controller.signal,
           body: JSON.stringify({ 
             text: cleanText, 
-            voiceId,
-            service: engineType === "microsoft_edge_tts" ? "edge" : undefined
+            service: "edge"
           })
         });
 
@@ -520,7 +512,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
     // Interceptador para App Local (Electron)
     const lowerTxt = query.toLowerCase();
     if ((lowerTxt.startsWith("abrir ") || lowerTxt.startsWith("abra ")) && window.electronAPI) {
-       const site = lowerTxt.replace("abrir ", "").replace("abra ", "").trim();
+       const site = (lowerTxt || '').replace("abrir ", "").replace("abra ", "").trim();
        let url = "";
        if (site.includes("youtube")) url = "https://youtube.com";
        else if (site.includes("google")) url = "https://google.com";
@@ -690,8 +682,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           {conversations.map((msg, index) => {
             const isJarvis = msg.sender === "JARVIS";
             // Clean XML command nodes for rendering beautiful buttons or logs in dialogue instead of clutter
-            const commandMatches = msg.text.match(/<command[^>]*\/>/g);
-            const displayContent = msg.text.replace(/<command[^>]*\/>/g, "").trim();
+            const commandMatches = (msg.text || '').match(/<command[^>]*\/>/g);
+            const displayContent = (msg.text || '').replace(/<command[^>]*\/>/g, "").trim();
 
             return (
               <div key={index} className={`flex gap-3 ${isJarvis ? "justify-start" : "justify-end"}`}>
@@ -987,20 +979,6 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                   }`}
                 >
                   <span>Microsoft Edge TTS</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEngineType("premium_api")}
-                  className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center flex flex-col justify-center items-center ${
-                    engineType === "premium_api"
-                      ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold shadow-[0_2px_8px_var(--brand-glow)]"
-                      : isDarkMode
-                        ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
-                        : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
-                  }`}
-                >
-                  <span>Módulos API Premium </span>
-                  <span className="opacity-70 text-[8px] font-sans">(ElevenLabs/OpenAI)</span>
                 </button>
               </div>
 

@@ -81,6 +81,15 @@ if ($LASTEXITCODE -ne 0) {
     Write-Status "❌ Erro ao instalar dependências NPM!" $ErrorColor
     exit 1
 }
+
+Write-Status "Configurando Banco de Dados Prisma..." $InfoColor
+if (-not (Test-Path ".env")) {
+    Copy-Item ".env.example" ".env"
+    Write-Status "⚠️ Arquivo .env não encontrado. Foi criado a partir do .env.example." $WarningColor
+}
+npx prisma generate
+npx prisma db push
+
 Write-Status "✅ Dependências instaladas" $SuccessColor
 
 # ============================================

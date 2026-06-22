@@ -1,4 +1,5 @@
 import express from "express";
+import { exec, execSync } from "child_process";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
@@ -11,15 +12,13 @@ import { EdgeTTS } from "node-edge-tts";
 import os from "os";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import Database from 'better-sqlite3';
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
-const dbPath = process.env.DATABASE_URL?.replace("file:", "") || "./dev.db";
-const connection = new Database(dbPath);
-const adapter = new PrismaBetterSqlite3(connection);
-
+const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || "file:./prisma/dev.db" });
 const prisma = new PrismaClient({ adapter });
 
 // Ensure localhost/ipv4 works nicely
@@ -38,7 +37,7 @@ if (typeof AbortSignal.timeout !== "function") {
   };
 }
 
-import { OAuth2Client } from 'google-auth-library';
+
 
 const app = express();
 
@@ -81,14 +80,57 @@ app.use(cors({
 app.use(express.json());
 app.set("trust proxy", true); // Handle Cloudflare tunneling correctly
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const ALLOWED_EMAIL = process.env.ALLOWED_EMAIL || 'viniciusc.castro09@gmail.com';
+const JWT_SECRET = process.env.JWT_SECRET || "jarvis_super_secret_key_007";
 
 // Add the auth middleware
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Missing credentials" });
+  
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || user.password !== password) {
+     return res.status(401).json({ error: "Credenciais inválidas" });
+  }
+
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+  return res.json({ token, user: { email: user.email, role: user.role } });
+});
+
+app.get("/api/users", async (req, res) => {
+  const users = await prisma.user.findMany({ select: { id: true, email: true, role: true } });
+  res.json(users);
+});
+app.post("/api/users", async (req, res) => {
+  const { email, password, role } = req.body;
+  try {
+    const user = await prisma.user.create({ data: { email, password, role: role || "user" }, select: { id: true, email: true, role: true } });
+    res.json(user);
+  } catch(e) {
+    res.status(400).json({error: "Failed to create user. Email may exist."});
+  }
+});
+app.put("/api/users/:id", async (req, res) => {
+  const { email, password, role } = req.body;
+  const data: any = {};
+  if (email) data.email = email;
+  if (password) data.password = password;
+  if (role) data.role = role;
+  try {
+    const user = await prisma.user.update({ where: { id: Number(req.params.id) }, data, select: { id: true, email: true, role: true } });
+    res.json(user);
+  } catch(e) {
+    res.status(400).json({error: "Failed to update user."});
+  }
+});
+app.delete("/api/users/:id", async (req, res) => {
+  await prisma.user.delete({ where: { id: Number(req.params.id) } });
+  res.json({ success: true });
+});
+
 app.use(async (req, res, next) => {
   // 1. Libera todos os arquivos estáticos e rotas do frontend (qualquer rota que não comece com /api/)
   // Libera também as rotas públicas da API (/api/public/)
-  if (!req.path.startsWith('/api/') || req.path.startsWith('/api/public/')) {
+  if (!req.path.startsWith('/api/') || req.path.startsWith('/api/public/') || req.path.startsWith('/api/auth/login')) {
      return next();
   }
 
@@ -106,33 +148,8 @@ app.use(async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   try {
-     // Primeiro tentamos como Access Token (usado nos fluxos de popup para iframes)
-     try {
-       const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`, {
-           headers: { Authorization: `Bearer ${token}` }
-       });
-       if (response.ok) {
-           const payload = await response.json();
-           if (payload && payload.email === ALLOWED_EMAIL) {
-               return next();
-           } else if (payload && payload.email) {
-               return res.status(403).json({ error: `Acesso negado. O e-mail ${payload.email} não tem autorização.` });
-           }
-       }
-     } catch (fetchErr) {
-       console.warn("Userinfo fetch failed, falling back to ID token validation:", fetchErr);
-     }
-
-     // Fallback: validamos como ID Token
-     const ticket = await googleClient.verifyIdToken({
-         idToken: token,
-         audience: process.env.GOOGLE_CLIENT_ID, 
-     });
-     const payload = ticket.getPayload();
-     if (!payload || payload.email !== ALLOWED_EMAIL) {
-         return res.status(403).json({ error: `Acesso negado. O e-mail ${payload?.email || 'desconhecido'} não tem autorização.` });
-     }
-     // O e-mail está valido e é o correto
+     const decoded = jwt.verify(token, JWT_SECRET);
+     (req as any).user = decoded;
      return next();
   } catch (error) {
      console.error("Token verification failed:", error);
@@ -169,8 +186,7 @@ const PORT = 3000;
 
 app.get("/api/public/config", (req, res) => {
   res.json({
-    googleClientId: process.env.GOOGLE_CLIENT_ID || "",
-    allowedEmail: ALLOWED_EMAIL
+    // Only used conceptually, no longer for Google Auth
   });
 });
 
@@ -335,7 +351,7 @@ function syncNoteToVault(notePath: string, content: string) {
       fs.mkdirSync(vaultDir, { recursive: true });
     }
     
-    let safePath = notePath.replace(/^(\/|\\)/, "");
+    let safePath = (notePath || '').replace(/^(\/|\\)/, "");
     if (!safePath.endsWith(".md")) {
        safePath += ".md";
     }
@@ -656,92 +672,33 @@ app.post("/api/tts", rateLimiter(15), async (req, res) => {
     return res.status(400).json({ error: "No text provided" });
   }
 
-  const { ELEVENLABS_API_KEY, OPENAI_API_KEY } = process.env;
-
   try {
-    if (service === "edge" || (!ELEVENLABS_API_KEY && !OPENAI_API_KEY) || (!service)) {
-      // Setup Edge TTS (Free, high quality)
-      let voice = voiceId || "pt-BR-AntonioNeural";
-      
-      // If voice is an ElevenLabs ID or not a valid Edge voice (with no hyphen), map it correctly
-      if (voice && !voice.includes("-")) {
-        if (voice === "EXAVITQu4vr4xnSDxMaL" || voice === "LcfcDJNUP1GQjkvn1xUw") {
-          voice = "pt-BR-FranciscaNeural";
-        } else {
-          voice = "pt-BR-AntonioNeural";
-        }
-      }
-
-      const tts = new EdgeTTS({
-        voice: voice,
-        lang: 'pt-BR',
-        outputFormat: 'audio-24khz-48kbitrate-mono-mp3'
-      });
-      
-      const tempFile = path.join(os.tmpdir(), `tts-edge-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
-      await tts.ttsPromise(text, tempFile);
-      
-      const buffer = fs.readFileSync(tempFile);
-      try { fs.unlinkSync(tempFile); } catch(e) {}
-      
-      res.set('Content-Type', 'audio/mpeg');
-      return res.send(Buffer.from(buffer));
-    } else if (ELEVENLABS_API_KEY && service === "elevenlabs") {
-      // Setup ElevenLabs TTS
-      // Default voice is Adam (pNInz6obpgDQGcFmaJgB)
-      const voice = voiceId || "pNInz6obpgDQGcFmaJgB"; 
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
-        method: "POST",
-        headers: {
-          "Accept": "audio/mpeg",
-          "xi-api-key": ELEVENLABS_API_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          text,
-          model_id: "eleven_multilingual_v2",
-          voice_settings: {
-            similarity_boost: 0.75,
-            stability: 0.5
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("ElevenLabs API error");
-      }
-
-      const buffer = await response.arrayBuffer();
-      res.set('Content-Type', 'audio/mpeg');
-      return res.send(Buffer.from(buffer));
-      
-    } else if (OPENAI_API_KEY && service === "openai") {
-      // Setup OpenAI TTS
-      const voice = voiceId || "onyx"; // alloy, echo, fable, onyx, nova, shimmer
-      const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "tts-1",
-          voice: voice,
-          input: text
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("OpenAI API error");
-      }
-
-      const buffer = await response.arrayBuffer();
-      res.set('Content-Type', 'audio/mpeg');
-      return res.send(Buffer.from(buffer));
-    }
+    // Setup Edge TTS (Free, high quality)
+    let voice = voiceId || "pt-BR-AntonioNeural";
     
-    return res.status(404).json({ error: "No TTS API keys configured" });
+    // If voice is an ElevenLabs ID or not a valid Edge voice (with no hyphen), map it correctly
+    if (voice && !voice.includes("-")) {
+      if (voice === "EXAVITQu4vr4xnSDxMaL" || voice === "LcfcDJNUP1GQjkvn1xUw") {
+        voice = "pt-BR-FranciscaNeural";
+      } else {
+        voice = "pt-BR-AntonioNeural";
+      }
+    }
 
+    const tts = new EdgeTTS({
+      voice: voice,
+      lang: 'pt-BR',
+      outputFormat: 'audio-24khz-48kbitrate-mono-mp3'
+    });
+    
+    const tempFile = path.join(os.tmpdir(), `tts-edge-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
+    await tts.ttsPromise(text, tempFile);
+    
+    const buffer = fs.readFileSync(tempFile);
+    try { fs.unlinkSync(tempFile); } catch(e) {}
+    
+    res.set('Content-Type', 'audio/mpeg');
+    return res.send(Buffer.from(buffer));
   } catch (error) {
     console.error("TTS Error:", error);
     return res.status(500).json({ error: "TTS generation failed" });
@@ -953,7 +910,7 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
     // 1. search_notes hook
     if (fsSrv && fsSrv.active && (lowerMsg.includes("buscar") || lowerMsg.includes("pesquisar") || lowerMsg.includes("mcp search") || lowerMsg.includes("procurar"))) {
-      const q = message.replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim();
+      const q = (message || '').replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim();
       if (q.length > 1) {
         const found = jarvisState.obsidianNotes.filter(n => 
           n.path.toLowerCase().includes(q.toLowerCase()) || n.content.toLowerCase().includes(q.toLowerCase())
@@ -1109,7 +1066,7 @@ Texto a ser salvo
       const dbSrv = jarvisState.mcpServers?.find(s => s.id === "db");
 
       if (jarvisState.mcpEnabled && fsSrv && fsSrv.active && (lower.includes("buscar") || lower.includes("pesquisar") || lower.includes("ler") || lower.includes("obsidian")) && (lower.includes("nota") || lower.includes("arquivo") || lower.includes("procurar") || lower.includes("mcp"))) {
-        const q = message.replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim() || "geral";
+        const q = (message || '').replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim() || "geral";
         const found = jarvisState.obsidianNotes.filter(n => 
           n.path.toLowerCase().includes(q.toLowerCase()) || n.content.toLowerCase().includes(q.toLowerCase())
         );
@@ -1188,8 +1145,8 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   
   if (isQueryOnly) {
     // 1. Remover terminalmente quaisquer tags XML de criação/agendamento geradas em consultas para não poluir
-    replyText = replyText.replace(/<command\s+type="Agenda"\s+([^>]+)\/>/gi, "");
-    replyText = replyText.replace(/<command\s+type="Finance"\s+([^>]+)\/>/gi, "");
+    replyText = (replyText || '').replace(/<command\s+type="Agenda"\s+([^>]+)\/>/gi, "");
+    replyText = (replyText || '').replace(/<command\s+type="Finance"\s+([^>]+)\/>/gi, "");
     
     // 2. Se a agenda ou finanças reais estão vazias na base de dados, mas o LLM alucinou que há itens,
     // nós saneamos a resposta textual para que o usuário receba dados 100% verídicos do sistema!
@@ -1235,7 +1192,7 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     }
     syncNoteToVault(parsedPath, parsedContent);
   }
-  replyText = replyText.replace(updateRegex, "").trim();
+  replyText = (replyText || '').replace(updateRegex, "").trim();
 
   // 4.b Process Google Sheets Updates
   const authHeader = req.headers.authorization;
@@ -1270,7 +1227,7 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
       }
     }
   }
-  replyText = replyText.replace(sheetUpdateRegex, "").trim();
+  replyText = (replyText || '').replace(sheetUpdateRegex, "").trim();
 
   // 5. Save and respond
   const displayText = file ? `${message} (📂 Anexo: ${file.name})` : message;
@@ -1472,7 +1429,7 @@ app.get("/api/system/hardware", async (_req, res) => {
 });
 
 // Maintenance controls execution SSH
-const { exec } = require("child_process");
+
 app.post("/api/maintenance/execute", (req, res) => {
   const { action } = req.body;
   if (!action) return res.status(400).json({ error: "Missing action" });
@@ -1485,8 +1442,9 @@ app.post("/api/maintenance/execute", (req, res) => {
   } else if (action === "purge_vram") {
     command = "python -c \"import torch; torch.cuda.empty_cache()\" || echo 'CUDA/PyTorch not available'";
   } else if (action === "postgres_backup") {
-    const destPath = require('path').resolve(process.env.OBSIDIAN_VAULT_PATH || "vault", `db_backup_${new Date().toISOString().split("T")[0].replace(/-/g, "")}.db`);
-    command = `copy prisma\\dev.db "${destPath}" /Y || echo 'SQLite backup failed'`;
+    const destPath = path.resolve(process.env.OBSIDIAN_VAULT_PATH || "vault", `db_backup_${new Date().toISOString().split("T")[0].replace(/-/g, "")}.db`);
+    const dbSourcePath = process.env.DATABASE_URL?.replace("file:", "") || "prisma/dev.db";
+    command = `copy "${path.resolve(process.cwd(), dbSourcePath)}" "${destPath}" /Y || echo 'SQLite backup failed'`;
   } else {
     return res.status(400).json({ error: "Ação não identificada." });
   }
@@ -1938,7 +1896,7 @@ app.post("/api/update/iot", async (req, res) => {
                serviceData.brightness_pct = mConfig.brightness;
                // HEX to RGB
                if (mConfig.color && mConfig.color.startsWith("#")) {
-                 const hex = mConfig.color.replace("#", "");
+                 const hex = (mConfig.color || '').replace("#", "");
                  const r = parseInt(hex.substring(0, 2), 16);
                  const g = parseInt(hex.substring(2, 4), 16);
                  const b = parseInt(hex.substring(4, 6), 16);
@@ -1971,7 +1929,7 @@ app.post("/api/update/iot", async (req, res) => {
     if (!wsDispatched) {
       try {
         console.log(`[MUNDO REAL] Disparando Preset '${presetName}' para Home Assistant em ${HOME_ASSISTANT_IP}`);
-        const webhookName = presetName.toLowerCase().replace(/ /g, "_");
+        const webhookName = (presetName || '').toLowerCase().replace(/ /g, "_");
         await fetch(`http://${HOME_ASSISTANT_IP}:8123/api/webhook/${webhookName}`, { method: "POST" }).catch(() => {});
       } catch(e) {}
     }
@@ -2068,15 +2026,13 @@ app.get("/api/config/tokens", (_req, res) => {
       githubToken: jarvisState.githubToken || "",
       haToken: jarvisState.homeAssistant.token || "",
       telegramToken: process.env["TELEGRAM_TOKEN"] || "",
-      elevenlabsToken: process.env["ELEVENLABS_API_KEY"] || "",
-      openaiToken: process.env["OPENAI_API_KEY"] || "",
       googleClientId: process.env["GOOGLE_CLIENT_ID"] || ""
     }
   });
 });
 
 app.post("/api/config/tokens", (req, res) => {
-  const { githubToken, haToken, telegramToken, elevenlabsToken, openaiToken, googleClientId } = req.body;
+  const { githubToken, haToken, telegramToken, googleClientId } = req.body;
   
   // Save internal DB tokens
   if (githubToken !== undefined) {
@@ -2091,8 +2047,6 @@ app.post("/api/config/tokens", (req, res) => {
   // Create or Update .env file with the requested env tokens
   const envUpdates: Record<string, string> = {};
   if (telegramToken !== undefined) { envUpdates["TELEGRAM_TOKEN"] = telegramToken; process.env["TELEGRAM_TOKEN"] = telegramToken; }
-  if (elevenlabsToken !== undefined) { envUpdates["ELEVENLABS_API_KEY"] = elevenlabsToken; process.env["ELEVENLABS_API_KEY"] = elevenlabsToken; }
-  if (openaiToken !== undefined) { envUpdates["OPENAI_API_KEY"] = openaiToken; process.env["OPENAI_API_KEY"] = openaiToken; }
   if (googleClientId !== undefined) { envUpdates["GOOGLE_CLIENT_ID"] = googleClientId; process.env["GOOGLE_CLIENT_ID"] = googleClientId; }
   updateEnv(envUpdates);
 
@@ -2454,7 +2408,7 @@ updaterState.githubToken = jarvisState.githubToken || "";
 
 function getLocalCommitSync() {
   try {
-    return require("child_process").execSync("git rev-parse --short HEAD", { timeout: 3000, encoding: "utf8" }).trim();
+    return execSync("git rev-parse --short HEAD", { timeout: 3000, encoding: "utf8" }).trim();
   } catch (err) {
     return "v5.0-local";
   }
@@ -2576,7 +2530,7 @@ app.post("/api/system/update/run", (_req, res) => {
       // 1. Check if git is available
       let useGit = false;
       try {
-        const _checkGit = require("child_process").execSync("git status", { timeout: 3000, encoding: "utf8" });
+        const _checkGit = execSync("git status", { timeout: 3000, encoding: "utf8" });
         useGit = true;
         updaterState.logs.push("[UPDATE] Repositório Git local validado. Usando 'git pull' nativo.");
       } catch (e) {
@@ -2851,6 +2805,23 @@ async function startServer() {
     app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
+  }
+
+  // Seed initial user if database is empty
+  try {
+    const existingUser = await prisma.user.findFirst();
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          email: "viniciusc.castro09@gmail.com",
+          password: "091422",
+          role: "admin"
+        }
+      });
+      console.log("Seeded default admin user.");
+    }
+  } catch (err) {
+    console.error("Error seeding default user:", err);
   }
 
   const server = app.listen(PORT, "0.0.0.0", () => {

@@ -1,6 +1,8 @@
 import { getServerUrl, fetchAutenticado } from "./lib/api";
 import PackagerModule from "./components/PackagerModule";
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { SystemHealthMonitor, HardwareProcessingMonitor } from "./components/HardwareMonitor";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -153,13 +155,6 @@ export default function App() {
     return "violet";
   });
 
-  const [healthStatus, setHealthStatus] = useState({
-    docker: { status: "online", latency: 8 },
-    groq: { status: "online", latency: 45 },
-    network: { status: "online", latency: 12 },
-    lastUpdated: new Date().toLocaleTimeString("pt-BR"),
-  });
-
   const changeTheme = (
     theme: "cyan" | "amber" | "violet" | "emerald" | "rose",
   ) => {
@@ -168,37 +163,6 @@ export default function App() {
       localStorage.setItem("jarvis_holo_theme", theme);
     } catch (e) { /* ignore */ }
   };
-
-  // Health check loop polling every 10 seconds
-  useEffect(() => {
-    const runHealthCheck = async () => {
-      try {
-        const start = performance.now();
-        const res = await fetch(getServerUrl() + "/api/system/health");
-        const duration = Math.round(performance.now() - start);
-        if (res.ok) {
-          const contentType = res.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const data = await res.json();
-            setHealthStatus({
-              docker: data.docker || { status: "online", latency: 7 },
-              groq: data.groq || { status: "online", latency: 42 },
-              network: { status: "online", latency: duration },
-              lastUpdated: new Date().toLocaleTimeString("pt-BR"),
-            });
-          }
-        }
-      } catch (err: any) {
-        if (err.message !== "Failed to fetch") {
-          console.error("Falha ao ler telemetria de saúde:", err);
-        }
-      }
-    };
-
-    runHealthCheck();
-    const timer = setInterval(runHealthCheck, 10000); // 10 seconds
-    return () => clearInterval(timer);
-  }, []);
 
   // Fetch updated records from backend
   const fetchSystemState = async () => {
@@ -236,7 +200,7 @@ export default function App() {
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const data = await res.json();
-          setHardwareStats(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+          setHardwareStats((prev: any) => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
         }
       }
     } catch (e) { /* ignore */ }
@@ -257,9 +221,7 @@ export default function App() {
       fetchSystemState();
       fetchUpdateState();
     }, 10000);
-    const hwInterval = setInterval(() => {
-      fetchHardwareStats();
-    }, 3000); // 3 seconds for hardware to avoid spamming
+    const hwInterval = setInterval(fetchHardwareStats, 3000);
     return () => {
       clearInterval(interval);
       clearInterval(hwInterval);
@@ -904,11 +866,11 @@ export default function App() {
                   JARVIS{" "}
                   <span className="text-[var(--brand-light)]">CHRIST</span>
                 </h1>
-                <span className="text-[9px] bg-[var(--brand-glow)] text-[var(--brand-light)] px-2 py-0.5 rounded border border-[var(--brand-border)] font-mono">
+                <span className="text-[10px] bg-[var(--brand-glow)] text-[var(--brand-light)] px-2 py-0.5 rounded border border-[var(--brand-border)] font-mono">
                   v5.0-LOCAL
                 </span>
               </div>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--brand-light)]/70 font-semibold font-mono">
+              <p className="text-xs uppercase tracking-[0.25em] text-[var(--brand-light)]/70 font-semibold font-mono">
                 Automated Deployment & AI Control System
               </p>
             </div>
@@ -923,7 +885,7 @@ export default function App() {
                 target="_blank"
                 rel="noreferrer"
                 className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${
-                  "border-zinc-800 bg-zinc-900"
+                  "border-zinc-800/40 bg-zinc-900"
                 }`}
                 title="Abrir n8n (Porta 5678)"
               >
@@ -934,7 +896,7 @@ export default function App() {
                 target="_blank"
                 rel="noreferrer"
                 className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${
-                  "border-zinc-800 bg-zinc-900"
+                  "border-zinc-800/40 bg-zinc-900"
                 }`}
                 title="Abrir Home Assistant (Porta 8123)"
               >
@@ -945,7 +907,7 @@ export default function App() {
                 target="_blank"
                 rel="noreferrer"
                 className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all group ${
-                  "border-zinc-800 bg-zinc-900"
+                  "border-zinc-800/40 bg-zinc-900"
                 }`}
                 title="Abrir Memória Central (Google Sheets)"
                 onClick={(e) => {
@@ -963,7 +925,7 @@ export default function App() {
                 target="_blank"
                 rel="noreferrer"
                 className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${
-                  "border-zinc-800 bg-zinc-900"
+                  "border-zinc-800/40 bg-zinc-900"
                 }`}
                 title="Abrir JARVIS Web/Dev (Porta 3000)"
               >
@@ -971,8 +933,8 @@ export default function App() {
               </a>
             </div>
 
-            <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800"}`}>
-              <span className="text-[9px] text-zinc-500 uppercase block tracking-wider">
+            <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800/40"}`}>
+              <span className="text-xs text-zinc-500 uppercase block tracking-wider">
                 Servidor {hardwareStats?.cpu || "Notebook (Servidor)"}
               </span>
               <div
@@ -987,8 +949,8 @@ export default function App() {
                 {systemState?.systemActive ? "ATIVO" : "INATIVO"}
               </div>
             </div>
-            <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800"}`}>
-              <span className="text-[9px] text-zinc-500 uppercase block tracking-wider">
+            <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800/40"}`}>
+              <span className="text-xs text-zinc-500 uppercase block tracking-wider">
                 Estação Horária
               </span>
               <span
@@ -1001,7 +963,7 @@ export default function App() {
                 {timeStr}
               </span>
             </div>
-            <div className={`border-l pl-4 flex items-center justify-center ${"border-zinc-800"}`}>
+            <div className={`border-l pl-4 flex items-center justify-center ${"border-zinc-800/40"}`}>
               <button
                 onClick={async () => {
                   try {
@@ -1037,7 +999,7 @@ export default function App() {
                 <span>
                   Uma nova alteração de código-fonte foi sincronizada no Git
                   remoto. Commit:{" "}
-                  <span className="text-cyan-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800 font-bold">
+                  <span className="text-cyan-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/40 font-bold">
                     {updateState.remoteCommit}
                   </span>{" "}
                   - "{updateState.remoteMessage}"
@@ -1060,7 +1022,7 @@ export default function App() {
         <main className="flex-1 overflow-visible mb-6 flex flex-col w-full relative">
           {!systemState?.systemActive ? (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#030712] border border-zinc-900 rounded-2xl">
-              <div className="w-16 h-16 mb-4 rounded-full border-4 border-zinc-800 flex items-center justify-center">
+              <div className="w-16 h-16 mb-4 rounded-full border-4 border-zinc-800/40 flex items-center justify-center">
                 <span className="w-4 h-4 rounded-full bg-zinc-600"></span>
               </div>
               <h2 className="text-2xl font-bold font-sans tracking-widest text-zinc-500 uppercase">
@@ -1085,17 +1047,17 @@ export default function App() {
                 🚀 Ligar JARVIS
               </button>
               <div className="mt-8 pt-6 border-t border-zinc-900/50 flex flex-col items-center">
-                <span className="text-[10px] text-zinc-700 font-mono uppercase tracking-widest">
+                <span className="text-xs text-zinc-700 font-mono uppercase tracking-widest">
                   Recursos em Repouso
                 </span>
                 <div className="flex gap-4 mt-2">
-                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800">
+                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     4GB VRAM (CUDA)
                   </span>
-                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800">
+                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     Docker Subnet
                   </span>
-                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800">
+                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     Websockets IoT
                   </span>
                 </div>
@@ -1104,10 +1066,19 @@ export default function App() {
           ) : null}
 
           <div
-            className={`flex-1 transition-opacity duration-500 ${!systemState?.systemActive ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+            className={`flex-1 transition-opacity duration-500 relative ${!systemState?.systemActive ? "opacity-0 pointer-events-none" : "opacity-100"}`}
           >
-            {/* TAB 1: HUD COCKPIT */}
-            {activeTab === "dashboard" && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="w-full"
+              >
+                {/* TAB 1: HUD COCKPIT */}
+                {activeTab === "dashboard" && (
               <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
                 {/* Column 1 & 2: Main AI Voice Terminal Interface */}
                 <div className="xl:col-span-3 space-y-6">
@@ -1122,20 +1093,20 @@ export default function App() {
 
                   {/* Home Assistant Quick IoT toggles */}
                   <div className="holographic-card p-5">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-zinc-800 pb-3 mb-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-zinc-800/40 pb-3 mb-4">
                       <div>
                         <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase flex items-center gap-1.5">
                           <Home className="h-4 w-4" />
                           Domótica Residencial (Home Assistant Cores)
                         </h3>
-                        <p className="text-[10px] text-zinc-500">
+                        <p className="text-xs text-zinc-500">
                           Sincronizado via IP Local da Máquina com Zigbee e
                           Matter
                         </p>
                       </div>
 
                       {/* Presets dropdown style buttons */}
-                      <div className="flex gap-1.5 font-mono text-[10px]">
+                      <div className="flex gap-1.5 font-mono text-xs">
                         {["Modo Trabalho", "Modo Cinema", "Modo Noturno"].map(
                           (p) => (
                             <button
@@ -1144,7 +1115,7 @@ export default function App() {
                               className={`px-2.5 py-1 rounded border transition-all cursor-pointer ${
                                 selectedPreset === p
                                   ? "bg-[var(--brand-dark)] border-[var(--brand-primary)] text-[var(--brand-light)] font-bold"
-                                  : "bg-zinc-950/40 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                                  : "bg-zinc-950/40 border-zinc-800/40 text-zinc-500 hover:text-zinc-300"
                               }`}
                             >
                               {p}
@@ -1167,7 +1138,7 @@ export default function App() {
                           >
                             <div>
                               <div className="flex justify-between items-start">
-                                <span className="text-[10px] font-mono tracking-wider block uppercase">
+                                <span className="text-xs font-mono tracking-wider block uppercase">
                                   {device.type}
                                 </span>
                                 <button
@@ -1200,7 +1171,7 @@ export default function App() {
                                 <span className="text-xs font-semibold text-zinc-200 block">
                                   {device.name}
                                 </span>
-                                <span className="text-[9px] font-mono opacity-80 block mt-0.5">
+                                <span className="text-xs font-mono opacity-80 block mt-0.5">
                                   {device.status}
                                 </span>
                               </div>
@@ -1239,89 +1210,7 @@ export default function App() {
                 {/* Column 3: Telemetry, Pipeline preview, CPU graphics (HUD style sidebar) */}
                 <div className="space-y-6">
                   {/* MONITOR DE SAÚDE DO SISTEMA (DOCKER, GROQ, REDE) */}
-                  <div className="holographic-card p-4 space-y-4 shadow-[0_0_15px_var(--brand-glow)]">
-                    <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
-                      <h3 className="text-xs font-mono font-bold tracking-widest text-[var(--brand-light)] uppercase flex items-center gap-1.5">
-                        <Activity className="h-3.5 w-3.5 text-[var(--brand-light)] animate-pulse" />
-                        Monitor de Saúde do Sistema
-                      </h3>
-                      <span className="text-[8px] bg-[var(--brand-glow)] border border-[var(--brand-border)] px-1.5 py-0.5 font-bold rounded font-mono text-[var(--brand-light)] animate-pulse">
-                        LIVE (10s)
-                      </span>
-                    </div>
-
-                    <div className="space-y-3.5 font-mono text-xs">
-                      {/* Docker Latency */}
-                      <div>
-                        <div className="flex justify-between items-center text-[11px] mb-1">
-                          <span className="text-zinc-400 flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                            Latência do Docker
-                          </span>
-                          <span className="font-bold text-[var(--brand-light)]">
-                            {healthStatus.docker.latency} ms
-                          </span>
-                        </div>
-                        <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden">
-                          <div
-                            className="bg-[var(--brand-primary)] h-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, Math.max(5, (healthStatus.docker.latency / 25) * 100))}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {/* Groq Latency */}
-                      <div>
-                        <div className="flex justify-between items-center text-[11px] mb-1">
-                          <span className="text-zinc-400 flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Latência do Groq API
-                          </span>
-                          <span className="font-bold text-[var(--brand-light)]">
-                            {healthStatus.groq.latency} ms
-                          </span>
-                        </div>
-                        <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden">
-                          <div
-                            className="bg-[var(--brand-primary)] h-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, Math.max(5, (healthStatus.groq.latency / 120) * 100))}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {/* Network API Latency */}
-                      <div>
-                        <div className="flex justify-between items-center text-[11px] mb-1">
-                          <span className="text-zinc-400 flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                            API de Rede (RTT)
-                          </span>
-                          <span className="font-bold text-emerald-400">
-                            {healthStatus.network.latency} ms
-                          </span>
-                        </div>
-                        <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden">
-                          <div
-                            className="bg-emerald-500 h-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, Math.max(5, (healthStatus.network.latency / 120) * 100))}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center text-[9px] text-zinc-500 pt-1 font-mono border-t border-zinc-900">
-                      <span>WSL2 INTRAHOST</span>
-                      <span>
-                        ÚLTIMA ATUALIZAÇÃO: {healthStatus.lastUpdated}
-                      </span>
-                    </div>
-                  </div>
+                  <SystemHealthMonitor />
 
                   {/* Mini Pipeline Progression tracking */}
                   <div className="holographic-card p-4 space-y-4">
@@ -1411,115 +1300,7 @@ export default function App() {
                   </div>
 
                   {/* Hardware Spec monitors (simulating Native child monitoring threads) */}
-                  <div className="holographic-card p-4 space-y-4">
-                    <div className="flex justify-between items-center border-l border-[var(--brand-primary)] pl-2">
-                      <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase">
-                        Métricas de VRAM & Processamento
-                      </h3>
-                      <button
-                        onClick={() => {
-                          setActiveTab("settings");
-                          setSettingsTab("cudautil");
-                        }}
-                        className="text-[9px] text-zinc-500 hover:text-[var(--brand-light)] underline cursor-pointer uppercase font-mono"
-                      >
-                        HUD Detalhado
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 font-mono text-xs">
-                      <div>
-                        <div className="flex justify-between text-[11px] mb-1">
-                          <span
-                            className="text-zinc-500 uppercase truncate max-w-[150px]"
-                            title={
-                              hardwareStats?.gpuModel || "Dispositivo CUDA"
-                            }
-                          >
-                            GPU VRAM (
-                            {hardwareStats?.gpuModel
-                              ? hardwareStats.gpuModel
-                                  .replace("NVIDIA GeForce", "")
-                                  .trim()
-                              : "Detectando..."}
-                            )
-                          </span>
-                          <span className="text-[var(--brand-light)]">
-                            {hardwareStats?.gpuVramUsed
-                              ? `${(hardwareStats.gpuVramUsed / 1024).toFixed(1)} GB / ${(hardwareStats.gpuVramTotal ? hardwareStats.gpuVramTotal / 1024 : 12.0).toFixed(1)} GB`
-                              : "4.2 GB / 12.0 GB"}
-                          </span>
-                        </div>
-                        <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden">
-                          <div
-                            className="bg-[var(--brand-primary)] h-full transition-all duration-500 animate-pulse"
-                            style={{
-                              width: `${hardwareStats?.gpuVramUsed ? Math.round((hardwareStats.gpuVramUsed / (hardwareStats.gpuVramTotal || 12288)) * 100) : 38}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-[11px] mb-1">
-                          <span className="text-zinc-500 uppercase">
-                            Temperatura GPU
-                          </span>
-                          <span className="text-red-400">
-                            {hardwareStats?.gpuTemp || 58} °C (Seguro)
-                          </span>
-                        </div>
-                        <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden">
-                          <div
-                            className="h-full bg-red-500 transition-all cursor-pulse"
-                            style={{
-                              width: `${Math.min(100, Math.max(0, hardwareStats?.gpuTemp || 58))}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-[11px] mb-1">
-                          <span
-                            className="text-zinc-500 uppercase truncate max-w-[180px]"
-                            title={hardwareStats?.cpu || "Host CPU"}
-                          >
-                            CPU (
-                            {hardwareStats?.cpu
-                              ? hardwareStats.cpu
-                                  .replace("(TM)", "")
-                                  .replace("(R)", "")
-                                  .trim()
-                              : "Detectando..."}
-                            )
-                          </span>
-                          <span className="text-[var(--brand-light)]">
-                            {hardwareStats?.cpuUsage || 38}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden">
-                          <div
-                            className="bg-[var(--brand-primary)] h-full opacity-70 transition-all duration-1000"
-                            style={{
-                              width: `${hardwareStats?.cpuUsage || 38}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-zinc-950/80 p-3 rounded-lg border border-zinc-900 font-mono text-[10px] text-zinc-500 space-y-1">
-                      <div className="flex justify-between">
-                        <span>IP do Servidor</span>
-                        <span className="text-zinc-300">{typeof window !== 'undefined' ? window.location.hostname : "localhost"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Status de Conexão</span>
-                        <span className="text-[var(--brand-primary)]">Túnel Ativo</span>
-                      </div>
-                    </div>
-                  </div>
+                  <HardwareProcessingMonitor hardwareStats={hardwareStats} setActiveTab={setActiveTab} setSettingsTab={setSettingsTab} />
 
                   {/* Fast triggers area */}
                   <div className="bg-gradient-to-r from-[var(--brand-dark)] to-blue-950/20 border border-[var(--brand-border)] p-4.5 rounded-2xl space-y-3">
@@ -1527,18 +1308,18 @@ export default function App() {
                       <Zap className="h-3.5 w-3.5 text-yellow-400" />
                       Atalhos de Simulação
                     </h4>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed">
+                    <p className="text-xs text-zinc-400 leading-relaxed">
                       Envie gatilhos simulando comandos do PC e voz ao JARVIS
                       para ver o console operar comandos complexos:
                     </p>
-                    <div className="flex flex-col gap-1.5 font-mono text-[10px]">
+                    <div className="flex flex-col gap-1.5 font-mono text-xs">
                       <button
                         onClick={() =>
                           handleSendMessage(
                             "Preparar meu ambiente de estudos no PC principal",
                           )
                         }
-                        className="w-full text-left bg-zinc-900/60 hover:bg-[var(--brand-dark)] p-2 rounded border border-zinc-800 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center"
+                        className="w-full text-left bg-zinc-900/60 hover:bg-[var(--brand-dark)] p-2 rounded border border-zinc-800/40 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center"
                       >
                         <span>📚 Modo Estudos (Macro PC)</span>
                         <ChevronRight className="h-3 w-3" />
@@ -1549,7 +1330,7 @@ export default function App() {
                             "Quanto gastei na minha categoria de Alimentação este mês?",
                           )
                         }
-                        className="w-full text-left bg-zinc-900/60 hover:bg-[var(--brand-dark)] p-2 rounded border border-zinc-800 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center"
+                        className="w-full text-left bg-zinc-900/60 hover:bg-[var(--brand-dark)] p-2 rounded border border-zinc-800/40 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center"
                       >
                         <span>💳 Consulta de iFood (RAG / DB)</span>
                         <ChevronRight className="h-3 w-3" />
@@ -1560,7 +1341,7 @@ export default function App() {
                             "Como está meu briefing de agenda para amanhã?",
                           )
                         }
-                        className="w-full text-left bg-zinc-900/60 hover:bg-[var(--brand-dark)] p-2 rounded border border-zinc-800 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center"
+                        className="w-full text-left bg-zinc-900/60 hover:bg-[var(--brand-dark)] p-2 rounded border border-zinc-800/40 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center"
                       >
                         <span>📅 Eventos Agendados</span>
                         <ChevronRight className="h-3 w-3" />
@@ -1596,13 +1377,13 @@ export default function App() {
 
                     <form
                       onSubmit={handleAgendaSubmit}
-                      className="space-y-3 bg-zinc-950 border border-zinc-800 p-4 rounded-xl flex-1"
+                      className="space-y-3 bg-zinc-950 border border-zinc-800/40 p-4 rounded-xl flex-1"
                     >
                       <h4 className="text-[11px] text-zinc-400 font-mono mb-2">
                         Agendar novo compromisso
                       </h4>
                       <div>
-                        <label className="text-[10px] text-zinc-500 block mb-1">
+                        <label className="text-xs text-zinc-500 block mb-1">
                           Título do Evento
                         </label>
                         <input
@@ -1616,11 +1397,11 @@ export default function App() {
                             })
                           }
                           placeholder="Reunião com os Investidores"
-                          className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
+                          className="w-full bg-black border border-zinc-800/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-zinc-500 block mb-1">
+                        <label className="text-xs text-zinc-500 block mb-1">
                           Data e Hora
                         </label>
                         <input
@@ -1633,11 +1414,11 @@ export default function App() {
                               datetime: e.target.value,
                             })
                           }
-                          className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] [color-scheme:dark]"
+                          className="w-full bg-black border border-zinc-800/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] [color-scheme:dark]"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-zinc-500 block mb-1">
+                        <label className="text-xs text-zinc-500 block mb-1">
                           Categoria
                         </label>
                         <select
@@ -1648,7 +1429,7 @@ export default function App() {
                               category: e.target.value,
                             })
                           }
-                          className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
+                          className="w-full bg-black border border-zinc-800/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
                         >
                           <option value="Trabalho">Trabalho</option>
                           <option value="Pessoal">Pessoal</option>
@@ -1656,7 +1437,7 @@ export default function App() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] text-zinc-500 block mb-1">
+                        <label className="text-xs text-zinc-500 block mb-1">
                           Anotações (Extraídas ou Manual)
                         </label>
                         <textarea
@@ -1668,7 +1449,7 @@ export default function App() {
                               notes: e.target.value,
                             })
                           }
-                          className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] placeholder-zinc-700"
+                          className="w-full bg-black border border-zinc-800/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] placeholder-zinc-700"
                           placeholder="Levar documentação atualizada..."
                         ></textarea>
                       </div>
@@ -1680,11 +1461,11 @@ export default function App() {
                       </button>
                     </form>
 
-                    <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-center">
+                    <div className="bg-zinc-950 border border-zinc-800/40 p-4 rounded-xl text-center">
                       <h4 className="text-[11px] text-zinc-300 font-mono mb-2">
                         Adição por Arquivos via IA
                       </h4>
-                      <p className="text-[10px] text-zinc-500 mb-3">
+                      <p className="text-xs text-zinc-500 mb-3">
                         Suba um PDF de calendário acadêmico, voo, ou roteiro
                         para IA agendar automaticamente.
                       </p>
@@ -1692,7 +1473,7 @@ export default function App() {
                         📤 Upload de Arquivo (PDF/CSV)
                         <input
                           type="file"
-                          className="hidden transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_var(--brand-glow)]"
+                          className="hidden transition-all duration-300 hover:border-zinc-600 focus:shadow-sm group-hover:shadow-[0_0_15px_var(--brand-glow)] transition-all"
                           onChange={(e) => handleFileUpload(e, "Agenda")}
                           accept=".pdf,.txt,.ics"
                         />
@@ -1700,7 +1481,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="w-full xl:w-2/3 border-t xl:border-t-0 xl:border-l border-zinc-800 xl:pl-6 pt-6 xl:pt-0">
+                  <div className="w-full xl:w-2/3 border-t xl:border-t-0 xl:border-l border-zinc-800/40 xl:pl-6 pt-6 xl:pt-0">
                     <h3 className="text-xs font-mono font-medium text-zinc-300 uppercase tracking-widest pl-2 border-l-2 border-[var(--brand-primary)] mb-4">
                       Compromissos Registrados
                     </h3>
@@ -1708,10 +1489,10 @@ export default function App() {
                       {systemState?.agenda?.map((item: any) => (
                         <div
                           key={item.id}
-                          className="bg-zinc-950 p-4 rounded-xl border border-zinc-800/60 flex flex-col h-full hover:border-zinc-700 transition duration-300"
+                          className="bg-zinc-950 p-4 rounded-xl border border-zinc-800/40 flex flex-col h-full hover:border-zinc-700 transition duration-300"
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <span className="px-2 py-0.5 bg-[var(--brand-dark)] border border-[var(--brand-border)] text-[9px] text-[var(--brand-light)] rounded">
+                            <span className="px-2 py-0.5 bg-[var(--brand-dark)] border border-[var(--brand-border)] text-xs text-[var(--brand-light)] rounded">
                               {item.category}
                             </span>
                             <button
@@ -1724,10 +1505,10 @@ export default function App() {
                           <h4 className="text-xs font-semibold text-white mt-1 line-clamp-2">
                             {item.title}
                           </h4>
-                          <div className="text-[9px] text-zinc-500 pt-2 pb-2 mb-auto mt-2 border-y border-zinc-900 leading-relaxed overflow-hidden text-clip whitespace-pre-wrap">
+                          <div className="text-xs text-zinc-500 pt-2 pb-2 mb-auto mt-2 border-y border-zinc-900 leading-relaxed overflow-hidden text-clip whitespace-pre-wrap">
                             {item.notes || "Sem anotações complementares."}
                           </div>
-                          <div className="text-[10px] font-medium mt-3 text-emerald-400 bg-emerald-950/20 px-2 py-1.5 rounded flex items-center justify-between">
+                          <div className="text-xs font-medium mt-3 text-emerald-400 bg-emerald-950/20 px-2 py-1.5 rounded flex items-center justify-between">
                             <span>
                               {new Date(item.datetime).toLocaleDateString(
                                 "pt-BR",
@@ -1744,7 +1525,7 @@ export default function App() {
                       ))}
                       {(!systemState?.agenda ||
                         systemState?.agenda.length === 0) && (
-                        <div className="col-span-2 text-center text-zinc-600 text-[10px] py-10 border border-dashed border-zinc-800 rounded-xl">
+                        <div className="col-span-2 text-center text-zinc-600 text-xs py-10 border border-dashed border-zinc-800/40 rounded-xl">
                           Nenhum compromisso cadastrado para o período.
                         </div>
                       )}
@@ -1756,12 +1537,12 @@ export default function App() {
 
             {/* TAB 4: CONFIGURAÇÕES & IOT */}
             {activeTab === "settings" && (
-              <div className="flex h-[calc(100vh-140px)] w-full overflow-hidden border border-zinc-800 rounded-xl bg-black/20 animate-fade-in relative z-10 shadow-2xl">
+              <div className="flex h-[calc(100vh-140px)] w-full overflow-hidden border border-zinc-800/40 rounded-xl bg-black/20 animate-fade-in relative z-10 shadow-2xl">
                 {/* Left Sidebar for Tabs */}
-                <div className="w-56 shrink-0 border-r border-zinc-800 bg-zinc-950/50 flex flex-col overflow-y-auto custom-scrollbar">
+                <div className="w-56 shrink-0 border-r border-zinc-800/40 bg-zinc-950/50 flex flex-col overflow-y-auto custom-scrollbar">
                   
                   {/* Category: SISTEMA */}
-                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800 bg-black/40">
+                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800/40 bg-black/40">
                     Sistema
                   </div>
                   <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1811,7 +1592,7 @@ export default function App() {
                   </div>
 
                   {/* Category: WORKSPACE & IA */}
-                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800 mt-2 bg-black/40">
+                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
                     Workspace & IA
                   </div>
                   <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1848,7 +1629,7 @@ export default function App() {
                   </div>
 
                   {/* Category: MANUTENÇÃO */}
-                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800 mt-2 bg-black/40">
+                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
                     Manutenção
                   </div>
                   <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1917,7 +1698,7 @@ export default function App() {
                       </h3>
                       <p className="text-[11px] text-zinc-400 leading-normal mb-3">
                         A IA estrutura e armazena os dados através de planilhas.{" "}
-                        <code className="text-[10px] text-lime-400 font-bold bg-zinc-950 border border-zinc-900 px-1 rounded">
+                        <code className="text-xs text-lime-400 font-bold bg-zinc-950 border border-zinc-900 px-1 rounded">
                           Sync Auto
                         </code>{" "}
                       </p>
@@ -1926,12 +1707,12 @@ export default function App() {
                         {systemState?.googleSheetsData?.map((sheet: any) => (
                           <div
                             key={sheet.sheet + sheet.spreadsheet}
-                            className="w-full text-left p-2.5 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-[11px] cursor-pointer"
+                            className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-zinc-950 hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-[11px] cursor-pointer"
                           >
-                            <span className="block font-bold text-white text-[10px] text-emerald-400">
+                            <span className="block font-bold text-white text-xs text-emerald-400">
                               📊 {sheet.spreadsheet} - {sheet.sheet}
                             </span>
-                            <span className="block text-[9px] text-zinc-500 truncate mt-0.5">
+                            <span className="block text-xs text-zinc-500 truncate mt-0.5">
                               {sheet.rows?.length || 0} Registros
                             </span>
                           </div>
@@ -1939,14 +1720,14 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="lg:col-span-3 bg-zinc-900/50 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
+                    <div className="lg:col-span-3 bg-zinc-900/50 border border-zinc-800/40 p-5 rounded-2xl flex flex-col justify-between">
                       <div>
-                        <div className="flex justify-between items-center border-b border-zinc-800 pb-3 mb-4">
+                        <div className="flex justify-between items-center border-b border-zinc-800/40 pb-3 mb-4">
                           <div>
                             <h3 className="text-xs font-bold text-white uppercase pr-2">
                               Visualizando Tabelas Relacionais do Cerebro
                             </h3>
-                            <p className="text-[10px] text-zinc-500">
+                            <p className="text-xs text-zinc-500">
                               Google Sheets OAuth (Próximo Módulo)
                             </p>
                           </div>
@@ -1957,9 +1738,9 @@ export default function App() {
                             (sheet: any, index: number) => (
                               <div
                                 key={index}
-                                className="bg-black/40 border border-zinc-800/60 rounded-xl p-4 group"
+                                className="bg-black/40 border border-zinc-800/40 rounded-xl p-4 group"
                               >
-                                <div className="text-[10px] font-bold text-emerald-400 mb-2 font-mono flex items-center justify-between">
+                                <div className="text-xs font-bold text-emerald-400 mb-2 font-mono flex items-center justify-between">
                                   <div className="flex items-center gap-1">
                                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
                                       {sheet.spreadsheet} &gt; {sheet.sheet}
@@ -1967,7 +1748,7 @@ export default function App() {
                                 </div>
                                 <div className="bg-zinc-950 text-xs font-mono text-zinc-350 p-3 rounded-lg border border-zinc-900 leading-loose overflow-x-auto">
                                   {sheet.rows?.map((r: string, i: number) => (
-                                      <div key={i} className="border-b border-zinc-800/50 pb-1 mb-1 last:border-0">{r}</div>
+                                      <div key={i} className="border-b border-zinc-800/40 pb-1 mb-1 last:border-0">{r}</div>
                                   ))}
                                 </div>
                               </div>
@@ -1976,7 +1757,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="border-t border-zinc-800 pt-3 mt-4 text-[10px] text-zinc-500 leading-normal">
+                      <div className="border-t border-zinc-800/40 pt-3 mt-4 text-xs text-zinc-500 leading-normal">
                         💡 <strong>Dica do JARVIS:</strong> Todas as informações estruturadas (metas, preferências, agendamentos longos) agora são guardadas na API do Sheets. Caso o OAuth não conclua, as informações ficarão apenas na memória do MOCK e sincronizadas com a UI do sistema local.
                       </div>
                     </div>
@@ -2048,7 +1829,7 @@ export default function App() {
                         5. Conectando a Segunda Memória (Obsidian)
                       </strong>
                       <p className="text-zinc-500 leading-relaxed">
-                        Agora instale o <a href="https://obsidian.md" target="_blank" className="text-rose-400 underline">Obsidian</a> no seu PC usando a pasta que configuramos (ex <code className="text-[10px] text-zinc-400">C:\jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
+                        Agora instale o <a href="https://obsidian.md" target="_blank" className="text-rose-400 underline">Obsidian</a> no seu PC usando a pasta que configuramos (ex <code className="text-xs text-zinc-400">C:\jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
                       </p>
                     </div>
                   </div>
@@ -2081,12 +1862,12 @@ export default function App() {
                 </div>
 
                 {/* Readme details */}
-                <div className="lg:col-span-2 bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl overflow-y-auto leading-relaxed text-xs space-y-5 shadow-inner">
-                  <div className="border-b border-zinc-800 pb-4">
+                <div className="lg:col-span-2 bg-zinc-900/50 border border-zinc-800/40 p-6 rounded-2xl overflow-y-auto leading-relaxed text-xs space-y-5 shadow-inner">
+                  <div className="border-b border-zinc-800/40 pb-4">
                     <h2 className="text-xl font-bold text-white tracking-wide">
                       JARVIS v5.0 — Manual de Arquitetura
                     </h2>
-                    <p className="text-[10px] uppercase tracking-wider text-[var(--brand-light)] font-mono mt-1">
+                    <p className="text-xs uppercase tracking-wider text-[var(--brand-light)] font-mono mt-1">
                       Sistemas de Assistência Pessoal Local-First e Privado
                     </p>
                   </div>
@@ -2115,7 +1896,7 @@ export default function App() {
                         <li>
                           Cria a estrutura de pastas do seu Obsidian Vault no
                           caminho físico{" "}
-                          <code className="text-yellow-400 text-[10px]">
+                          <code className="text-yellow-400 text-xs">
                             C:\jarvis-vault
                           </code>
                           .
@@ -2142,7 +1923,7 @@ export default function App() {
                         </strong>
                         :
                       </p>
-                      <div className="grid grid-cols-2 gap-3 mt-2 font-mono text-[10px]">
+                      <div className="grid grid-cols-2 gap-3 mt-2 font-mono text-xs">
                         <div className="bg-zinc-950 p-2.5 rounded border border-zinc-900">
                           <strong className="text-[var(--brand-light)] block mb-0.5">
                             Groq Cloud LPU
@@ -2170,7 +1951,7 @@ export default function App() {
                         português direto. Experimente falar ou digitar no
                         terminal da HUD:
                       </p>
-                      <div className="bg-zinc-950/80 p-3 rounded-lg border border-zinc-900 text-zinc-400 font-mono text-[10px] space-y-1">
+                      <div className="bg-zinc-950/80 p-3 rounded-lg border border-zinc-900 text-zinc-400 font-mono text-xs space-y-1">
                         <div>
                           🎤{" "}
                           <span className="text-white">
@@ -2204,7 +1985,7 @@ export default function App() {
                       <div className="text-zinc-300 text-xs">
                         Para economizar recursos computacionais, clique em
                         "Hibernar JARVIS" na bandeja. O app executará:
-                        <pre className="bg-black p-2 rounded text-rose-400 font-mono text-[10px] mt-1.5">
+                        <pre className="bg-black p-2 rounded text-rose-400 font-mono text-xs mt-1.5">
                           docker compose pause
                         </pre>
                         Isso congela a RAM e CPU liberando o desktop
@@ -2216,16 +1997,18 @@ export default function App() {
                 </div>
               </div>
             )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
 
         {/* Futuristic Bottom Status Bar Footer */}
-        <footer className="pt-4 border-t border-zinc-900 flex flex-col sm:flex-row justify-between items-center text-[10px] text-zinc-500 font-mono gap-3 shrink-0">
+        <footer className="pt-4 border-t border-zinc-900 flex flex-col sm:flex-row justify-between items-center text-xs text-zinc-500 font-mono gap-3 shrink-0">
           <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
             <span>SISTEMA: ONLINE</span>
             <span>SINAL TELEGRAM BOT: AGUARDANDO POLCHING</span>
             <span>DOCKER SUBNET: 172.18.0.0/16</span>
-            <span>LOCAL DEPLOYS: C:\jarvis-vault</span>
+            <span>LOCAL DEPLOYS: {import.meta.env.VITE_OBSIDIAN_VAULT_PATH || "VAULT LOCAL"}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

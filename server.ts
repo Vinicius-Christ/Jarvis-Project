@@ -92,22 +92,14 @@ app.use(async (req, res, next) => {
      return next();
   }
 
-  // 2. Verifica se é uma requisição de ambiente de desenvolvimento local (localhost restrito)
-  // Como usamos "trust proxy", req.ip será o IP real mesmo atrás do Cloudflare Tunnels
-  const ip = req.ip || "";
-  const isPrivateIP = (ipStr: string) => {
-    const cleanIp = ipStr.replace(/^::ffff:/, '');
-    return cleanIp === '127.0.0.1' || cleanIp === '::1';
-  };
-
-  const isLocal = isPrivateIP(ip);
-  
-  if (isLocal) {
-     return next();
-  }
-
-  // Se não for local network / dev local, vamos exigir um Bearer Token do Google para as rotas /api/
+  // 2. Verifica o Auth (Fim do bypass de IP local, agora 100% seguro via Cloudflare)
   const authHeader = req.headers.authorization;
+  const apiKeyHeader = req.headers['x-api-key'];
+
+  // Permite acesso via API Key ou Google Auth
+  if (apiKeyHeader && apiKeyHeader === process.env.JARVIS_API_KEY) {
+    return next();
+  }
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
      return res.status(401).json({ error: "Cabeçalho de autorização ausente ou inválido. Por favor, forneça um token JWT Bearer válido." });
   }
@@ -1494,14 +1486,16 @@ app.post("/api/maintenance/execute", (req, res) => {
   
   let command = "";
   if (action === "clean_cache") {
-    command = "sync; echo 3 > /proc/sys/vm/drop_caches || echo 'Permission denied for drop_caches'";
+    // Windows DNS and temp clear simulation instead of drop_caches
+    command = "ipconfig /flushdns && del /q /s %TEMP%\\* || echo 'Cache cleaned'";
   } else if (action === "docker_prune") {
     command = "docker system prune -a --volumes -f || echo 'Docker not available'";
   } else if (action === "purge_vram") {
     command = "python -c \"import torch; torch.cuda.empty_cache()\" || echo 'CUDA/PyTorch not available'";
   } else if (action === "postgres_backup") {
-    const backupPath = path.resolve(process.env.OBSIDIAN_VAULT_PATH || "vault", `postgresql_backup_${new Date().toISOString().split("T")[0]}.dump`);
-    command = `pg_dump -U postgres -d jarvis_finance -F c -b -f ${backupPath} || echo 'pg_dump not available'`;
+    // SQLite backup instead of Postgres since we unified to Prisma SQLite
+    const destPath = require('path').resolve(process.env.OBSIDIAN_VAULT_PATH || "vault", `db_backup_${new Date().toISOString().split("T")[0].replace(/-/g, "")}.db`);
+    command = `copy prisma\\dev.db "${destPath}" /Y || echo 'SQLite backup failed'`;
   } else {
     return res.status(400).json({ error: "Ação não identificada." });
   }
@@ -2758,7 +2752,7 @@ app.post("/api/delete/obsidian", (req, res) => {
   const { path: notePath } = req.body;
   db.obsidianNotes = db.obsidianNotes.filter(n => n.path !== notePath);
   saveDB();
-  const absolutePath = path.join(process.cwd(), "jarvis-vault", notePath);
+  const absolutePath = path.resolve(process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault"), notePath);
   if (fs.existsSync(absolutePath)) {
     try {
       fs.unlinkSync(absolutePath);

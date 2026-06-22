@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
-import { exec } from "child_process";
+
 import { promisify } from "util";
 import si from "systeminformation";
 import dns from "dns";
@@ -174,7 +174,7 @@ app.get("/api/public/config", (req, res) => {
   });
 });
 
-const DB_FILE = path.join(process.cwd(), "data", "db.json");
+const DB_FILE = path.join(process.cwd(), "data", "jarvisState.json");
 
 export interface DbSchema {
   githubRepo: string;
@@ -215,7 +215,7 @@ export interface DbSchema {
 }
 
 // Define basic initial DB
-let db: DbSchema = {
+let jarvisState: any = {
   githubRepo: "",
   githubToken: "",
   googleSheetUrl: "https://docs.google.com/spreadsheets/d/13wmGhejq3V78ZHSHl-SxayDZM7pk9s3qYRPVtZnbhgg/edit?usp=sharing",
@@ -286,7 +286,7 @@ async function loadDB() {
     const config = await prisma.appConfig.findUnique({ where: { key: DB_STATE_KEY } });
     if (config) {
       const parsed = JSON.parse(config.value);
-      db = { ...db, ...parsed }; // merge keys to prevent breaking if schema updates
+      jarvisState = { ...jarvisState, ...parsed }; // merge keys to prevent breaking if schema updates
     }
   } catch (err: any) {
     console.error("Falha ao ler o SQLite, usando configuracao padrao:", err?.message || err);
@@ -295,69 +295,32 @@ async function loadDB() {
   // Load specific tables to sync memory
   try {
     const finances = await prisma.finance.findMany();
-    if (finances.length > 0) db.finances = finances as any;
+    if (finances.length > 0) jarvisState.finances = finances as any;
     
     const agenda = await prisma.agenda.findMany();
-    if (agenda.length > 0) db.agenda = agenda as any;
+    if (agenda.length > 0) jarvisState.agenda = agenda as any;
     
     const convs = await prisma.conversation.findMany();
-    if (convs.length > 0) db.conversations = convs as any;
+    if (convs.length > 0) jarvisState.conversations = convs as any;
 
     const ha = await prisma.homeAssistantState.findFirst();
     if (ha) {
-      db.homeAssistant.ip = ha.ip;
-      db.homeAssistant.token = ha.token;
-      db.homeAssistant.ambientPreset = ha.ambientPreset;
-      db.homeAssistant.wsStatus = ha.wsStatus;
-      if (ha.lights) db.homeAssistant.lights = JSON.parse(ha.lights);
-      if (ha.ac) db.homeAssistant.ac = JSON.parse(ha.ac);
-      if (ha.devices) db.homeAssistant.devices = JSON.parse(ha.devices);
-      if (ha.hiddenDevices) db.homeAssistant.hiddenDevices = JSON.parse(ha.hiddenDevices);
-      if (ha.modesConfig) db.homeAssistant.modesConfig = JSON.parse(ha.modesConfig);
+      jarvisState.homeAssistant.ip = ha.ip;
+      jarvisState.homeAssistant.token = ha.token;
+      jarvisState.homeAssistant.ambientPreset = ha.ambientPreset;
+      jarvisState.homeAssistant.wsStatus = ha.wsStatus;
+      if (ha.lights) jarvisState.homeAssistant.lights = JSON.parse(ha.lights);
+      if (ha.ac) jarvisState.homeAssistant.ac = JSON.parse(ha.ac);
+      if (ha.devices) jarvisState.homeAssistant.devices = JSON.parse(ha.devices);
+      if (ha.hiddenDevices) jarvisState.homeAssistant.hiddenDevices = JSON.parse(ha.hiddenDevices);
+      if (ha.modesConfig) jarvisState.homeAssistant.modesConfig = JSON.parse(ha.modesConfig);
     }
   } catch(e) {}
 }
 
 let saveTimeout: null | NodeJS.Timeout = null;
 
-function saveDB() {
-  if (saveTimeout !== null) {
-    clearTimeout(saveTimeout);
-  }
-  
-  saveTimeout = setTimeout(async () => {
-    saveTimeout = null;
-    try {
-      await prisma.appConfig.upsert({
-        where: { key: DB_STATE_KEY },
-        update: { value: JSON.stringify({ ...db, finances: [], agenda: [], conversations: [], homeAssistant: {} }) },
-        create: { key: DB_STATE_KEY, value: JSON.stringify({ ...db, finances: [], agenda: [], conversations: [], homeAssistant: {} }) }
-      });
-      
-      const ha = db.homeAssistant;
-      const haFirst = await prisma.homeAssistantState.findFirst();
-      const haData = {
-        ip: ha.ip,
-        token: ha.token,
-        ambientPreset: ha.ambientPreset,
-        wsStatus: ha.wsStatus,
-        lights: JSON.stringify(ha.lights),
-        ac: JSON.stringify(ha.ac),
-        devices: JSON.stringify(ha.devices),
-        hiddenDevices: JSON.stringify(ha.hiddenDevices),
-        modesConfig: JSON.stringify(ha.modesConfig)
-      };
-      
-      if (haFirst) {
-        await prisma.homeAssistantState.update({ where: { id: haFirst.id }, data: haData });
-      } else {
-        await prisma.homeAssistantState.create({ data: haData });
-      }
-    } catch (err: any) {
-      console.error("Falha ao salvar no Prisma SQLite assincronamente:", err?.message || err);
-    }
-  }, 1000); // 1000ms debouncer
-}
+// Prisma handles persist
 
 function saveDBSync() {
   // Sync wrapper not really needed or replace with async wait before exit
@@ -419,19 +382,19 @@ function connectHomeAssistantWS() {
     reconnectTimeout = null;
   }
 
-  const ip = db.homeAssistant.ip || "";
-  const token = db.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI";
+  const ip = jarvisState.homeAssistant.ip || "";
+  const token = jarvisState.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI";
 
   console.log(`[HA WS] Tentando conectar ao Home Assistant em ws://${ip}:8123/api/websocket`);
   
   try {
-    db.homeAssistant.wsStatus = "connecting";
+    jarvisState.homeAssistant.wsStatus = "connecting";
     const wsUrl = `ws://${ip}:8123/api/websocket`;
     
     // Safety check for empty or placeholder token/ip
     if (!ip || ip.includes("COLOQUE_SEU") || !token || token.includes("COLOQUE_SEU")) {
       console.warn("[HA WS] IP ou Token do Home Assistant não parecem estar configurados. Aguardando configuração via painel.");
-      db.homeAssistant.wsStatus = "disconnected";
+      jarvisState.homeAssistant.wsStatus = "disconnected";
       return;
     }
 
@@ -439,7 +402,7 @@ function connectHomeAssistantWS() {
 
     haWS.on("open", () => {
       console.log(`[HA WS] Socket aberto com sucesso. Aguardando requerimento de autorização...`);
-      db.homeAssistant.wsStatus = "authenticating";
+      jarvisState.homeAssistant.wsStatus = "authenticating";
     });
 
     haWS.on("message", (data) => {
@@ -454,9 +417,9 @@ function connectHomeAssistantWS() {
           }));
         } else if (msg.type === "auth_ok") {
           console.log("[HA WS] Conectado e Autenticado com Sucesso!");
-          db.homeAssistant.wsStatus = "connected";
+          jarvisState.homeAssistant.wsStatus = "connected";
           haReconnectDelay = 15000; // Reset reconnection backoff delay on success
-          saveDB();
+          
 
           // Obter informações estáticas e estados iniciais de todos os gadgets
           haMessageId = 1;
@@ -474,13 +437,13 @@ function connectHomeAssistantWS() {
 
         } else if (msg.type === "auth_invalid") {
           console.error("[HA WS] Erro crítico: Autenticação Rejeitada (Token inválido ou expirado).");
-          db.homeAssistant.wsStatus = "error";
+          jarvisState.homeAssistant.wsStatus = "error";
           // Auth is invalid, do not reconnect automatically
           if (reconnectTimeout) {
             clearTimeout(reconnectTimeout);
             reconnectTimeout = null;
           }
-          saveDB();
+          
         } else if (msg.type === "result") {
           if (msg.success && Array.isArray(msg.result)) {
             console.log(`[HA WS] Inicializados ${msg.result.length} estados do Home Assistant.`);
@@ -501,20 +464,20 @@ function connectHomeAssistantWS() {
 
     haWS.on("close", () => {
       console.warn(`[HA WS] Conexão terminada. Tentando se reconectar em ${haReconnectDelay / 1000} segundos...`);
-      db.homeAssistant.wsStatus = "disconnected";
+      jarvisState.homeAssistant.wsStatus = "disconnected";
       reconnectTimeout = setTimeout(connectHomeAssistantWS, haReconnectDelay);
       haReconnectDelay = Math.min(haReconnectDelay * 2, 120000); // Exponential backoff capped at 2 minutes
     });
 
     haWS.on("error", (err: any) => {
       console.error("[HA WS] Erro na transmissão de dados do socket:", err?.message || err);
-      db.homeAssistant.wsStatus = "error";
+      jarvisState.homeAssistant.wsStatus = "error";
       // O evento close será acionado em seguida
     });
 
   } catch (err: any) {
     console.error("[HA WS] Falha ao disparar o construtor WebSocket do Home Assistant:", err?.message || err);
-    db.homeAssistant.wsStatus = "error";
+    jarvisState.homeAssistant.wsStatus = "error";
     reconnectTimeout = setTimeout(connectHomeAssistantWS, haReconnectDelay);
     haReconnectDelay = Math.min(haReconnectDelay * 2, 120000);
   }
@@ -559,13 +522,13 @@ function syncEntitiesWithDB(entities: any[]) {
       integration: "Matter / Zigbee / WiFi (WS-Live)",
       status: statusText,
       state: currentState,
-      targetUrl: `http://${db.homeAssistant.ip || ""}:8123`
+      targetUrl: `http://${jarvisState.homeAssistant.ip || ""}:8123`
     };
   });
 
-  const manualDevices = db.homeAssistant.devices.filter(d => !d.id.includes("."));
-  db.homeAssistant.devices = [...manualDevices, ...updatedDevices];
-  saveDB();
+  const manualDevices = jarvisState.homeAssistant.devices.filter(d => !d.id.includes("."));
+  jarvisState.homeAssistant.devices = [...manualDevices, ...updatedDevices];
+  
 }
 
 function updateEntityInDB(entity: any) {
@@ -575,7 +538,7 @@ function updateEntityInDB(entity: any) {
     return;
   }
 
-  const existingIdx = db.homeAssistant.devices.findIndex(d => d.id === id);
+  const existingIdx = jarvisState.homeAssistant.devices.findIndex(d => d.id === id);
   const friendlyName = entity.attributes.friendly_name || id;
   const currentState = entity.state;
   const unit = entity.attributes.unit_of_measurement || "";
@@ -604,19 +567,19 @@ function updateEntityInDB(entity: any) {
     integration: "Matter / Zigbee / WiFi (WS-Live)",
     status: statusText,
     state: currentState,
-    targetUrl: `http://${db.homeAssistant.ip || ""}:8123`
+    targetUrl: `http://${jarvisState.homeAssistant.ip || ""}:8123`
   };
 
   if (existingIdx >= 0) {
-    db.homeAssistant.devices[existingIdx] = deviceData;
+    jarvisState.homeAssistant.devices[existingIdx] = deviceData;
   } else {
-    db.homeAssistant.devices.push(deviceData);
+    jarvisState.homeAssistant.devices.push(deviceData);
   }
-  saveDB();
+  
 }
 
 function callHAService(entity_id: string, service: string, domain: string, service_data?: any) {
-  if (haWS && db.homeAssistant.wsStatus === "connected" && haWS.readyState === WebSocket.OPEN) {
+  if (haWS && jarvisState.homeAssistant.wsStatus === "connected" && haWS.readyState === WebSocket.OPEN) {
     try {
       console.log(`[HA WS] Disparando Comando IoT WebSocket: ${domain}.${service} para ${entity_id}`);
       haWS.send(JSON.stringify({
@@ -958,14 +921,14 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
   // 1. Build prompt context using Obsidian Notes
   let contextPrompt = `Memória Atual do JARVIS (Obsidian Vault):\n`;
-  db.obsidianNotes.forEach(note => {
+  jarvisState.obsidianNotes.forEach(note => {
     contextPrompt += `--- ${note.path} ---\n${note.content}\n\n`;
   });
 
   // 1b. Inject Real Agenda/Calendar database events
   contextPrompt += `\n[SISTEMA DE CALENDÁRIO / AGENDA / COMPROMISSOS REAIS CADASTRADOS]:\n`;
-  if (db.agenda && db.agenda.length > 0) {
-    db.agenda.forEach(item => {
+  const agendaList = await prisma.agenda.findMany(); if (agendaList.length > 0) {
+    jarvisState.agenda.forEach(item => {
       contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"} | Notas: ${item.notes || "Sem notas."}\n`;
     });
   } else {
@@ -974,8 +937,8 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
   // 1c. Inject Real Finances database transactions
   contextPrompt += `\n[SISTEMA FINANCEIRO / GASTOS / TRANSAÇÕES REAIS CADASTRADAS]:\n`;
-  if (db.finances && db.finances.length > 0) {
-    db.finances.forEach(item => {
+  const financesList = await prisma.finance.findMany(); if (financesList.length > 0) {
+    jarvisState.finances.forEach(item => {
       contextPrompt += `- ID: ${item.id} | Valor: R$ ${parseFloat(item.value).toFixed(2)} | Categoria: ${item.category} | Descrição: "${item.description}"\n`;
     });
   } else {
@@ -983,16 +946,16 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
   }
 
   // PRE-PROCESS INTEGRATED MCP TOOLS
-  if (db.mcpEnabled && db.mcpServers) {
-    const fsSrv = db.mcpServers.find(s => s.id === "fs");
-    const dbSrv = db.mcpServers.find(s => s.id === "db");
+  if (jarvisState.mcpEnabled && jarvisState.mcpServers) {
+    const fsSrv = jarvisState.mcpServers.find(s => s.id === "fs");
+    const dbSrv = jarvisState.mcpServers.find(s => s.id === "db");
     const lowerMsg = message.toLowerCase();
 
     // 1. search_notes hook
     if (fsSrv && fsSrv.active && (lowerMsg.includes("buscar") || lowerMsg.includes("pesquisar") || lowerMsg.includes("mcp search") || lowerMsg.includes("procurar"))) {
       const q = message.replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim();
       if (q.length > 1) {
-        const found = db.obsidianNotes.filter(n => 
+        const found = jarvisState.obsidianNotes.filter(n => 
           n.path.toLowerCase().includes(q.toLowerCase()) || n.content.toLowerCase().includes(q.toLowerCase())
         );
         contextPrompt += `\n\n[MCP SYSTEM TOOL - search_notes RESULT para query: "${q}"]:\n` + 
@@ -1004,7 +967,7 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
     // 2. read_note hook
     if (fsSrv && fsSrv.active && (lowerMsg.includes("ler nota") || lowerMsg.includes("ler arquivo") || lowerMsg.includes("abrir nota") || lowerMsg.includes("conteúdo de"))) {
-      const noteToRead = db.obsidianNotes.find(n => 
+      const noteToRead = jarvisState.obsidianNotes.find(n => 
         lowerMsg.includes(n.path.toLowerCase()) || lowerMsg.includes(path.basename(n.path).toLowerCase())
       );
       if (noteToRead) {
@@ -1014,7 +977,10 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
     // 3. get_finances hook
     if (dbSrv && dbSrv.active && (lowerMsg.includes("finance") || lowerMsg.includes("gastos") || lowerMsg.includes("extrato") || lowerMsg.includes("despesas") || lowerMsg.includes("finanças"))) {
-      const transactions = db.finances;
+      
+// MCP tool sync get_finances
+const transactions = jarvisState.finances || [];
+
       contextPrompt += `\n\n[MCP SYSTEM TOOL - get_finances RESULT (Registros de SQL local)]:\n` + 
         (transactions.length > 0 
           ? transactions.map(t => `- R$ ${t.value.toFixed(2)} (${t.category}): ${t.description} [Ref ID: ${t.id}]`).join("\n") 
@@ -1023,7 +989,7 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
   }
   
   const currentSaoPauloTime = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  const selectedP = db.activePersona || "jarvis";
+  const selectedP = jarvisState.activePersona || "jarvis";
   const personaDetails = AI_PERSONAS[selectedP] || AI_PERSONAS.jarvis;
 
   contextPrompt += `\n[FUSO HORÁRIO / DATA E HORA DE BRASÍLIA/SP]: ${currentSaoPauloTime}. Sempre use para calcular compromissos relativos ("hoje", "amanhã", "este sábado", etc.)\n\n`;
@@ -1139,12 +1105,12 @@ Texto a ser salvo
         replyText = `Processando arquivo 📂 **${file.name}**. Por favor, adicione sua chave \`GROQ_API_KEY\` para processamento cognitivo avançado na nuvem.`;
       }
     } else {
-      const fsSrv = db.mcpServers?.find(s => s.id === "fs");
-      const dbSrv = db.mcpServers?.find(s => s.id === "db");
+      const fsSrv = jarvisState.mcpServers?.find(s => s.id === "fs");
+      const dbSrv = jarvisState.mcpServers?.find(s => s.id === "db");
 
-      if (db.mcpEnabled && fsSrv && fsSrv.active && (lower.includes("buscar") || lower.includes("pesquisar") || lower.includes("ler") || lower.includes("obsidian")) && (lower.includes("nota") || lower.includes("arquivo") || lower.includes("procurar") || lower.includes("mcp"))) {
+      if (jarvisState.mcpEnabled && fsSrv && fsSrv.active && (lower.includes("buscar") || lower.includes("pesquisar") || lower.includes("ler") || lower.includes("obsidian")) && (lower.includes("nota") || lower.includes("arquivo") || lower.includes("procurar") || lower.includes("mcp"))) {
         const q = message.replace(/buscar|pesquisar|localizar|procurar|nota|notas|arquivo|obsidian|no|de|do|por/gi, "").trim() || "geral";
-        const found = db.obsidianNotes.filter(n => 
+        const found = jarvisState.obsidianNotes.filter(n => 
           n.path.toLowerCase().includes(q.toLowerCase()) || n.content.toLowerCase().includes(q.toLowerCase())
         );
         replyText = `Senhor, de acordo com o protocolo **Model Context Protocol (MCP)**, acionei o canal de comunicação do seu **Servidor MCP Local (Sistema de Arquivos)** e executei as ferramentas nativas \`search_notes\` e \`read_note\`.
@@ -1153,8 +1119,11 @@ Texto a ser salvo
 ${found.length > 0 ? found.map(f => `- 📝 **${f.path}**: "${f.content.substring(0, 150)}..."`).join("\n") : "*(Nenhum arquivo correspondente localizado no Obsidian Vault)*"}
 
 A IA do JARVIS realizou a varredura local nos seus arquivos com sucesso via MCP Server.`;
-      } else if (db.mcpEnabled && dbSrv && dbSrv.active && (lower.includes("gasto") || lower.includes("finan") || lower.includes("extrato") || lower.includes("despesa") || lower.includes("finanças"))) {
-        const transactions = db.finances;
+      } else if (jarvisState.mcpEnabled && dbSrv && dbSrv.active && (lower.includes("gasto") || lower.includes("finan") || lower.includes("extrato") || lower.includes("despesa") || lower.includes("finanças"))) {
+        
+// MCP tool sync get_finances
+const transactions = jarvisState.finances || [];
+
         replyText = `Senhor, estabeleci comunicação direta com o seu banco SQLite local por meio do **Servidor MCP Local (Acesso PostgreSQL/SQLite)** chamando o driver da ferramenta nativa \`get_finances\`.
 
 **Sua Consola Financeira Local (MCP):**
@@ -1194,16 +1163,16 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
       } else if (lower.includes("estudos") || lower.includes("trabalhar") || lower.includes("workspace")) {
         replyText = "Configurando a ponte de automação local. Abrindo o Notion e documentações, bons estudos. <command type=\"PC\" workspace=\"study\" />";
       } else if (lower.includes("agenda") || lower.includes("compromisso") || lower.includes("reunião")) {
-        if (db.agenda && db.agenda.length > 0) {
-          const list = db.agenda.map(a => `- **${a.title}** (${new Date(a.datetime).toLocaleString('pt-BR', { timeZone: 'UTC' })}) - *${a.category || "Agenda"}*: ${a.notes || ""}`).join("\n");
+        const agendaList = await prisma.agenda.findMany(); if (agendaList.length > 0) {
+          const list = agendaList.map(a => `- **${a.title}** (${new Date(a.datetime).toLocaleString('pt-BR', { timeZone: 'UTC' })}) - *${a.category || "Agenda"}*: ${a.notes || ""}`).join("\n");
           replyText = `Com certeza, senhor. Consultei a base de dados em tempo real. Aqui estão os compromissos cadastrados no seu calendário:\n\n${list}\n\nDeseja realizar alguma alteração ou agendar novo evento?`;
         } else {
           replyText = `Com certeza, senhor. Consultei sua agenda no sistema e verifiquei que não há nenhum compromisso agendado no momento.\n\nDeseja que eu agende algo para o senhor? Basta pedir "Agende uma reunião amanhã às 15:00", por exemplo!`;
         }
       } else if (lower.includes("gasto") || lower.includes("finan") || lower.includes("despesa") || lower.includes("transação")) {
-        if (db.finances && db.finances.length > 0) {
-          const list = db.finances.map(f => `- **R$ ${parseFloat(f.value).toFixed(2)}** (${f.category}): ${f.description}`).join("\n");
-          const total = db.finances.reduce((acc, f) => acc + parseFloat(f.value), 0);
+        const financesList = await prisma.finance.findMany(); if (financesList.length > 0) {
+          const list = financesList.map(f => `- **R$ ${Number(f.value).toFixed(2)}** (${f.category}): ${f.description}`).join("\n");
+          const total = financesList.reduce((acc, f) => acc + Number(f.value), 0);
           replyText = `Senhor, consultei os lançamentos no banco de dados. Aqui estão as transações cadastradas:\n\n${list}\n\n**Total Geral:** R$ ${total.toFixed(2)}.\n\nDeseja cadastrar um novo lançamento ou excluir alguma despesa?`;
         } else {
           replyText = `Senhor, verifiquei na base de dados SQLite/PostgreSQL e não localizei nenhuma transação registrada atualmente.\n\nDeseja registrar algum gasto? Você pode dizer "Lance uma despesa de R$ 45.90 com Jantar de ifood", por exemplo!`;
@@ -1227,12 +1196,12 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     const msgLower = message.toLowerCase();
     
     if (msgLower.includes("agenda") || msgLower.includes("compromisso") || msgLower.includes("reunião")) {
-      if (!db.agenda || db.agenda.length === 0) {
+      if (agendaList.length === 0) {
         // Se a agenda real está completamente vazia
         replyText = `Mestre, consultei a base de dados central em tempo real e confirmo que **não há nenhum compromisso agendado** na sua agenda no momento.\n\nDeseja que eu registre ou agende algum novo compromisso para o senhor?`;
       } else {
         // Se a agenda tem compromissos reais, mas o LLM pode ter alucinado outros fictícios, nós injetamos a lista real no texto da resposta de forma polida!
-        const listStr = db.agenda.map(a => {
+        const listStr = agendaList.map(a => {
           const dateFormatted = new Date(a.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
           return `- **${a.title}** (${dateFormatted}) - *${a.category || "Trabalho"}*`;
         }).join("\n");
@@ -1241,11 +1210,11 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     }
     
     if (msgLower.includes("gasto") || msgLower.includes("finan") || msgLower.includes("despesa") || msgLower.includes("transação") || msgLower.includes("saldo")) {
-      if (!db.finances || db.finances.length === 0) {
+      if (financesList.length === 0) {
         replyText = `Senhor, verifiquei os registros da base de dados financeira e confirmo que **não há nenhuma transação ou gasto cadastrado**.\n\nDeseja que eu lance alguma despesa ou receita agora?`;
       } else {
-        const listStr = db.finances.map(f => `- **R$ ${parseFloat(f.value).toFixed(2)}** (${f.category}): ${f.description}`).join("\n");
-        const total = db.finances.reduce((acc, f) => acc + parseFloat(f.value), 0);
+        const listStr = financesList.map(f => `- **R$ ${Number(f.value).toFixed(2)}** (${f.category}): ${f.description}`).join("\n");
+        const total = financesList.reduce((acc, f) => acc + Number(f.value), 0);
         replyText = `Senhor, aqui estão os lançamentos financeiros oficiais cadastrados no sistema:\n\n${listStr}\n\n**Total Geral:** R$ ${total.toFixed(2)}.\n\nDeseja realizar algum novo lançamento ou excluir alguma despesa?`;
       }
     }
@@ -1258,11 +1227,11 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     const parsedPath = match[1].trim();
     const parsedContent = match[2].trim();
     
-    const existingNote = db.obsidianNotes.find(n => n.path === parsedPath);
+    const existingNote = jarvisState.obsidianNotes.find(n => n.path === parsedPath);
     if (existingNote) {
       existingNote.content = parsedContent;
     } else {
-      db.obsidianNotes.push({ path: parsedPath, content: parsedContent });
+      jarvisState.obsidianNotes.push({ path: parsedPath, content: parsedContent });
     }
     syncNoteToVault(parsedPath, parsedContent);
   }
@@ -1281,19 +1250,19 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     
     const newRows = rowsText.split("\n").map(r => r.replace(/^- /, "").trim());
     
-    if (!db.googleSheetsData) db.googleSheetsData = [];
+    if (!jarvisState.googleSheetsData) jarvisState.googleSheetsData = [];
     
-    const existingDoc = db.googleSheetsData.find((d: any) => d.spreadsheet === spName && d.sheet === shName);
+    const existingDoc = jarvisState.googleSheetsData.find((d: any) => d.spreadsheet === spName && d.sheet === shName);
     if (existingDoc) {
       existingDoc.rows.push(...newRows);
     } else {
-      db.googleSheetsData.push({ spreadsheet: spName, sheet: shName, rows: newRows });
+      jarvisState.googleSheetsData.push({ spreadsheet: spName, sheet: shName, rows: newRows });
     }
 
     // Trigger real Google Sheets sync if user is logged in & has configured spreadsheet URL
-    if (db.googleSheetUrl) {
+    if (jarvisState.googleSheetUrl) {
       if (token) {
-        syncToGoogleSheets(db.googleSheetUrl, shName, newRows, token).catch(e => {
+        syncToGoogleSheets(jarvisState.googleSheetUrl, shName, newRows, token).catch(e => {
           console.error("Async Google Sheets sync failed:", e);
         });
       } else {
@@ -1307,15 +1276,23 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   const displayText = file ? `${message} (📂 Anexo: ${file.name})` : message;
   const modelLabel = isLocalSimulated ? `${groqModelName.toUpperCase()} [Cloud Mock]` : `${groqModelName.toUpperCase()} [Native Local]`;
   
-  db.conversations.push({ sender: "User", text: displayText, time: new Date().toISOString() });
-  db.conversations.push({ sender: "JARVIS", text: replyText, time: new Date().toISOString() });
+  
+  try {
+    await prisma.conversation.create({ data: { sender: "User", text: displayText } });
+  } catch (e) {}
+
+  
+  try {
+    await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
+  } catch (e) {}
+
   
   try {
     await prisma.conversation.create({ data: { sender: "User", text: displayText } });
     await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
   } catch (err) { }
 
-  saveDB();
+  
   
   return res.json({
     text: replyText,
@@ -1325,8 +1302,23 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
 });
 
 // Endpoint: Database read/write simulations
-app.get("/api/db", (_req, res) => {
-  res.json(db);
+app.get("/api/db", async (_req, res) => {
+  jarvisState.finances = await prisma.finance.findMany();
+  jarvisState.agenda = await prisma.agenda.findMany();
+  jarvisState.conversations = await prisma.conversation.findMany();
+  const haState = await prisma.homeAssistantState.findFirst();
+  if (haState) {
+    jarvisState.homeAssistant.ip = haState.ip;
+    jarvisState.homeAssistant.token = haState.token;
+    jarvisState.homeAssistant.ambientPreset = haState.ambientPreset;
+    jarvisState.homeAssistant.wsStatus = haState.wsStatus;
+    if (haState.lights) jarvisState.homeAssistant.lights = JSON.parse(haState.lights);
+    if (haState.ac) jarvisState.homeAssistant.ac = JSON.parse(haState.ac);
+    if (haState.devices) jarvisState.homeAssistant.devices = JSON.parse(haState.devices);
+    if (haState.hiddenDevices) jarvisState.homeAssistant.hiddenDevices = JSON.parse(haState.hiddenDevices);
+    if (haState.modesConfig) jarvisState.homeAssistant.modesConfig = JSON.parse(haState.modesConfig);
+  }
+  res.json(jarvisState);
 });
 
 let staticHardware: { cpu: string; gpus: any[] } | null = null;
@@ -1480,27 +1472,26 @@ app.get("/api/system/hardware", async (_req, res) => {
 });
 
 // Maintenance controls execution SSH
+const { exec } = require("child_process");
 app.post("/api/maintenance/execute", (req, res) => {
   const { action } = req.body;
   if (!action) return res.status(400).json({ error: "Missing action" });
   
   let command = "";
   if (action === "clean_cache") {
-    // Windows DNS and temp clear simulation instead of drop_caches
     command = "ipconfig /flushdns && del /q /s %TEMP%\\* || echo 'Cache cleaned'";
   } else if (action === "docker_prune") {
     command = "docker system prune -a --volumes -f || echo 'Docker not available'";
   } else if (action === "purge_vram") {
     command = "python -c \"import torch; torch.cuda.empty_cache()\" || echo 'CUDA/PyTorch not available'";
   } else if (action === "postgres_backup") {
-    // SQLite backup instead of Postgres since we unified to Prisma SQLite
     const destPath = require('path').resolve(process.env.OBSIDIAN_VAULT_PATH || "vault", `db_backup_${new Date().toISOString().split("T")[0].replace(/-/g, "")}.db`);
     command = `copy prisma\\dev.db "${destPath}" /Y || echo 'SQLite backup failed'`;
   } else {
     return res.status(400).json({ error: "Ação não identificada." });
   }
 
-  exec(command, { timeout: 30000 }, (err, stdout, stderr) => {
+  exec(command, { timeout: 30000 }, (err: any, stdout: string, stderr: string) => {
     let logs: string[] = [];
     const timestamp = new Date().toLocaleTimeString("pt-BR", { hour12: false });
     logs.push(`[MAINTENANCE] [${timestamp}] Executando: ${command}`);
@@ -1513,56 +1504,57 @@ app.post("/api/maintenance/execute", (req, res) => {
 });
 
 
+
 // Endpoint: Trigger local simulation installer
 app.post("/api/install/trigger", (req, res) => {
-  if (db.installer.status === "installing") {
+  if (jarvisState.installer.status === "installing") {
     return res.json({ message: "A instalação já está em andamento, senhor." });
   }
 
   const { detectExisting } = req.body;
 
-  db.installer.status = "installing";
-  db.installer.progress = 10;
-  db.installer.logs = [
+  jarvisState.installer.status = "installing";
+  jarvisState.installer.progress = 10;
+  jarvisState.installer.logs = [
     "[INFO] Iniciando provisionamento REAL com docker-compose...",
     "[INFO] Estabelecendo canais de comunicação com Docker Daemon..."
   ];
 
-  db.installer.modules.docker.status = "running";
+  jarvisState.installer.modules.docker.status = "running";
   
   const cmd = `docker compose up -d || echo 'Docker Compose falhou. Verifique a instalação do Docker local.'`;
   
   exec(cmd, { cwd: process.cwd(), timeout: 120000 }, (err, stdout, stderr) => {
-    db.installer.progress = 50;
-    if (stdout) db.installer.logs.push(`[STDOUT] ${stdout}`);
-    if (stderr) db.installer.logs.push(`[STDERR] ${stderr}`);
-    if (err) db.installer.logs.push(`[ERROR] ${err.message}`);
+    jarvisState.installer.progress = 50;
+    if (stdout) jarvisState.installer.logs.push(`[STDOUT] ${stdout}`);
+    if (stderr) jarvisState.installer.logs.push(`[STDERR] ${stderr}`);
+    if (err) jarvisState.installer.logs.push(`[ERROR] ${err.message}`);
     
-    db.installer.modules.docker.status = "completed";
-    db.installer.modules.docker.progress = 100;
+    jarvisState.installer.modules.docker.status = "completed";
+    jarvisState.installer.modules.docker.progress = 100;
     
-    db.installer.modules.obsidian.status = "running";
+    jarvisState.installer.modules.obsidian.status = "running";
     const vaultDir = process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault");
     try {
       if (!fs.existsSync(vaultDir)) fs.mkdirSync(vaultDir, { recursive: true });
-      db.installer.logs.push(`[OBSIDIAN] Repositório real configurado em: ${vaultDir}`);
-      db.installer.modules.obsidian.status = "completed";
-      db.installer.modules.obsidian.progress = 100;
+      jarvisState.installer.logs.push(`[OBSIDIAN] Repositório real configurado em: ${vaultDir}`);
+      jarvisState.installer.modules.obsidian.status = "completed";
+      jarvisState.installer.modules.obsidian.progress = 100;
     } catch(e: any) {
-      db.installer.logs.push(`[ERROR] Falha no Obsidian Vault: ${e.message}`);
+      jarvisState.installer.logs.push(`[ERROR] Falha no Obsidian Vault: ${e.message}`);
     }
 
-    db.installer.modules.n8n.status = "running";
-    db.installer.progress = 90;
-    db.installer.logs.push(`[N8N] Conectando trigger do sistema e checando conectividade...`);
+    jarvisState.installer.modules.n8n.status = "running";
+    jarvisState.installer.progress = 90;
+    jarvisState.installer.logs.push(`[N8N] Conectando trigger do sistema e checando conectividade...`);
     
     setTimeout(() => {
-      db.installer.progress = 100;
-      db.installer.status = "completed";
-      db.installer.modules.n8n.progress = 100;
-      db.installer.modules.n8n.status = "completed";
-      db.installer.logs.push("[N8N] Workflows ativados com gatilhos locais do WebSocket.");
-      db.installer.logs.push("[JARVIS] PROCESSO COMPLETO REALIZADO.");
+      jarvisState.installer.progress = 100;
+      jarvisState.installer.status = "completed";
+      jarvisState.installer.modules.n8n.progress = 100;
+      jarvisState.installer.modules.n8n.status = "completed";
+      jarvisState.installer.logs.push("[N8N] Workflows ativados com gatilhos locais do WebSocket.");
+      jarvisState.installer.logs.push("[JARVIS] PROCESSO COMPLETO REALIZADO.");
     }, 2000);
   });
 
@@ -1571,20 +1563,20 @@ app.post("/api/install/trigger", (req, res) => {
 
 // Endpoint: Reset/Reset of setup State
 app.post("/api/install/reset", (_req, res) => {
-  db.installer.status = "idle";
-  db.installer.progress = 0;
-  db.installer.logs = [];
-  db.installer.modules.docker = { label: "Docker Desktop & Containers", status: "pending", progress: 0 };
-  db.installer.modules.obsidian = { label: "Obsidian Vault & Templates", status: "pending", progress: 0 };
-  db.installer.modules.n8n = { label: "n8n Orquestrador & Workflows", status: "pending", progress: 0 };
+  jarvisState.installer.status = "idle";
+  jarvisState.installer.progress = 0;
+  jarvisState.installer.logs = [];
+  jarvisState.installer.modules.docker = { label: "Docker Desktop & Containers", status: "pending", progress: 0 };
+  jarvisState.installer.modules.obsidian = { label: "Obsidian Vault & Templates", status: "pending", progress: 0 };
+  jarvisState.installer.modules.n8n = { label: "n8n Orquestrador & Workflows", status: "pending", progress: 0 };
   res.json({ message: "Estado de instalação reiniciado." });
 });
 
 app.post("/api/system/toggle", async (_req, res) => {
-  db.systemActive = !db.systemActive;
+  jarvisState.systemActive = !jarvisState.systemActive;
   
-  if (!db.containerMockStates) {
-    db.containerMockStates = {
+  if (!jarvisState.containerMockStates) {
+    jarvisState.containerMockStates = {
       n8n: "running",
       homeassistant: "running",
       postgres: "running",
@@ -1593,14 +1585,14 @@ app.post("/api/system/toggle", async (_req, res) => {
   }
 
   try {
-    if (!db.systemActive) {
+    if (!jarvisState.systemActive) {
       console.log("[DOCKER] Hibernando sistema: Parando containers para economizar CPU e RAM...");
       
       // Atualiza estados para o frontend refletir a hibernação imediatamente
-      Object.keys(db.containerMockStates).forEach(key => {
-        db.containerMockStates[key] = "exited";
+      Object.keys(jarvisState.containerMockStates).forEach(key => {
+        jarvisState.containerMockStates[key] = "exited";
       });
-      saveDB();
+      
 
       await new Promise<void>((resolve) => {
         exec("docker compose stop", { cwd: process.cwd(), timeout: 20000 }, (err) => {
@@ -1611,10 +1603,10 @@ app.post("/api/system/toggle", async (_req, res) => {
       console.log("[DOCKER] Acordando sistema: Subindo containers...");
       
       // Atualiza estados para o frontend refletir a ativação imediatamente
-      Object.keys(db.containerMockStates).forEach(key => {
-        db.containerMockStates[key] = "running";
+      Object.keys(jarvisState.containerMockStates).forEach(key => {
+        jarvisState.containerMockStates[key] = "running";
       });
-      saveDB();
+      
 
       await new Promise<void>((resolve) => {
         // Usar up -d é cem vezes mais seguro pois cria os pacotes caso tenham sido apagados e sobe os parados
@@ -1625,7 +1617,7 @@ app.post("/api/system/toggle", async (_req, res) => {
     }
   } catch(e) {}
 
-  res.json({ success: true, systemActive: db.systemActive });
+  res.json({ success: true, systemActive: jarvisState.systemActive });
 });
 
 app.post("/api/docker/restart", async (req, res) => {
@@ -1645,21 +1637,21 @@ app.post("/api/docker/restart", async (req, res) => {
 
 // Endpoint: Google Sheets Global Config
 app.get("/api/settings/googlesheets", (req, res) => {
-  res.json({ googleSheetUrl: db.googleSheetUrl || "" });
+  res.json({ googleSheetUrl: jarvisState.googleSheetUrl || "" });
 });
 
 app.post("/api/settings/googlesheets", (req, res) => {
   const { url } = req.body;
   if (url !== undefined) {
-    db.googleSheetUrl = url;
-    saveDB();
+    jarvisState.googleSheetUrl = url;
+    
   }
-  res.json({ success: true, googleSheetUrl: db.googleSheetUrl });
+  res.json({ success: true, googleSheetUrl: jarvisState.googleSheetUrl });
 });
 
 // Endpoint: AI Persona Selector API
 app.get("/api/ai/persona", (_req, res) => {
-  const persona = db.activePersona || "jarvis";
+  const persona = jarvisState.activePersona || "jarvis";
   res.json({ activePersona: persona, info: AI_PERSONAS[persona] });
 });
 
@@ -1668,9 +1660,9 @@ app.post("/api/ai/persona", (req, res) => {
   if (!persona || !AI_PERSONAS[persona]) {
     return res.status(400).json({ error: "Persona inválida" });
   }
-  db.activePersona = persona;
-  saveDB();
-  res.json({ success: true, activePersona: db.activePersona, info: AI_PERSONAS[db.activePersona] });
+  jarvisState.activePersona = persona;
+  
+  res.json({ success: true, activePersona: jarvisState.activePersona, info: AI_PERSONAS[jarvisState.activePersona] });
 });
 
 // Endpoint: Individual Docker Container Control Actions
@@ -1694,8 +1686,8 @@ app.post("/api/docker/action", (req, res) => {
   }
 
   // Sincronizar o estado simulado local para que o preview na nuvem funcione perfeitamente
-  if (!db.containerMockStates) {
-    db.containerMockStates = {
+  if (!jarvisState.containerMockStates) {
+    jarvisState.containerMockStates = {
       n8n: "running",
       homeassistant: "running",
       postgres: "running",
@@ -1703,20 +1695,20 @@ app.post("/api/docker/action", (req, res) => {
     };
   }
 
-  if (action === "stop") db.containerMockStates[container] = "exited";
-  else if (action === "start" || action === "unpause") db.containerMockStates[container] = "running";
-  else if (action === "pause") db.containerMockStates[container] = "paused";
-  else if (action === "restart") db.containerMockStates[container] = "running";
+  if (action === "stop") jarvisState.containerMockStates[container] = "exited";
+  else if (action === "start" || action === "unpause") jarvisState.containerMockStates[container] = "running";
+  else if (action === "pause") jarvisState.containerMockStates[container] = "paused";
+  else if (action === "restart") jarvisState.containerMockStates[container] = "running";
 
-  saveDB();
-  res.json({ success: true, container, action, newState: db.containerMockStates[container] });
+  
+  res.json({ success: true, container, action, newState: jarvisState.containerMockStates[container] });
 });
 
 app.post("/api/update/pc", (req, res) => {
   const { workspace } = req.body;
   if (workspace) {
-    db.pcAutomation.activeWorkspace = workspace;
-    const ws = db.pcAutomation.workspaceOptions.find(w => w.id === workspace);
+    jarvisState.pcAutomation.activeWorkspace = workspace;
+    const ws = jarvisState.pcAutomation.workspaceOptions.find(w => w.id === workspace);
     console.log(`[PC] Alternando workspace para: ${ws?.name || workspace}`);
     if (ws?.apps) {
       console.log(`[PC] Abrindo aplicativos: ${ws.apps.join(", ")}`);
@@ -1736,16 +1728,16 @@ app.post("/api/update/pc", (req, res) => {
         });
       });
     }
-    saveDB();
+    
   }
-  res.json({ success: true, workspace: db.pcAutomation.activeWorkspace });
+  res.json({ success: true, workspace: jarvisState.pcAutomation.activeWorkspace });
 });
 
 app.post("/api/update/goal", async (req, res) => {
   const { limit, reason } = req.body;
-  if (limit !== undefined) db.goal.limit = limit;
-  if (reason !== undefined) db.goal.reason = reason;
-  saveDB();
+  if (limit !== undefined) jarvisState.goal.limit = limit;
+  if (reason !== undefined) jarvisState.goal.reason = reason;
+  
   try {
     await prisma.goal.create({
       data: {
@@ -1756,33 +1748,33 @@ app.post("/api/update/goal", async (req, res) => {
   } catch (err) {
     console.error("Prisma goal creation failed", err);
   }
-  res.json({ success: true, goal: db.goal });
+  res.json({ success: true, goal: jarvisState.goal });
 });
 
 app.post("/api/delete/goal", async (req, res) => {
-  db.goal = { limit: 0, reason: "" };
-  saveDB();
+  jarvisState.goal = { limit: 0, reason: "" };
+  
   try {
     await prisma.goal.deleteMany();
   } catch (e) {
     console.error("Prisma delete goal failed", e);
   }
-  res.json({ success: true, goal: db.goal });
+  res.json({ success: true, goal: jarvisState.goal });
 });
 
 // Endpoint: Dynamic operations on agenda, finances & Home Device modifications
 app.post("/api/update/finance", async (req, res) => {
-  const { value, category, description, date } = req.body;
+  const { value, category, description, date, type } = req.body;
   const parsedValue = parseFloat(value);
-  const newItem = {
-    id: db.finances.length + 1,
-    value: isNaN(parsedValue) ? 0 : parsedValue,
-    category,
-    description,
-    date: date || new Date().toISOString().split("T")[0]
+  
+  const newItem = { 
+    id: jarvisState.finances ? jarvisState.finances.length + 1 : Date.now(),
+    value: isNaN(parsedValue) ? 0 : parsedValue, 
+    category, 
+    description, 
+    type: type || (category === "Renda" ? "Receita" : "Despesa"), 
+    date: date || new Date().toISOString()
   };
-  db.finances.push(newItem);
-  saveDB();
 
   try {
     await prisma.finance.create({
@@ -1790,10 +1782,14 @@ app.post("/api/update/finance", async (req, res) => {
         value: newItem.value,
         category: newItem.category,
         description: newItem.description,
-        type: newItem.category === "Renda" ? "Receita" : "Despesa",
+        type: newItem.type,
         date: new Date(newItem.date)
       }
     });
+
+    // Sync to state to keep it updated immediately
+    if (!jarvisState.finances) jarvisState.finances = [];
+    jarvisState.finances.push(newItem);
   } catch (err) {
     console.error("Prisma finance create failed", err);
   }
@@ -1801,10 +1797,10 @@ app.post("/api/update/finance", async (req, res) => {
   // Sincronização automática para Google Sheets
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-  if (db.googleSheetUrl) {
+  if (jarvisState.googleSheetUrl) {
     if (token) {
       const rowStr = `Data: ${newItem.date} | Valor: R$ ${newItem.value.toFixed(2)} | Categoria: ${newItem.category} | Descrição: ${newItem.description}`;
-      syncToGoogleSheets(db.googleSheetUrl, "Finanças", [rowStr], token).catch(e => {
+      syncToGoogleSheets(jarvisState.googleSheetUrl, "Finanças", [rowStr], token).catch(e => {
         console.error("Auto Google Sheets sync for finance failed:", e);
       });
     } else {
@@ -1818,27 +1814,38 @@ app.post("/api/update/finance", async (req, res) => {
 app.post("/api/delete/finance", async (req, res) => {
   const { description, all } = req.body;
   if (all === true || (description && (description.toLowerCase() === "all" || description.toLowerCase() === "todos" || description.toLowerCase() === "tudo"))) {
-    db.finances = [];
+    await prisma.finance.deleteMany();
     try { await prisma.finance.deleteMany(); } catch {}
   } else if (description) {
-    db.finances = db.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
+    jarvisState.finances = jarvisState.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
     try { await prisma.finance.deleteMany({ where: { description: { contains: description } } }); } catch {}
   }
-  saveDB();
+  
   res.json({ success: true });
 });
 
 app.post("/api/update/agenda", async (req, res) => {
   const { title, datetime, category, notes } = req.body;
   const newItem = {
-    id: db.agenda.length + 1,
+    id: jarvisState.agenda.length + 1,
     title,
     datetime,
     category: category || "Trabalho",
     notes: notes || "Lançado via interface JARVIS Central."
   };
-  db.agenda.push(newItem);
-  saveDB();
+  
+  try {
+    await prisma.agenda.create({
+      data: {
+        title: newItem.title,
+        datetime: new Date(newItem.datetime),
+        category: newItem.category,
+        notes: newItem.notes || ""
+      }
+    });
+  } catch (err) {}
+
+  
 
   try {
     await prisma.agenda.create({
@@ -1856,11 +1863,11 @@ app.post("/api/update/agenda", async (req, res) => {
   // Sincronização automática para Google Sheets
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-  if (db.googleSheetUrl) {
+  if (jarvisState.googleSheetUrl) {
     if (token) {
       const dateFormatted = new Date(newItem.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
       const rowStr = `Data/Hora: ${dateFormatted} | Título: ${newItem.title} | Categoria: ${newItem.category} | Notas: ${newItem.notes}`;
-      syncToGoogleSheets(db.googleSheetUrl, "Agenda", [rowStr], token).catch(e => {
+      syncToGoogleSheets(jarvisState.googleSheetUrl, "Agenda", [rowStr], token).catch(e => {
         console.error("Auto Google Sheets sync for agenda failed:", e);
       });
     } else {
@@ -1874,49 +1881,49 @@ app.post("/api/update/agenda", async (req, res) => {
 app.post("/api/delete/agenda", async (req, res) => {
   const { title, all } = req.body;
   if (all === true || (title && (title.toLowerCase() === "all" || title.toLowerCase() === "todos" || title.toLowerCase() === "tudo"))) {
-    db.agenda = [];
+    await prisma.agenda.deleteMany();
     try { await prisma.agenda.deleteMany(); } catch {}
   } else if (title) {
-    db.agenda = db.agenda.filter(a => !a.title.toLowerCase().includes(title.toLowerCase()));
+    jarvisState.agenda = jarvisState.agenda.filter(a => !a.title.toLowerCase().includes(title.toLowerCase()));
     try { await prisma.agenda.deleteMany({ where: { title: { contains: title } } }); } catch {}
   }
-  saveDB();
+  
   res.json({ success: true });
 });
 
 app.post("/api/update/iot", async (req, res) => {
   const { deviceId, state, brightness, color, presetName } = req.body;
 
-  const HOME_ASSISTANT_IP = db.homeAssistant.ip || ""; 
-  // const HA_TOKEN = db.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI"; 
+  const HOME_ASSISTANT_IP = jarvisState.homeAssistant.ip || ""; 
+  // const HA_TOKEN = jarvisState.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI"; 
 
   if (presetName) {
-    db.homeAssistant.ambientPreset = presetName;
-    const mConfig = db.homeAssistant.modesConfig?.[presetName];
+    jarvisState.homeAssistant.ambientPreset = presetName;
+    const mConfig = jarvisState.homeAssistant.modesConfig?.[presetName];
     if (mConfig) {
-      db.homeAssistant.lights.brightness = mConfig.brightness;
-      db.homeAssistant.lights.color = mConfig.color;
-      db.homeAssistant.ac.temp = mConfig.temp;
+      jarvisState.homeAssistant.lights.brightness = mConfig.brightness;
+      jarvisState.homeAssistant.lights.color = mConfig.color;
+      jarvisState.homeAssistant.ac.temp = mConfig.temp;
     } else if (presetName === "Modo Cinema") {
-      db.homeAssistant.lights.brightness = 15;
-      db.homeAssistant.lights.color = "#E040FB"; // Ambient magenta
-      db.homeAssistant.ac.temp = 20;
+      jarvisState.homeAssistant.lights.brightness = 15;
+      jarvisState.homeAssistant.lights.color = "#E040FB"; // Ambient magenta
+      jarvisState.homeAssistant.ac.temp = 20;
     } else if (presetName === "Modo Trabalho") {
-      db.homeAssistant.lights.brightness = 90;
-      db.homeAssistant.lights.color = "#E0F7FA"; // Daylight white
-      db.homeAssistant.ac.temp = 22;
+      jarvisState.homeAssistant.lights.brightness = 90;
+      jarvisState.homeAssistant.lights.color = "#E0F7FA"; // Daylight white
+      jarvisState.homeAssistant.ac.temp = 22;
     } else if (presetName === "Modo Noturno") {
-      db.homeAssistant.lights.brightness = 5;
-      db.homeAssistant.lights.color = "#FF8F00"; // Warm orange
-      db.homeAssistant.ac.temp = 24;
+      jarvisState.homeAssistant.lights.brightness = 5;
+      jarvisState.homeAssistant.lights.color = "#FF8F00"; // Warm orange
+      jarvisState.homeAssistant.ac.temp = 24;
     }
-    saveDB();
+    
 
     // =============== MUNDO REAL WEBSOCKET & WEBHOOK ===============
     let wsDispatched = false;
-    if (db.homeAssistant.wsStatus === "connected" && haWS) {
+    if (jarvisState.homeAssistant.wsStatus === "connected" && haWS) {
       // Find lights in synchronized devices and apply properties
-      db.homeAssistant.devices.forEach(d => {
+      jarvisState.homeAssistant.devices.forEach(d => {
         if (d.id.startsWith("light.")) {
           let service = "turn_on";
           let serviceData: any = {};
@@ -1926,7 +1933,7 @@ app.post("/api/update/iot", async (req, res) => {
              service = "turn_off";
              serviceData = undefined; // No extra data for turn_off
           } else {
-             const mConfig = db.homeAssistant.modesConfig?.[presetName];
+             const mConfig = jarvisState.homeAssistant.modesConfig?.[presetName];
              if (mConfig) {
                serviceData.brightness_pct = mConfig.brightness;
                // HEX to RGB
@@ -1974,7 +1981,7 @@ app.post("/api/update/iot", async (req, res) => {
   }
 
   if (deviceId) {
-    const dev = db.homeAssistant.devices.find(d => d.id === deviceId);
+    const dev = jarvisState.homeAssistant.devices.find(d => d.id === deviceId);
     if (dev) {
       if (state !== undefined) dev.state = state;
       if (brightness !== undefined) dev.brightness = brightness;
@@ -2005,22 +2012,22 @@ app.post("/api/update/iot", async (req, res) => {
     }
   } else {
     // legacy general lights update
-    if (brightness !== undefined) db.homeAssistant.lights.brightness = brightness;
-    if (color !== undefined) db.homeAssistant.lights.color = color;
-    if (state !== undefined) db.homeAssistant.lights.state = state;
+    if (brightness !== undefined) jarvisState.homeAssistant.lights.brightness = brightness;
+    if (color !== undefined) jarvisState.homeAssistant.lights.color = color;
+    if (state !== undefined) jarvisState.homeAssistant.lights.state = state;
   }
 
-  saveDB();
-  res.json({ success: true, homeState: db.homeAssistant });
+  
+  res.json({ success: true, homeState: jarvisState.homeAssistant });
 });
 
 app.post("/api/homeassistant/config", (req, res) => {
   const { ip, token, hiddenDevices, modesConfig } = req.body;
-  if (ip !== undefined) db.homeAssistant.ip = ip;
-  if (token !== undefined) db.homeAssistant.token = token;
-  if (hiddenDevices !== undefined) db.homeAssistant.hiddenDevices = hiddenDevices;
-  if (modesConfig !== undefined) db.homeAssistant.modesConfig = { ...db.homeAssistant.modesConfig, ...modesConfig };
-  saveDB();
+  if (ip !== undefined) jarvisState.homeAssistant.ip = ip;
+  if (token !== undefined) jarvisState.homeAssistant.token = token;
+  if (hiddenDevices !== undefined) jarvisState.homeAssistant.hiddenDevices = hiddenDevices;
+  if (modesConfig !== undefined) jarvisState.homeAssistant.modesConfig = { ...jarvisState.homeAssistant.modesConfig, ...modesConfig };
+  
 
   // Reset socket connection on config change if IP/token changed
   if ((ip !== undefined || token !== undefined) && haWS) {
@@ -2030,7 +2037,7 @@ app.post("/api/homeassistant/config", (req, res) => {
   }
   setTimeout(connectHomeAssistantWS, 1000);
 
-  res.json({ success: true, homeAssistant: db.homeAssistant });
+  res.json({ success: true, homeAssistant: jarvisState.homeAssistant });
 });
 
 function updateEnv(updates: Record<string, string>) {
@@ -2058,8 +2065,8 @@ app.get("/api/config/tokens", (_req, res) => {
   res.json({
     success: true,
     tokens: {
-      githubToken: db.githubToken || "",
-      haToken: db.homeAssistant.token || "",
+      githubToken: jarvisState.githubToken || "",
+      haToken: jarvisState.homeAssistant.token || "",
       telegramToken: process.env["TELEGRAM_TOKEN"] || "",
       elevenlabsToken: process.env["ELEVENLABS_API_KEY"] || "",
       openaiToken: process.env["OPENAI_API_KEY"] || "",
@@ -2073,13 +2080,13 @@ app.post("/api/config/tokens", (req, res) => {
   
   // Save internal DB tokens
   if (githubToken !== undefined) {
-    db.githubToken = githubToken;
+    jarvisState.githubToken = githubToken;
     updaterState.githubToken = githubToken;
   }
   if (haToken !== undefined) {
-    db.homeAssistant.token = haToken;
+    jarvisState.homeAssistant.token = haToken;
   }
-  saveDB();
+  
 
   // Create or Update .env file with the requested env tokens
   const envUpdates: Record<string, string> = {};
@@ -2097,20 +2104,20 @@ app.post("/api/config/tokens", (req, res) => {
 // ==========================================
 app.post("/api/mcp/toggle", (req, res) => {
   const { id } = req.body;
-  if (!db.mcpServers) {
-    db.mcpServers = [
+  if (!jarvisState.mcpServers) {
+    jarvisState.mcpServers = [
       { id: "fs", name: "Sistema de Arquivos Local", desc: "Permite que a IA leia arquivos .md, .txt, pdfs ou projetos do seu disco local de forma padronizada.", active: true },
       { id: "github", name: "Integração GitHub Host", desc: "Permite que a IA liste seus repositórios, abra PRs e revise código usando suas credenciais locais.", active: false },
       { id: "db", name: "Acesso PostgreSQL Nativo", desc: "Fornece metadados do schema e permite que a IA crie queries seguras atreladas ao banco em execução no Docker.", active: false },
     ];
   }
-  const srv = db.mcpServers.find(s => s.id === id);
+  const srv = jarvisState.mcpServers.find(s => s.id === id);
   if (srv) {
     srv.active = !srv.active;
-    saveDB();
+    
     console.log(`[MCP Server] Servidor '${srv.name}' alterado para estado: ${srv.active ? "Ativo" : "Inativo"}`);
   }
-  res.json({ success: true, mcpServers: db.mcpServers });
+  res.json({ success: true, mcpServers: jarvisState.mcpServers });
 });
 
 app.post("/api/mcp", (req, res) => {
@@ -2127,13 +2134,13 @@ app.post("/api/mcp", (req, res) => {
   console.log(`[MCP Server] Chamada RPC recebida - Método: ${method}`);
 
   // Auto-init mcpServers if missing to prevent crashes
-  if (!db.mcpServers) {
-    db.mcpServers = [
+  if (!jarvisState.mcpServers) {
+    jarvisState.mcpServers = [
       { id: "fs", name: "Sistema de Arquivos Local", desc: "Permite que a IA leia arquivos .md, .txt, pdfs ou projetos do seu disco local de forma padronizada.", active: true },
       { id: "github", name: "Integração GitHub Host", desc: "Permite que a IA liste seus repositórios, abra PRs e revise código usando suas credenciais locais.", active: false },
       { id: "db", name: "Acesso PostgreSQL Nativo", desc: "Fornece metadados do schema e permite que a IA crie queries seguras atreladas ao banco em execução no Docker.", active: false },
     ];
-    saveDB();
+    
   }
 
   switch (method) {
@@ -2156,8 +2163,8 @@ app.post("/api/mcp", (req, res) => {
     case "tools/list": {
       // Return tools based on active servers
       const tools: any[] = [];
-      const fsSrv = db.mcpServers.find(s => s.id === "fs");
-      const dbSrv = db.mcpServers.find(s => s.id === "db");
+      const fsSrv = jarvisState.mcpServers.find(s => s.id === "fs");
+      const dbSrv = jarvisState.mcpServers.find(s => s.id === "db");
 
       if (fsSrv && fsSrv.active) {
         tools.push(
@@ -2231,7 +2238,7 @@ app.post("/api/mcp", (req, res) => {
       try {
         if (name === "search_notes") {
           const q = (toolArgs?.query || "").toLowerCase();
-          const found = db.obsidianNotes.filter(n => 
+          const found = jarvisState.obsidianNotes.filter(n => 
              n.path.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
           );
           return res.json({
@@ -2251,7 +2258,7 @@ app.post("/api/mcp", (req, res) => {
         
         if (name === "read_note") {
           const notePath = toolArgs?.path;
-          const note = db.obsidianNotes.find(n => n.path === notePath || n.path.endsWith(notePath));
+          const note = jarvisState.obsidianNotes.find(n => n.path === notePath || n.path.endsWith(notePath));
           if (!note) {
             return res.json({
               jsonrpc: "2.0",
@@ -2273,14 +2280,14 @@ app.post("/api/mcp", (req, res) => {
         if (name === "write_note") {
           const notePath = toolArgs?.path;
           const content = toolArgs?.content;
-          const existingIdx = db.obsidianNotes.findIndex(n => n.path === notePath);
+          const existingIdx = jarvisState.obsidianNotes.findIndex(n => n.path === notePath);
           
           if (existingIdx >= 0) {
-            db.obsidianNotes[existingIdx].content = content;
+            jarvisState.obsidianNotes[existingIdx].content = content;
           } else {
-            db.obsidianNotes.push({ path: notePath, content: content });
+            jarvisState.obsidianNotes.push({ path: notePath, content: content });
           }
-          saveDB();
+          
           syncNoteToVault(notePath, content);
           
           return res.json({
@@ -2293,7 +2300,10 @@ app.post("/api/mcp", (req, res) => {
         }
 
         if (name === "get_finances") {
-          const transactions = db.finances;
+          
+// MCP tool sync get_finances
+const transactions = jarvisState.finances || [];
+
           return res.json({
             jsonrpc: "2.0",
             id,
@@ -2370,7 +2380,7 @@ app.get("/api/system/health", async (_req, res) => {
       homeassistant: "running",
       postgres: "running",
       redis: "running",
-      ...(db.containerMockStates || {})
+      ...(jarvisState.containerMockStates || {})
     };
 
     if (dockerStatus === "online") {
@@ -2413,7 +2423,7 @@ app.get("/api/system/health", async (_req, res) => {
         homeassistant: "exited",
         postgres: "exited",
         redis: "exited",
-        ...(db.containerMockStates || {})
+        ...(jarvisState.containerMockStates || {})
       }
     });
   }
@@ -2434,13 +2444,13 @@ let updaterState = {
 };
 
 // If repo is configured in db, load it
-if (!db.githubRepo) {
-  db.githubRepo = "Vinicius-Christ/Jarvis-Project-";
-  saveDB();
+if (!jarvisState.githubRepo) {
+  jarvisState.githubRepo = "Vinicius-Christ/Jarvis-Project-";
+  
 } else {
-  updaterState.githubRepo = db.githubRepo;
+  updaterState.githubRepo = jarvisState.githubRepo;
 }
-updaterState.githubToken = db.githubToken || "";
+updaterState.githubToken = jarvisState.githubToken || "";
 
 function getLocalCommitSync() {
   try {
@@ -2472,22 +2482,22 @@ function copyFolderRecursiveSync(src: string, dest: string) {
 }
 
 app.get("/api/system/update/status", (_req, res) => {
-  updaterState.githubRepo = db.githubRepo || "Vinicius-Christ/Jarvis-Project-";
-  updaterState.githubToken = db.githubToken || "";
+  updaterState.githubRepo = jarvisState.githubRepo || "Vinicius-Christ/Jarvis-Project-";
+  updaterState.githubToken = jarvisState.githubToken || "";
   res.json(updaterState);
 });
 
 app.post("/api/system/update/config", (req, res) => {
   const { githubRepo, githubToken } = req.body;
   if (githubRepo) {
-    db.githubRepo = githubRepo;
+    jarvisState.githubRepo = githubRepo;
     updaterState.githubRepo = githubRepo;
   }
   if (githubToken !== undefined) {
-    db.githubToken = githubToken;
+    jarvisState.githubToken = githubToken;
     updaterState.githubToken = githubToken;
   }
-  saveDB();
+  
   res.json({ success: true, githubRepo: updaterState.githubRepo, githubToken: updaterState.githubToken });
 });
 
@@ -2737,21 +2747,21 @@ app.post("/api/system/update/run", (_req, res) => {
 
 app.post("/api/update/obsidian", (req, res) => {
   const { path: notePath, content } = req.body;
-  const note = db.obsidianNotes.find(n => n.path === notePath);
+  const note = jarvisState.obsidianNotes.find(n => n.path === notePath);
   if (note) {
     note.content = content;
   } else {
-    db.obsidianNotes.push({ path: notePath, content });
+    jarvisState.obsidianNotes.push({ path: notePath, content });
   }
-  saveDB();
+  
   syncNoteToVault(notePath, content);
   res.json({ success: true, notePath });
 });
 
 app.post("/api/delete/obsidian", (req, res) => {
   const { path: notePath } = req.body;
-  db.obsidianNotes = db.obsidianNotes.filter(n => n.path !== notePath);
-  saveDB();
+  jarvisState.obsidianNotes = jarvisState.obsidianNotes.filter(n => n.path !== notePath);
+  
   const absolutePath = path.resolve(process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault"), notePath);
   if (fs.existsSync(absolutePath)) {
     try {
@@ -2779,12 +2789,12 @@ app.post("/api/iot/add", (req, res) => {
     integration: integration || "Suporte Universal",
     state: "on",
     status: status || "Registrado com sucesso",
-    targetUrl: targetUrl || `http://${db.homeAssistant.ip || ""}:8123`
+    targetUrl: targetUrl || `http://${jarvisState.homeAssistant.ip || ""}:8123`
   };
 
-  db.homeAssistant.devices.push(newDevice);
-  saveDB();
-  res.json({ success: true, device: newDevice, devices: db.homeAssistant.devices });
+  jarvisState.homeAssistant.devices.push(newDevice);
+  
+  res.json({ success: true, device: newDevice, devices: jarvisState.homeAssistant.devices });
 });
 
 // Endpoint: Query real Docker Container Logs

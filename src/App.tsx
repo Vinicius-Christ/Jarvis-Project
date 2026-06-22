@@ -111,7 +111,7 @@ export default function App() {
   >("general");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [systemState, setSystemState] = useState<any>(null);
-  const [hardwareStats, setHardwareStats] = useState<any>(null);
+  
   const [timeStr, setTimeStr] = useState("");
   const [selectedPreset, setSelectedPreset] = useState("Modo Trabalho");
 
@@ -193,23 +193,10 @@ export default function App() {
     } catch (err) { /* ignore */ }
   };
 
-  const fetchHardwareStats = async () => {
-    try {
-      const res = await fetch(getServerUrl() + "/api/system/hardware");
-      if (res.ok) {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const data = await res.json();
-          setHardwareStats((prev: any) => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
-        }
-      }
-    } catch (e) { /* ignore */ }
-  };
-
+  
   useEffect(() => {
     fetchSystemState();
-    fetchHardwareStats();
-    fetchUpdateState();
+        fetchUpdateState();
 
     // Auto check update once on startup
     fetch(getServerUrl() + "/api/system/update/check")
@@ -221,10 +208,10 @@ export default function App() {
       fetchSystemState();
       fetchUpdateState();
     }, 10000);
-    const hwInterval = setInterval(fetchHardwareStats, 3000);
+    
     return () => {
       clearInterval(interval);
-      clearInterval(hwInterval);
+      
     };
   }, []);
 
@@ -866,7 +853,7 @@ export default function App() {
                   JARVIS{" "}
                   <span className="text-[var(--brand-light)]">CHRIST</span>
                 </h1>
-                <span className="text-[10px] bg-[var(--brand-glow)] text-[var(--brand-light)] px-2 py-0.5 rounded border border-[var(--brand-border)] font-mono">
+                <span className="text-sm bg-[var(--brand-glow)] text-[var(--brand-light)] px-2 py-0.5 rounded border border-[var(--brand-border)] font-mono">
                   v5.0-LOCAL
                 </span>
               </div>
@@ -935,7 +922,7 @@ export default function App() {
 
             <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800/40"}`}>
               <span className="text-xs text-zinc-500 uppercase block tracking-wider">
-                Servidor {hardwareStats?.cpu || "Notebook (Servidor)"}
+                Servidor "Servidor Jarvis"
               </span>
               <div
                 className={`flex items-center gap-1.5 justify-end text-xs ${systemState?.systemActive ? "opacity-100" : "opacity-30"} ${
@@ -945,7 +932,7 @@ export default function App() {
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${systemState?.systemActive ? "bg-emerald-500 " : "bg-zinc-500"}`}
                 ></span>
-                {hardwareStats?.gpus?.[0]?.model || "GTX 1650"} CUDA:{" "}
+                "GPU Local" CUDA:{" "}
                 {systemState?.systemActive ? "ATIVO" : "INATIVO"}
               </div>
             </div>
@@ -1051,13 +1038,13 @@ export default function App() {
                   Recursos em Repouso
                 </span>
                 <div className="flex gap-4 mt-2">
-                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
+                  <span className="text-sm bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     4GB VRAM (CUDA)
                   </span>
-                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
+                  <span className="text-sm bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     Docker Subnet
                   </span>
-                  <span className="text-[10px] bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
+                  <span className="text-sm bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     Websockets IoT
                   </span>
                 </div>
@@ -1300,7 +1287,7 @@ export default function App() {
                   </div>
 
                   {/* Hardware Spec monitors (simulating Native child monitoring threads) */}
-                  <HardwareProcessingMonitor hardwareStats={hardwareStats} setActiveTab={setActiveTab} setSettingsTab={setSettingsTab} />
+                  <HardwareProcessingMonitor hardwareStats={{cpu: "Servidor Jarvis"}} setActiveTab={setActiveTab} setSettingsTab={setSettingsTab} />
 
                   {/* Fast triggers area */}
                   <div className="bg-gradient-to-r from-[var(--brand-dark)] to-blue-950/20 border border-[var(--brand-border)] p-4.5 rounded-2xl space-y-3">
@@ -1379,7 +1366,7 @@ export default function App() {
                       onSubmit={handleAgendaSubmit}
                       className="space-y-3 bg-zinc-950 border border-zinc-800/40 p-4 rounded-xl flex-1"
                     >
-                      <h4 className="text-[11px] text-zinc-400 font-mono mb-2">
+                      <h4 className="text-sm text-zinc-400 font-mono mb-2">
                         Agendar novo compromisso
                       </h4>
                       <div>
@@ -1462,18 +1449,18 @@ export default function App() {
                     </form>
 
                     <div className="bg-zinc-950 border border-zinc-800/40 p-4 rounded-xl text-center">
-                      <h4 className="text-[11px] text-zinc-300 font-mono mb-2">
+                      <h4 className="text-sm text-zinc-300 font-mono mb-2">
                         Adição por Arquivos via IA
                       </h4>
                       <p className="text-xs text-zinc-500 mb-3">
                         Suba um PDF de calendário acadêmico, voo, ou roteiro
                         para IA agendar automaticamente.
                       </p>
-                      <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-white text-[11px] font-mono py-1.5 px-3 rounded transition-all block">
+                      <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-white text-sm font-mono py-1.5 px-3 rounded transition-all block">
                         📤 Upload de Arquivo (PDF/CSV)
                         <input
                           type="file"
-                          className="hidden transition-all duration-300 hover:border-zinc-600 focus:shadow-sm group-hover:shadow-[0_0_15px_var(--brand-glow)] transition-all"
+                          className="hidden transition-all duration-300 hover:border-zinc-600 focus:shadow-sm group-hover:shadow-md border border-[var(--brand-glow)] shadow-[var(--brand-glow)]/20 transition-all"
                           onChange={(e) => handleFileUpload(e, "Agenda")}
                           accept=".pdf,.txt,.ics"
                         />
@@ -1542,7 +1529,7 @@ export default function App() {
                 <div className="w-56 shrink-0 border-r border-zinc-800/40 bg-zinc-950/50 flex flex-col overflow-y-auto custom-scrollbar">
                   
                   {/* Category: SISTEMA */}
-                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800/40 bg-black/40">
+                  <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800/40 bg-black/40">
                     Sistema
                   </div>
                   <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1592,7 +1579,7 @@ export default function App() {
                   </div>
 
                   {/* Category: WORKSPACE & IA */}
-                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
+                  <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
                     Workspace & IA
                   </div>
                   <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1629,7 +1616,7 @@ export default function App() {
                   </div>
 
                   {/* Category: MANUTENÇÃO */}
-                  <div className="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
+                  <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
                     Manutenção
                   </div>
                   <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1696,7 +1683,7 @@ export default function App() {
                       <h3 className="text-xs font-bold text-[var(--brand-light)] uppercase tracking-widest pl-2 border-l border-[var(--brand-primary)] mb-4 animate-pulse">
                         Google Sheets Memória
                       </h3>
-                      <p className="text-[11px] text-zinc-400 leading-normal mb-3">
+                      <p className="text-sm text-zinc-400 leading-normal mb-3">
                         A IA estrutura e armazena os dados através de planilhas.{" "}
                         <code className="text-xs text-lime-400 font-bold bg-zinc-950 border border-zinc-900 px-1 rounded">
                           Sync Auto
@@ -1707,7 +1694,7 @@ export default function App() {
                         {systemState?.googleSheetsData?.map((sheet: any) => (
                           <div
                             key={sheet.sheet + sheet.spreadsheet}
-                            className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-zinc-950 hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-[11px] cursor-pointer"
+                            className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-zinc-950 hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-sm cursor-pointer"
                           >
                             <span className="block font-bold text-white text-xs text-emerald-400">
                               📊 {sheet.spreadsheet} - {sheet.sheet}
@@ -1789,7 +1776,7 @@ export default function App() {
                     Guia Definitivo: Deploy Completo (Windows)
                   </h3>
 
-                  <div className="font-sans text-[11px] space-y-4">
+                  <div className="font-sans text-sm space-y-4">
                     <div>
                       <strong className="text-white block mb-1 text-xs">
                         1. Deploy Inicial no Servidor (Windows)
@@ -1835,21 +1822,14 @@ export default function App() {
                   </div>
 
                   <div className="bg-[var(--brand-dark)] border border-[var(--brand-border)] p-4.5 rounded-xl text-xs space-y-2">
-                    <span className="text-[var(--brand-light)] font-mono font-bold block uppercase tracking-wider text-[11px]">
+                    <span className="text-[var(--brand-light)] font-mono font-bold block uppercase tracking-wider text-sm">
                       ⚡ CUDA RENDERING PERFORMANCE
                     </span>
-                    <p className="text-[11px] text-zinc-400">
-                      O {hardwareStats?.cpu || "Notebook (Servidor)"} utiliza a
+                    <p className="text-sm text-zinc-400">
+                      O "Servidor Jarvis" utiliza a
                       placa{" "}
                       <strong>
-                        {hardwareStats?.gpus?.[0]?.model ||
-                          "NVIDIA GeForce GTX 1650"}{" "}
-                        (
-                        {hardwareStats?.gpus?.[0]?.vram
-                          ? Math.round(hardwareStats.gpus[0].vram / 1024) +
-                            "GB VRAM"
-                          : "4GB VRAM"}
-                        )
+                        NVIDIA GeForce GTX 1650 (4GB VRAM)
                       </strong>
                       . Isso possibilita rodar o modelo Llama 3.3 com tempo
                       de resposta inferior a <strong>800ms por token</strong>{" "}
@@ -1885,10 +1865,10 @@ export default function App() {
                         </strong>
                         . Ao clicar em instalar na aba "Pipeline de Instalação":
                       </p>
-                      <ul className="list-disc pl-5 mt-1.5 space-y-1 text-zinc-400 text-[11px]">
+                      <ul className="list-disc pl-5 mt-1.5 space-y-1 text-zinc-400 text-sm">
                         <li>
                           Ele instala o Docker Engine nativamente no terminal root do seu{" "}
-                          {hardwareStats?.cpu || "Notebook (Servidor)"}.
+                          "Servidor Jarvis".
                         </li>
                         <li>
                           Usa o <strong>PowerShell</strong> do Windows para instalar a estrutura do cofre e criar atalhos.

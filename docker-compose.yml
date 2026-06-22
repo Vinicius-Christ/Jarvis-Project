@@ -47,6 +47,17 @@ services:
       - jarvis_network
     restart: unless-stopped
 
+  # Cloudflare Tunnels - Exposição Externa Segura e Gratuita (TryCloudflare)
+  # Opcionalmente, pode ser configurado com Token Próprio para URL Fixa
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --url http://host.docker.internal:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - jarvis_network
+    restart: unless-stopped
+
 networks:
   jarvis_network:
     driver: bridge

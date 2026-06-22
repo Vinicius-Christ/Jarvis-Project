@@ -9,28 +9,18 @@ import dns from "dns";
 import WebSocket from "ws";
 import { EdgeTTS } from "node-edge-tts";
 import os from "os";
+import dotenv from "dotenv";
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import Database from 'better-sqlite3';
 
-// Helper: load .env into process.env manually since we don't use dotenv module
-try {
-  if (fs.existsSync(path.join(process.cwd(), ".env"))) {
-    const envContent = fs.readFileSync(path.join(process.cwd(), ".env"), "utf8");
-    envContent.split("\n").forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
-        const splitIdx = trimmed.indexOf("=");
-        const key = trimmed.substring(0, splitIdx).trim();
-        let val = trimmed.substring(splitIdx + 1).trim();
-        // Remove surrounding quotes if present
-        val = val.replace(/^["'](.*)["']$/, '$1');
-        if (!process.env[key]) {
-          process.env[key] = val;
-        }
-      }
-    });
-  }
-} catch (e) {
-  console.error("Failed to load .env manually:", e);
-}
+dotenv.config();
+
+const dbPath = process.env.DATABASE_URL?.replace("file:", "") || "./dev.db";
+const connection = new Database(dbPath);
+const adapter = new PrismaBetterSqlite3(connection);
+
+const prisma = new PrismaClient({ adapter });
 
 // Ensure localhost/ipv4 works nicely
 dns.setDefaultResultOrder("ipv4first");
@@ -1801,22 +1791,37 @@ app.post("/api/update/pc", (req, res) => {
   res.json({ success: true, workspace: db.pcAutomation.activeWorkspace });
 });
 
-app.post("/api/update/goal", (req, res) => {
+app.post("/api/update/goal", async (req, res) => {
   const { limit, reason } = req.body;
   if (limit !== undefined) db.goal.limit = limit;
   if (reason !== undefined) db.goal.reason = reason;
   saveDB();
+  try {
+    await prisma.goal.create({
+      data: {
+        limit: limit !== undefined ? parseFloat(limit) : 0,
+        reason: reason || ""
+      }
+    });
+  } catch (err) {
+    console.error("Prisma goal creation failed", err);
+  }
   res.json({ success: true, goal: db.goal });
 });
 
-app.post("/api/delete/goal", (req, res) => {
+app.post("/api/delete/goal", async (req, res) => {
   db.goal = { limit: 0, reason: "" };
   saveDB();
+  try {
+    await prisma.goal.deleteMany();
+  } catch (e) {
+    console.error("Prisma delete goal failed", e);
+  }
   res.json({ success: true, goal: db.goal });
 });
 
 // Endpoint: Dynamic operations on agenda, finances & Home Device modifications
-app.post("/api/update/finance", (req, res) => {
+app.post("/api/update/finance", async (req, res) => {
   const { value, category, description, date } = req.body;
   const parsedValue = parseFloat(value);
   const newItem = {
@@ -1828,6 +1833,20 @@ app.post("/api/update/finance", (req, res) => {
   };
   db.finances.push(newItem);
   saveDB();
+
+  try {
+    await prisma.finance.create({
+      data: {
+        value: newItem.value,
+        category: newItem.category,
+        description: newItem.description,
+        type: newItem.category === "Renda" ? "Receita" : "Despesa",
+        date: new Date(newItem.date)
+      }
+    });
+  } catch (err) {
+    console.error("Prisma finance create failed", err);
+  }
 
   // Sincronização automática para Google Sheets
   const authHeader = req.headers.authorization;
@@ -1846,18 +1865,20 @@ app.post("/api/update/finance", (req, res) => {
   res.json({ success: true, item: newItem });
 });
 
-app.post("/api/delete/finance", (req, res) => {
+app.post("/api/delete/finance", async (req, res) => {
   const { description, all } = req.body;
   if (all === true || (description && (description.toLowerCase() === "all" || description.toLowerCase() === "todos" || description.toLowerCase() === "tudo"))) {
     db.finances = [];
+    try { await prisma.finance.deleteMany(); } catch {}
   } else if (description) {
     db.finances = db.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
+    try { await prisma.finance.deleteMany({ where: { description: { contains: description } } }); } catch {}
   }
   saveDB();
   res.json({ success: true });
 });
 
-app.post("/api/update/agenda", (req, res) => {
+app.post("/api/update/agenda", async (req, res) => {
   const { title, datetime, category, notes } = req.body;
   const newItem = {
     id: db.agenda.length + 1,
@@ -1868,6 +1889,19 @@ app.post("/api/update/agenda", (req, res) => {
   };
   db.agenda.push(newItem);
   saveDB();
+
+  try {
+    await prisma.agenda.create({
+      data: {
+        title: newItem.title,
+        datetime: new Date(newItem.datetime),
+        category: newItem.category,
+        notes: newItem.notes
+      }
+    });
+  } catch (err) {
+    console.error("Prisma agenda create failed", err);
+  }
 
   // Sincronização automática para Google Sheets
   const authHeader = req.headers.authorization;
@@ -1887,12 +1921,14 @@ app.post("/api/update/agenda", (req, res) => {
   res.json({ success: true, item: newItem });
 });
 
-app.post("/api/delete/agenda", (req, res) => {
+app.post("/api/delete/agenda", async (req, res) => {
   const { title, all } = req.body;
   if (all === true || (title && (title.toLowerCase() === "all" || title.toLowerCase() === "todos" || title.toLowerCase() === "tudo"))) {
     db.agenda = [];
+    try { await prisma.agenda.deleteMany(); } catch {}
   } else if (title) {
     db.agenda = db.agenda.filter(a => !a.title.toLowerCase().includes(title.toLowerCase()));
+    try { await prisma.agenda.deleteMany({ where: { title: { contains: title } } }); } catch {}
   }
   saveDB();
   res.json({ success: true });
@@ -2047,34 +2083,37 @@ app.post("/api/homeassistant/config", (req, res) => {
   res.json({ success: true, homeAssistant: db.homeAssistant });
 });
 
-app.get("/api/config/tokens", (_req, res) => {
-  let envTokens: Record<string, string> = {};
+function updateEnv(updates: Record<string, string>) {
   try {
+    let envContent = "";
     if (fs.existsSync(".env")) {
-      const envContent = fs.readFileSync(".env", "utf8");
-      envContent.split("\n").forEach(line => {
-        const trimmed = line.trim();
-        if (trimmed && !trimmed.startsWith("#")) {
-          const splitIdx = trimmed.indexOf("=");
-          if (splitIdx > -1) {
-            const key = trimmed.substring(0, splitIdx);
-            const val = trimmed.substring(splitIdx + 1).replace(/^"|"$/g, "").replace(/^'|'$/g, "");
-            envTokens[key] = val;
-          }
-        }
-      });
+      envContent = fs.readFileSync(".env", "utf8");
     }
-  } catch(e) {}
+    const lines = envContent.split("\n");
+    for (const [key, val] of Object.entries(updates)) {
+      const idx = lines.findIndex(l => l.startsWith(`${key}=`));
+      if (idx !== -1) {
+        lines[idx] = `${key}=${val}`;
+      } else {
+        lines.push(`${key}=${val}`);
+      }
+    }
+    fs.writeFileSync(".env", lines.join("\n"), "utf8");
+  } catch (e) {
+    console.error("Failed to write to .env", e);
+  }
+}
 
+app.get("/api/config/tokens", (_req, res) => {
   res.json({
     success: true,
     tokens: {
       githubToken: db.githubToken || "",
       haToken: db.homeAssistant.token || "",
-      telegramToken: envTokens["TELEGRAM_TOKEN"] || "",
-      elevenlabsToken: envTokens["ELEVENLABS_API_KEY"] || "",
-      openaiToken: envTokens["OPENAI_API_KEY"] || "",
-      googleClientId: envTokens["GOOGLE_CLIENT_ID"] || ""
+      telegramToken: process.env["TELEGRAM_TOKEN"] || "",
+      elevenlabsToken: process.env["ELEVENLABS_API_KEY"] || "",
+      openaiToken: process.env["OPENAI_API_KEY"] || "",
+      googleClientId: process.env["GOOGLE_CLIENT_ID"] || ""
     }
   });
 });
@@ -2093,37 +2132,12 @@ app.post("/api/config/tokens", (req, res) => {
   saveDB();
 
   // Create or Update .env file with the requested env tokens
-  let envTokens: Record<string, string> = {};
-  if (fs.existsSync(".env")) {
-    try {
-      const envContent = fs.readFileSync(".env", "utf8");
-      envContent.split("\n").forEach(line => {
-        const trimmed = line.trim();
-        if (trimmed && !trimmed.startsWith("#")) {
-          const splitIdx = trimmed.indexOf("=");
-          if (splitIdx > -1) {
-            envTokens[trimmed.substring(0, splitIdx)] = trimmed.substring(splitIdx + 1);
-          }
-        }
-      });
-    } catch(e) {}
-  }
-
-  if (telegramToken !== undefined) envTokens["TELEGRAM_TOKEN"] = `"${telegramToken}"`;
-  if (elevenlabsToken !== undefined) envTokens["ELEVENLABS_API_KEY"] = `"${elevenlabsToken}"`;
-  if (openaiToken !== undefined) envTokens["OPENAI_API_KEY"] = `"${openaiToken}"`;
-  if (googleClientId !== undefined) envTokens["GOOGLE_CLIENT_ID"] = `"${googleClientId}"`;
-
-  // Write back to .env
-  try {
-    let newEnvContent = "";
-    Object.keys(envTokens).forEach(k => {
-      newEnvContent += `${k}=${envTokens[k]}\n`;
-    });
-    fs.writeFileSync(".env", newEnvContent, "utf8");
-  } catch(e) {
-    console.error("Failed to write to .env", e);
-  }
+  const envUpdates: Record<string, string> = {};
+  if (telegramToken !== undefined) { envUpdates["TELEGRAM_TOKEN"] = telegramToken; process.env["TELEGRAM_TOKEN"] = telegramToken; }
+  if (elevenlabsToken !== undefined) { envUpdates["ELEVENLABS_API_KEY"] = elevenlabsToken; process.env["ELEVENLABS_API_KEY"] = elevenlabsToken; }
+  if (openaiToken !== undefined) { envUpdates["OPENAI_API_KEY"] = openaiToken; process.env["OPENAI_API_KEY"] = openaiToken; }
+  if (googleClientId !== undefined) { envUpdates["GOOGLE_CLIENT_ID"] = googleClientId; process.env["GOOGLE_CLIENT_ID"] = googleClientId; }
+  updateEnv(envUpdates);
 
   res.json({ success: true });
 });

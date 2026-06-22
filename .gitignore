@@ -58,3 +58,5 @@ Dockerfile.backend*
 # Electron
 out/
 electron-builder/
+
+/src/generated/prisma

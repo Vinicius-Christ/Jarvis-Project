@@ -9,34 +9,53 @@ Para garantir performance e não pesar no seu PC Gamer/de Trabalho, o sistema po
 
 ## 🔑 Passo 0: O Coração do Sistema (Chaves e Tokens)
 
-Antes de rodar as instalações, você precisa de "Chaves Mágicas" (Tokens) para dar permissão de fala, audição e automação para o seu Jarvis. O sistema vai puxar essas chaves de um arquivo chamado `.env`.
-Quando você baixar o projeto, verá um arquivo chamado `.env.example`. **Renomeie-o para `.env`**.
+Antes de rodar as instalações ou para ativar 100% dos poderes do Jarvis, você precisa das "Chaves Mágicas" (Tokens). Algumas chaves vão direto no código (para o cérebro rodar), e outras podem ser coladas lindamente na Interface Gráfica do seu Jarvis depois de instalado.
 
-Abra esse arquivo no Bloco de Notas ou VSCode. Você verá algumas variáveis para preencher. Veja como obter cada uma delas para que todo o ecossistema funcione:
+### 💻 Chaves Preenchidas no Código Fonte (Arquivo `.env`)
+Quando você baixar o projeto da pasta, verá um arquivo chamado `.env.example`. **Renomeie-o para `.env`** e abra no Bloco de Notas ou VSCode. Preencha lá dentro:
 
-### 1. A Inteligência (`GROQ_API_KEY`)
-O cérebro do LLM (Llama 3) processa áudios e textos ultrarrápido na nuvem da Groq sem derreter seu PC.
-*   **Onde pegar:** Entre em `https://console.groq.com/keys`, crie uma conta gratuita e clique em "Create API Key".
-*   **Como preencher:** `GROQ_API_KEY="sk_SuaChaveGiganteAqui"`
+1. **A Inteligência (`GROQ_API_KEY`)**
+   * **Para que serve:** O cérebro do Llama 3 processa áudios e raciocínios e responde. Sem isso, o Jarvis é um robô cego e mudo.
+   * **Onde gerar:** Crie uma conta no `console.groq.com/keys` e clique em "Create API Key".
+   * **Onde colar:** No arquivo `.env`, na linha `GROQ_API_KEY="sk_SuaChaveGiganteAqui"`.
 
-### 2. Controle de Casa e Lâmpadas (`HOME_ASSISTANT_IP` & `HOME_ASSISTANT_TOKEN`)
-Para a IA desligar a TV ou arrumar a luz quando você falar "Modo Cinema".
-*   **Onde pegar:** Você já deve ter um Hub do Home Assistant na sua casa (Ex: rodando num Raspberry local). Acesse a interface do seu Home Assistant -> Clique no seu Perfil lá embaixo no canto esquerdo -> Vá até o fim da página em **Long-Lived Access Tokens**. Crie um novo com o nome "Jarvis".
-*   **Como preencher:**
-    `HOME_ASSISTANT_IP="192.168.0.XX" (coloque o IP real do seu Home Assistant)`
-    `HOME_ASSISTANT_TOKEN="SuaChaveGiganteAqui"`
+2. **O IP do Controle de Casa (`HOME_ASSISTANT_IP`)**
+   * **Para que serve:** Permite encontrar a sua automação residencial local.
+   * **Onde gerar:** Olhe nas configurações de rede da sua casa onde seu Home Assistant/RaspberryPi roda.
+   * **Onde colar:** No arquivo `.env`, na linha `HOME_ASSISTANT_IP="192.168.0.XX"`.
 
-### 3. Login pelo Google Externo (`GOOGLE_CLIENT_ID`)
-Se for acessar pelo celular usando o Cloudflare no Passo 4, esta chave impede que estranhos usem seu Jarvis na internet.
-*   **Onde pegar:** Acesse o *Google Cloud Console* (`console.cloud.google.com`). Crie um Projeto -> Tela de Permissão OAuth -> Credenciais -> Criar "ID do Cliente Web". Cole as origens permitidas (Seu localhost e seu link do cloudflare). Ele lhe dará um código.
-*   **Como preencher:** `GOOGLE_CLIENT_ID="SeuCodigo_googleusercontent.com"`
+*(Caminhos de banco de dados e do Obsidian já vêm preenchidos de fábrica. Deixe o resto das variáveis de infraestrutura intocadas!)*
 
-### 4. Notificações do Servidor no Celular (`TELEGRAM_TOKEN`)
-Se quiser ver o n8n ou o servidor enviando prints e relatórios.
-*   **Onde pegar:** Abra o Telegram -> Busque pelo usuário oficial `@BotFather` -> Digite `/newbot` -> Siga os passos e ele te dará o "HTTP API Token".
-*   **Como preencher:** `TELEGRAM_TOKEN="seu_token_aqui"`
+---
 
-*(Nota: Caminhos de banco de dados do Obsidian já vêm preenchidos de fábrica. Deixe o resto das variáveis como vieram!)*
+### 🖥️ Chaves Preenchidas dentro da Interface Automática do JARVIS
+As chaves abaixo não precisam de arquivo e podem ser preenchidas a qualquer momento depois do sistema já rodando!
+Para encontrar elas:
+1. Abra o seu **painel principal do Jarvis** pelo navegador ou app.
+2. Na barra do menu, clique no símbolo de **Engrenagem** `⚙️ Configurações do Sistema`.
+3. No painel que abrir, procure o menu lateral e clique exatamente na aba **`🔐 Senhas & Tokens`**.
+
+Lá dentro haverão campos específicos para preencher com tranquilidade:
+
+1. **Home Assistant Token (Long-Lived Access Token)**
+   * **Para que serve:** Autoriza a IA a desligar a sua TV ou apagar a lâmpada via rede.
+   * **Onde gerar:** Na interface da sua casa (Home Assistant), clique no seu Perfil (canto inferio esquerdo) > desça até "Long-Lived Access Tokens". Crie um chamado "Jarvis".
+   * **Onde colar:** No campo brilhante *Home Assistant Token* da UI do Jarvis.
+
+2. **Google OAuth Client ID**
+   * **Para que serve:** Coloca uma tela de Login e blindagem extra para estranhos não acessarem seu IP Cloudflare.
+   * **Onde gerar:** Acesse o `console.cloud.google.com`. Vá em Credenciais -> Criar "ID do Cliente Web". Configure autorizando o URL do seu Cloudflare e copie o seu ID.
+   * **Onde colar:** No campo *Google OAuth Client ID* da UI do Jarvis.
+
+3. **Notificações por Telegram (`TELEGRAM_TOKEN`)**
+   * **Para que serve:** Faz seu JARVIS se comunicar pelo Telegram (relatórios, prints da sua tela).
+   * **Onde gerar:** Abra o app seu celular do Telegram -> Busque pela conta certinha `@BotFather` -> Digite `/newbot` -> De o nome -> Copie o Token Gigante "HTTP API".
+   * **Onde colar:** No campo *Telegram Bot Token* da UI do Jarvis.
+
+4. **GitHub Auth Token**
+   * **Para que serve:** Essencial para o Auto-Updater checar código-fonte do Sistema Operacional JARVIS e injetar atualizações automáticas via rede.
+   * **Onde gerar:** Entre na conta do Github -> Settings -> Developer Settings -> Personal access tokens.
+   * **Onde colar:** No campo *GitHub Auth Token* da UI.
 
 ---
 

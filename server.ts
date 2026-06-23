@@ -900,6 +900,20 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   }
   replyText = (replyText || '').replace(sheetUpdateRegex, "").trim();
 
+  // 4.c Process LocalPC Execution directly from Server by broadcasting to connected Desktop Apps
+  const pcCommandRegex = /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
+  let pcMatch;
+  while ((pcMatch = pcCommandRegex.exec(replyText || '')) !== null) {
+    if ((global as any).wssRelay) {
+      const payload = JSON.stringify({ type: "LocalPC", action: pcMatch[1], target: pcMatch[2] || "" });
+      (global as any).wssRelay.clients.forEach((client: any) => {
+        if (client.readyState === 1 /* WebSocket.OPEN */) {
+          client.send(payload);
+        }
+      });
+    }
+  }
+
   // 5. Save and respond
   const displayText = file ? `${message} (📂 Anexo: ${file.name})` : message;
   const modelLabel = isLocalSimulated ? `${groqModelName.toUpperCase()} [Cloud Mock]` : `${groqModelName.toUpperCase()} [Native Local]`;
@@ -2487,6 +2501,12 @@ async function startServer() {
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`JARVIS API Server running on port ${PORT}`);
   });
+
+  const wssRelay = new WebSocket.Server({ server });
+  wssRelay.on("connection", (ws) => {
+    console.log("[WS Relay] Dispositivo Frontend conectado à malha Cross-Device.");
+  });
+  (global as any).wssRelay = wssRelay;
 
   // Graceful shutdown
   process.on('SIGTERM', () => {

@@ -72,6 +72,49 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
     onSendMessageRef.current = onSendMessage;
   }, [onSendMessage]);
 
+  // --- Relé CROSS-DEVICE WebSocket ---
+  useEffect(() => {
+    // Apenas se este for o Cliente Desktop (tem electronAPI), faremos ele atuar passivamente recebendo ordens WS
+    if (typeof window !== "undefined" && window.electronAPI) {
+      let wsClient: WebSocket;
+      let isReconnecting = false;
+      const connectWSRelay = () => {
+        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const hostUrl = window.location.host;
+        try {
+          wsClient = new WebSocket(`${wsProtocol}//${hostUrl}`);
+          wsClient.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data && data.type === "LocalPC" && data.action) {
+                console.log("[Relé Cross-Device] Ordem recebida ativamente do Celular via Servidor Central:", data.action, data.target);
+                window.electronAPI.executeLocalCommand({ action: data.action, target: data.target || "" });
+              }
+            } catch (e) { }
+          };
+          wsClient.onclose = () => {
+            if (!isReconnecting) {
+              isReconnecting = true;
+              setTimeout(() => {
+                isReconnecting = false;
+                connectWSRelay();
+              }, 5000);
+            }
+          };
+        } catch (err) {
+          console.error("Falha ao inicializar WSRelay interno", err);
+        }
+      };
+      connectWSRelay();
+      return () => {
+        if (wsClient) {
+          wsClient.onclose = null; // evita loop
+          wsClient.close();
+        }
+      };
+    }
+  }, []);
+
   // Load available system synthesis voices
   useEffect(() => {
     const loadVoices = () => {
@@ -536,8 +579,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
       {/* Visual Widget & Core Control Specs */}
       <div className={`border rounded-xl p-4 flex flex-col items-center justify-between gap-3 shadow-lg h-full overflow-hidden transition-all ${isDarkMode
-          ? "bg-zinc-900/60 border-zinc-800"
-          : "bg-white border-zinc-200 shadow-sm"
+        ? "bg-zinc-900/60 border-zinc-800"
+        : "bg-white border-zinc-200 shadow-sm"
         }`}>
         <div className="flex justify-between w-full items-center shrink-0">
           <span className={`text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 ${isDarkMode ? "text-zinc-500" : "text-zinc-500 font-semibold"}`}>
@@ -545,8 +588,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
             GPU CUDA VRAM
           </span>
           <div className={`px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider border transition-colors ${isDarkMode
-              ? "bg-zinc-950/60 border-zinc-800 text-[var(--brand-primary)]"
-              : "bg-zinc-50 border-zinc-200 text-[var(--brand-primary)] font-bold"
+            ? "bg-zinc-950/60 border-zinc-800 text-[var(--brand-primary)]"
+            : "bg-zinc-50 border-zinc-200 text-[var(--brand-primary)] font-bold"
             }`}>
             Llama 3.3 Local
           </div>
@@ -566,16 +609,16 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
             <button
               onClick={handleMicToggle}
               className={`p-3.5 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer ${appState === "listening"
-                  ? "bg-red-500 hover:bg-red-600 scale-110 shadow-red-950/20 text-white"
-                  : "bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)] hover:scale-105  text-white"
+                ? "bg-red-500 hover:bg-red-600 scale-110 shadow-red-950/20 text-white"
+                : "bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)] hover:scale-105  text-white"
                 }`}
             >
               {appState === "listening" ? <MicOff className="h-5 w-5 transition-opacity duration-300" /> : <Mic className="h-5 w-5" />}
             </button>
           ) : (
             <div className={`text-[10px] italic text-center px-4 p-2 rounded border w-full font-mono ${isDarkMode
-                ? "text-zinc-550 bg-zinc-950/40 border-zinc-900/60"
-                : "text-zinc-600 bg-zinc-50 border-zinc-200"
+              ? "text-zinc-550 bg-zinc-950/40 border-zinc-900/60"
+              : "text-zinc-600 bg-zinc-50 border-zinc-200"
               }`}>
               Reconhecimento de voz desativado ou sem suporte no navegador.
             </div>
@@ -608,8 +651,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
             type="button"
             onClick={() => setIsVoiceModalOpen(true)}
             className={`w-full text-xs font-mono py-2 px-3 rounded-lg border hover:bg-[var(--brand-primary)]/10 hover:border-[var(--brand-primary)] transition duration-200 cursor-pointer flex items-center justify-center gap-2 font-semibold ${isDarkMode
-                ? "border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:text-[var(--brand-light)]"
-                : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:text-[var(--brand-primary)] shadow-sm"
+              ? "border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:text-[var(--brand-light)]"
+              : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:text-[var(--brand-primary)] shadow-sm"
               }`}
           >
             <Sliders className="h-3.5 w-3.5  text-[var(--brand-light)]" />
@@ -618,15 +661,15 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
           {/* Slink high-tech visual telemetry badge */}
           <div className={`border rounded-xl p-2.5 font-mono text-[9px] flex items-center justify-between transition-all ${isDarkMode
-              ? "bg-zinc-950/75 border-zinc-900 text-zinc-400"
-              : "bg-zinc-50 border-zinc-200 text-zinc-600"
+            ? "bg-zinc-950/75 border-zinc-900 text-zinc-400"
+            : "bg-zinc-50 border-zinc-200 text-zinc-600"
             }`}>
             <span className={`uppercase tracking-widest text-[8px] flex items-center gap-1 ${isDarkMode ? "text-zinc-500" : "text-zinc-500 font-semibold"}`}>
               <Cpu className="h-3 w-3 text-[var(--brand-light)]" /> Latência Local:
             </span>
             <span className={`font-bold px-2 py-0.5 rounded text-[10px] border ${isDarkMode
-                ? "text-emerald-400 bg-emerald-950/20 border-emerald-900/40"
-                : "text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold"
+              ? "text-emerald-400 bg-emerald-950/20 border-emerald-900/40"
+              : "text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold"
               }`}>
               {lastMeasureLatency.stt + lastMeasureLatency.llm + lastMeasureLatency.tts} ms
             </span>
@@ -636,21 +679,21 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
       {/* Terminal Interative Chat & Console log */}
       <div className={`lg:col-span-2 border rounded-xl flex flex-col justify-between overflow-hidden shadow-2xl h-full relative transition-all ${isDarkMode
-          ? "bg-black/90 border-zinc-800"
-          : "bg-white border-zinc-200 shadow-md"
+        ? "bg-black/90 border-zinc-800"
+        : "bg-white border-zinc-200 shadow-md"
         }`}>
         {/* Terminal Header */}
         <div className={`flex justify-between items-center px-4 py-3 border-b shrink-0 transition-all ${isDarkMode
-            ? "bg-zinc-900/80 border-zinc-800"
-            : "bg-zinc-50 border-zinc-200"
+          ? "bg-zinc-900/80 border-zinc-800"
+          : "bg-zinc-50 border-zinc-200"
           }`}>
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
             <span className={`text-xs font-mono font-medium ${isDarkMode ? "text-zinc-200" : "text-zinc-850"}`}>CONSOLE@JARVIS_v5.0:~</span>
           </div>
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-all ${isDarkMode
-              ? "text-zinc-400 bg-zinc-950 border-zinc-800"
-              : "text-zinc-650 bg-white border-zinc-200"
+            ? "text-zinc-400 bg-zinc-950 border-zinc-800"
+            : "text-zinc-650 bg-white border-zinc-200"
             }`}>
             "LOCAL_MODEL=Llama 3.3-Mini"
           </span>
@@ -669,8 +712,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
               <div key={index} className={`flex gap-3 ${isJarvis ? "justify-start" : "justify-end"}`}>
                 {isJarvis && (
                   <div className={`h-7 w-7 rounded-lg border flex items-center justify-center flex-shrink-0 font-bold text-xs ${isDarkMode
-                      ? "bg-zinc-900 border-[var(--brand-primary)]/20 text-[var(--brand-light)]"
-                      : "bg-zinc-100 border-zinc-200 text-[var(--brand-primary)]"
+                    ? "bg-zinc-900 border-[var(--brand-primary)]/20 text-[var(--brand-light)]"
+                    : "bg-zinc-100 border-zinc-200 text-[var(--brand-primary)]"
                     }`}>
                     J
                   </div>
@@ -678,12 +721,12 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                 <div className="max-w-[80%] flex flex-col gap-1.5">
                   <div
                     className={`px-3.5 py-2 rounded-xl text-xs leading-relaxed border transition-all ${isJarvis
-                        ? isDarkMode
-                          ? "bg-zinc-900/80 text-zinc-100 border-zinc-800"
-                          : "bg-zinc-100 text-zinc-900 border-zinc-200 shadow-sm"
-                        : isDarkMode
-                          ? "bg-[var(--brand-dark)] text-[var(--brand-light)] border-[var(--brand-border)]"
-                          : "bg-[var(--brand-primary)] text-white border-[var(--brand-border)] font-medium shadow-sm"
+                      ? isDarkMode
+                        ? "bg-zinc-900/80 text-zinc-100 border-zinc-800"
+                        : "bg-zinc-100 text-zinc-900 border-zinc-200 shadow-sm"
+                      : isDarkMode
+                        ? "bg-[var(--brand-dark)] text-[var(--brand-light)] border-[var(--brand-border)]"
+                        : "bg-[var(--brand-primary)] text-white border-[var(--brand-border)] font-medium shadow-sm"
                       }`}
                   >
                     <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayContent) }} />
@@ -704,8 +747,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                           <div
                             key={idx}
                             className={`text-[10px] border px-2 py-1 rounded flex items-center gap-1 bg-opacity-40 animate-pulse ${isDarkMode
-                                ? "bg-[var(--brand-dark)] border-[var(--brand-primary)]/30 text-[var(--brand-light)]"
-                                : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                              ? "bg-[var(--brand-dark)] border-[var(--brand-primary)]/30 text-[var(--brand-light)]"
+                              : "bg-zinc-100 border-zinc-200 text-zinc-700"
                               }`}
                           >
                             <Sparkles className="h-3 w-3 shrink-0" />
@@ -729,8 +772,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
         {/* Smart dismissible pop-up banner */}
         {showNotePopup && (
           <div className={`mx-4 mb-3 p-3.5 rounded-lg shadow-2xl backdrop-blur-md z-10 animate-in fade-in slide-in-from-bottom-2 duration-300 relative border ${isDarkMode
-              ? "bg-zinc-900/95 border-[var(--brand-primary)]/35"
-              : "bg-white border-zinc-200 shadow-sm"
+            ? "bg-zinc-900/95 border-[var(--brand-primary)]/35"
+            : "bg-white border-zinc-200 shadow-sm"
             }`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex gap-2.5 text-xs">
@@ -792,8 +835,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
               fileInputRef.current?.click();
             }}
             className={`p-2.5 rounded-lg transition border flex items-center justify-center cursor-pointer ${isDarkMode
-                ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-[var(--brand-light,rgb(6,182,212))]"
-                : "bg-white border-zinc-200 text-zinc-600 hover:text-[var(--brand-primary)]"
+              ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-[var(--brand-light,rgb(6,182,212))]"
+              : "bg-white border-zinc-200 text-zinc-600 hover:text-[var(--brand-primary)]"
               }`}
             title="Anexar documento (PDF, DOCX, Excel)"
           >
@@ -815,8 +858,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                     : "Digite o comando ou anexe planilhas, PDFs da rotina..."
             }
             className={`flex-1 border rounded-lg text-xs px-3.5 py-2.5 focus:outline-none focus:border-[var(--brand-primary)] transition-all ${isDarkMode
-                ? "bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-550"
-                : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400 shadow-sm"
+              ? "bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-550"
+              : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400 shadow-sm"
               }`}
           />
           <button
@@ -872,10 +915,10 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                         type="button"
                         onClick={() => handleSelectPersona(p.id)}
                         className={`text-left p-3 rounded-xl border transition-all duration-350 relative cursor-pointer overflow-hidden flex flex-col justify-between min-h-[76px] ${isActive
-                            ? "bg-zinc-950 border-[var(--brand-primary)] shadow-[0_0_8px_var(--brand-glow)]"
-                            : isDarkMode
-                              ? "bg-zinc-950/65 border-zinc-900 text-zinc-400 hover:bg-zinc-900"
-                              : "bg-zinc-50 border-zinc-300 text-zinc-600 hover:bg-zinc-100/80"
+                          ? "bg-zinc-950 border-[var(--brand-primary)] shadow-[0_0_8px_var(--brand-glow)]"
+                          : isDarkMode
+                            ? "bg-zinc-950/65 border-zinc-900 text-zinc-400 hover:bg-zinc-900"
+                            : "bg-zinc-50 border-zinc-300 text-zinc-600 hover:bg-zinc-100/80"
                           }`}
                       >
                         <span
@@ -912,8 +955,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
               {/* Info note */}
               <div className={`text-[11px] leading-normal border p-3 rounded-lg font-sans ${isDarkMode
-                  ? "text-zinc-500 bg-zinc-900/40 border-zinc-900/80"
-                  : "text-zinc-700 bg-zinc-50 border-zinc-200"
+                ? "text-zinc-500 bg-zinc-900/40 border-zinc-900/80"
+                : "text-zinc-700 bg-zinc-50 border-zinc-200"
                 }`}>
                 Personalize os parâmetros de reprodução do sintetizador nativo offline da sua máquina Ryzen ou do microserviço local.
               </div>
@@ -924,10 +967,10 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                   type="button"
                   onClick={() => setEngineType("local_system_tts")}
                   className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center ${engineType === "local_system_tts"
-                      ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold"
-                      : isDarkMode
-                        ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
-                        : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
+                    ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold"
+                    : isDarkMode
+                      ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
+                      : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
                     }`}
                 >
                   Sistema Offline
@@ -936,10 +979,10 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                   type="button"
                   onClick={() => setEngineType("microsoft_edge_tts")}
                   className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center flex flex-col justify-center items-center ${engineType === "microsoft_edge_tts"
-                      ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold shadow-[0_2px_8px_var(--brand-glow)]"
-                      : isDarkMode
-                        ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
-                        : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
+                    ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold shadow-[0_2px_8px_var(--brand-glow)]"
+                    : isDarkMode
+                      ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
+                      : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
                     }`}
                 >
                   <span>Microsoft Edge TTS</span>
@@ -955,8 +998,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                   value={selectedVoiceURI}
                   onChange={(e) => setSelectedVoiceURI(e.target.value)}
                   className={`w-full text-xs font-mono border rounded-lg p-2.5 focus:outline-none focus:border-[var(--brand-primary)] cursor-pointer ${isDarkMode
-                      ? "bg-zinc-900 border-zinc-800 text-zinc-200"
-                      : "bg-white border-zinc-300 text-zinc-850 shadow-sm"
+                    ? "bg-zinc-900 border-zinc-800 text-zinc-200"
+                    : "bg-white border-zinc-300 text-zinc-850 shadow-sm"
                     }`}
                 >
                   {systemVoices.length === 0 ? (
@@ -1031,8 +1074,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
               {/* Diagnostics & Latency info in popup list */}
               <div className={`border p-3 rounded-lg space-y-1.5 font-mono text-[10px] transition-all ${isDarkMode
-                  ? "bg-zinc-900/50 border-zinc-900 text-zinc-400"
-                  : "bg-zinc-50 border-zinc-200 text-zinc-600"
+                ? "bg-zinc-900/50 border-zinc-900 text-zinc-400"
+                : "bg-zinc-50 border-zinc-200 text-zinc-600"
                 }`}>
                 <div className={`text-[9px] font-bold border-b pb-1 flex justify-between ${isDarkMode ? "text-zinc-500 border-zinc-900/80" : "text-zinc-500 border-zinc-200"
                   }`}>
@@ -1082,8 +1125,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                   }
                 }}
                 className={`px-3.5 py-1.5 text-[10px] font-mono border rounded-lg transition cursor-pointer ${isDarkMode
-                    ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
-                    : "bg-white border-zinc-200 text-zinc-650 hover:bg-neutral-50 hover:text-black shadow-sm"
+                  ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
+                  : "bg-white border-zinc-200 text-zinc-650 hover:bg-neutral-50 hover:text-black shadow-sm"
                   }`}
               >
                 Resetar para Persona

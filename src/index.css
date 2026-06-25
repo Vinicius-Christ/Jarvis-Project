@@ -1,24 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   body {
-    @apply bg-[#050505] text-[#A1A1AA] font-sans antialiased;
-    background-image: radial-gradient(circle at 45% 0%, #151515 0%, #050505 80%);
+    @apply bg-black text-zinc-400 font-sans antialiased;
+    background-image: 
+      radial-gradient(circle at 50% -20%, rgba(59, 7, 100, 0.4) 0%, rgba(9, 9, 11, 1) 50%, #000000 100%),
+      radial-gradient(circle at 80% 80%, rgba(46, 16, 101, 0.15) 0%, transparent 50%);
     background-attachment: fixed;
     background-repeat: no-repeat;
     background-size: cover;
   }
+  
+  /* Modern Selection Color */
+  ::selection {
+    @apply bg-purple-900/40 text-purple-100;
+  }
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -26,12 +33,13 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272A;
+  background: rgba(88, 28, 135, 0.4);
   border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3F3F46;
+  background: rgba(107, 33, 168, 0.8);
 }
 
 @keyframes elegant-fade {
@@ -39,31 +47,70 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.animate-holo-breathe {
-  animation: elegant-fade 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes purple-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(168, 85, 247, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
 }
 
+.animate-holo-breathe {
+  animation: elegant-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Cyber-Industrial "Liquid Glass" Primitives - Black & Purple */
 .glass-panel {
-  @apply bg-[#0A0A0A]/85 backdrop-blur-2xl border border-white/[0.06] shadow-2xl;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  @apply bg-zinc-950/40 backdrop-blur-2xl border border-purple-500/10;
+  box-shadow: 
+    inset 0 1px 0 rgba(168, 85, 247, 0.05), 
+    0 20px 40px -15px rgba(0,0,0,0.8),
+    0 0 30px rgba(88, 28, 135, 0.05);
 }
 
 .hover-glow {
-  @apply transition-transform duration-300;
+  @apply transition-all duration-500 ease-out;
 }
 
 .hover-glow:hover {
   transform: translateY(-2px);
+  @apply border-purple-500/20 bg-zinc-900/50;
+  box-shadow: 
+    0 10px 30px -10px rgba(168, 85, 247, 0.15),
+    inset 0 1px 0 rgba(168, 85, 247, 0.1);
 }
 
 .holographic-card {
-  @apply bg-[#121212]/50 border border-white/[0.06] p-5 rounded-2xl relative overflow-hidden transition-all duration-300;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  @apply bg-zinc-950/50 border border-purple-900/20 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500 ease-out;
+  backdrop-filter: blur(24px);
+  box-shadow: 
+    inset 0 1px 0 rgba(168, 85, 247, 0.03), 
+    0 10px 30px -10px rgba(0,0,0,0.5);
+}
+
+.holographic-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, transparent 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.holographic-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .holographic-card:hover {
-  @apply bg-[#18181B]/70 border-white/[0.09] shadow-lg;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  @apply bg-zinc-900/60 border-purple-500/20;
+  transform: translateY(-3px);
+  box-shadow: 
+    inset 0 1px 0 rgba(168, 85, 247, 0.1), 
+    0 20px 40px -15px rgba(0,0,0,0.7),
+    0 0 20px rgba(168, 85, 247, 0.1);
 }
 
+/* Form Styles */
+input, textarea, select {
+  @apply bg-zinc-950/50 border border-purple-900/30 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all duration-300 text-zinc-100 placeholder-zinc-600 rounded-xl outline-none;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+}

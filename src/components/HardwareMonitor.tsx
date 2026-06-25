@@ -49,8 +49,8 @@ export function SystemHealthMonitor() {
   }, []);
 
   return (
-    <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/40 space-y-4">
-      <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
+    <div className="glass-panel p-5 rounded-2xl space-y-4">
+      <div className="flex justify-between items-center border-b border-white/5 pb-2">
         <h3 className="text-xs font-mono font-bold tracking-widest text-[var(--brand-light)] uppercase flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 text-[var(--brand-light)] animate-pulse" />
           Monitor de Saúde do Sistema
@@ -136,10 +136,29 @@ export function SystemHealthMonitor() {
   );
 }
 
-export function HardwareProcessingMonitor({ hardwareStats, setActiveTab, setSettingsTab }: { hardwareStats: any, setActiveTab: any, setSettingsTab: any }) {
+export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActiveTab, setSettingsTab }: { hardwareStats?: any, setActiveTab: any, setSettingsTab: any }) {
+  const [hardwareStats, setHardwareStats] = useState(initialStats || {});
+
+  useEffect(() => {
+    const fetchHardwareStats = async () => {
+      try {
+        const res = await fetch(getServerUrl() + "/api/health");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.hardware) {
+            setHardwareStats(data.hardware);
+          }
+        }
+      } catch (err) { }
+    };
+
+    fetchHardwareStats();
+    const timer = setInterval(fetchHardwareStats, 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
-    <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/40 space-y-4">
+    <div className="glass-panel p-5 rounded-2xl space-y-4">
       <div className="flex justify-between items-center border-l border-[var(--brand-primary)] pl-2">
         <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase">
           Métricas de VRAM & Processamento

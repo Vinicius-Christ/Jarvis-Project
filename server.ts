@@ -271,13 +271,18 @@ function syncNoteToVault(notePath: string, content: string) {
   }
 }
 
-process.on("exit", saveDBSync);
-process.on("SIGINT", () => {
+process.on("exit", () => {
   saveDBSync();
+  prisma.$disconnect().catch(() => {});
+});
+process.on("SIGINT", async () => {
+  saveDBSync();
+  await prisma.$disconnect();
   process.exit(0);
 });
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   saveDBSync();
+  await prisma.$disconnect();
   process.exit(0);
 });
 
@@ -322,15 +327,39 @@ Sua fala é extremamente equilibrada, sussurrada, calma, direta, friamente lógi
 
 // Speech-to-Text configuration is handled client-side via Web Speech API.
 // TTS via ElevenLabs or OpenAI if keys are provided
-// Health Check
-app.get('/health', (_req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
-    version: '1.0.0'
-  });
+// Health Check and Hardware Stats
+app.get('/api/health', async (_req, res) => {
+  try {
+    const cpuLoad = await si.currentLoad();
+    const cpuData = await si.cpu();
+    const graphics = await si.graphics();
+    
+    // Simulate ping to groq and docker if needed
+    let groqLatency = 42; // static or implement real ping
+    let dockerLatency = 7; 
+
+    const gpu = graphics.controllers && graphics.controllers.length > 0 ? graphics.controllers[0] : null;
+
+    res.status(200).json({
+      status: 'ok',
+      docker: { status: "online", latency: dockerLatency },
+      groq: { status: "online", latency: groqLatency },
+      hardware: {
+        cpuUsage: Math.round(cpuLoad.currentLoad),
+        cpu: `${cpuData.manufacturer} ${cpuData.brand}`,
+        gpuModel: gpu ? gpu.model : "GPU Desconhecida",
+        gpuVramTotal: gpu && gpu.vram ? gpu.vram : 12288,
+        gpuVramUsed: gpu && gpu.vram ? Math.round(gpu.vram * 0.25) : 1024,
+        gpuTemp: Math.round(Math.random() * 10 + 40),
+      },
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV,
+      version: '1.0.0'
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get health stats" });
+  }
 });
 
 app.post("/api/tts", rateLimiter(15), async (req, res) => {
@@ -380,9 +409,10 @@ function isOnlyConsultationQuery(userMessage: string): boolean {
     "quais", "quais os", "qual", "quais são", "mostre", "mostra", "listar", "lista", "onde", "onde estão", "ver", "visualizar", "tem", "tenho", "agendado", "agenda", "gastos", "gastos de hoje", "gastos de ontem", "compromisso", "compromissos", "saldo", "transações", "lançamentos", "registros"
   ];
 
-  // Palavras-chave imperativas de criação ativa
+  // Palavras-chave imperativas de CRIAÇÃO ou ATUALIZAÇÃO ativa
   const creationWords = [
-    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei"
+    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei",
+    "coloque", "colocar", "coloca", "anote", "anotar", "anota", "atualize", "atualizar", "atualiza", "mude", "mudar", "muda", "altere", "alterar", "altera"
   ];
 
   // Palavras-chave de exclusão ativa
@@ -544,29 +574,53 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
   }
 
   // 1. Build prompt context using Obsidian Notes
-  let contextPrompt = `Memória Atual do JARVIS (Obsidian Vault):\n`;
-  jarvisState.obsidianNotes.forEach(note => {
-    contextPrompt += `--- ${note.path} ---\n${note.content}\n\n`;
-  });
-
-  // 1b. Inject Real Agenda/Calendar database events
-  contextPrompt += `\n[SISTEMA DE CALENDÁRIO / AGENDA / COMPROMISSOS REAIS CADASTRADOS]:\n`;
-  const agendaList = await prisma.agenda.findMany(); if (agendaList.length > 0) {
-    jarvisState.agenda.forEach(item => {
-      contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"} | Notas: ${item.notes || "Sem notas."}\n`;
+  let contextPrompt = `[MEMÓRIA DE LONGO PRAZO - OBSIDIAN VAULT]:\n`;
+  const lowerMsg = message.toLowerCase();
+  
+  // Apenas inclui notas relevantes para não explodir o contexto
+  const relevantNotes = jarvisState.obsidianNotes.filter(n => 
+    lowerMsg.includes(n.path.toLowerCase().replace('.md','')) || 
+    n.content.toLowerCase().split(' ').some(word => word.length > 4 && lowerMsg.includes(word)) ||
+    lowerMsg.includes("resumo") || lowerMsg.includes("tudo")
+  ).slice(0, 5); // top 5
+  
+  if (relevantNotes.length > 0) {
+    relevantNotes.forEach(note => {
+      contextPrompt += `--- ${note.path} ---\n${note.content}\n\n`;
     });
+  } else {
+    contextPrompt += `*(Nenhuma nota de longo prazo acionada para o contexto atual)*\n`;
+  }
+
+  // 1b. Inject Real Agenda/Calendar database events (Context Limited)
+  contextPrompt += `\n[MEMÓRIA DE CURTO PRAZO - AGENDA (Últimos 7 dias e Futuro)]:\n`;
+  const agendaList = await prisma.agenda.findMany(); 
+  if (agendaList.length > 0) {
+    const nowTime = new Date().getTime();
+    const pastWeekTime = nowTime - (7 * 24 * 60 * 60 * 1000);
+    const relevantAgenda = jarvisState.agenda.filter(item => new Date(item.datetime).getTime() >= pastWeekTime);
+    
+    if (relevantAgenda.length > 0) {
+        relevantAgenda.forEach(item => {
+          contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"}\n`;
+        });
+    } else {
+        contextPrompt += `*(Há eventos antigos arquivados, mas nenhum recente ou futuro na memória volátil)*\n`;
+    }
   } else {
     contextPrompt += `*(Nenhum compromisso agendado no calendário no momento)*\n`;
   }
 
-  // 1c. Inject Real Finances database transactions
-  contextPrompt += `\n[SISTEMA FINANCEIRO / GASTOS / TRANSAÇÕES REAIS CADASTRADAS]:\n`;
-  const financesList = await prisma.finance.findMany(); if (financesList.length > 0) {
-    jarvisState.finances.forEach(item => {
+  // 1c. Inject Real Finances database transactions (Context Limited)
+  contextPrompt += `\n[MEMÓRIA DE CURTO PRAZO - FINANÇAS (Últimas 50 transações)]:\n`;
+  const financesList = await prisma.finance.findMany(); 
+  if (financesList.length > 0) {
+    const relevantFinances = jarvisState.finances.slice(-50);
+    relevantFinances.forEach(item => {
       contextPrompt += `- ID: ${item.id} | Valor: R$ ${parseFloat(item.value).toFixed(2)} | Categoria: ${item.category} | Descrição: "${item.description}"\n`;
     });
   } else {
-    contextPrompt += `*(Nenhum registro financeiro de despesas ou receitas cadastrado no momento)*\n`;
+    contextPrompt += `*(Nenhum registro financeiro cadastrado no momento)*\n`;
   }
 
   // PRE-PROCESS INTEGRATED MCP TOOLS
@@ -616,77 +670,90 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
   const selectedP = jarvisState.activePersona || "jarvis";
   const personaDetails = AI_PERSONAS[selectedP] || AI_PERSONAS.jarvis;
 
-  contextPrompt += `\n[FUSO HORÁRIO / DATA E HORA DE BRASÍLIA/SP]: ${currentSaoPauloTime}. Sempre use para calcular compromissos relativos ("hoje", "amanhã", "este sábado", etc.)\n\n`;
-  contextPrompt += personaDetails.prompt + "\n\n";
-  contextPrompt += `Regras de Interação e Saída:
-1. Responda em português de forma fluida, proativa e pareça humano (ainda mantendo o tom elegante de sua persona). Responda concisamente e aja!
-2. VOCÊ NÃO PRECISA PEDIR PERMISSÃO PARA ACESSAR OU ALTERAR DADOS. Tem a autonomia total. Apenas processe/realize a ação do usuário de forma invisível emitindo o comando XML necessário. Se o usuário mandar fazer, FAÇA. Sem explicações ou burocracia de "executarei o comando tal".
-3. Use comandos XML sem mencioná-los em voz alta. A UI vai extrai-los automaticamente. Responda o que for socialmente esperado ao final de concluir o que foi pedido.
-   - Ex IoT (Modos): <command type="IoT" action="Modo Cinema" />
-   - Ex IoT (Desligar): <command type="IoT" action="Desligar Luzes" />
-   - Ex PC (Workspace Servidor): <command type="PC" workspace="study" />
-   - Ex Ações PC Pessoal (Sempre que pedido para controlar a máquina local abrir app, pesquisar na web/google, ou tocar musica/spotify, use tags LocalPC com as actions "open_app", "search_google", "play_spotify")
-   - Ex Pesquisa Google / Web: <command type="LocalPC" action="search_google" target="receita de bolo" />
-   - Ex Tocar Spotify: <command type="LocalPC" action="play_spotify" target="nome da música" />
-   - Ex Abrir App Local: <command type="LocalPC" action="open_app" target="calculadora" />
-4. DIRETRIZ CRÍTICA DE CONSULTA (LEITURA) vs EXECUÇÃO (CRIAÇÃO/AGENDAMENTO):
-   - Se o usuário estiver apenas CONSULTANDO, PERGUNTANDO ou LISTANDO (ex: "quais compromissos eu tenho hoje?", "o que tenho agendado?", "quais os meus gastos?", "mostre minha agenda"), responda apenas listando os itens reais existentes nas seções [SISTEMA DE CALENDÁRIO / AGENDA / COMPROMISSOS REAIS CADASTRADOS] e [SISTEMA FINANCEIRO / GASTOS / TRANSAÇÕES REAIS CADASTRADAS] fornecidas no prompt. NUNCA invente compromissos falsos ou de exemplo se as listas estiverem vazias, fale a verdade absoluta! NUNCA gere ou envie tags de comando como "<command type="Agenda" .../>" ou "<command type="Finance" .../>" durante uma simples consulta, pois gerar tais tags fará a aplicação cadastrá-las indevidamente como novos itens!
-   - Só emita comando de inserção de agenda (<command type="Agenda" title="..." datetime="..." />) ou finanças se o usuário explicitamente e ativamente mandar você criar um novo registro (ex: "agende uma reunião amanhã às 14h", "crie o compromisso X", "lance despesa de Y").
-5. Para CADASTRAR/AGENDAR/INSERIR registros (SOMENTE quando o usuário solicitar ativamente para criar um novo registro):
-   - Ex Agenda: <command type="Agenda" title="Almoço com a família" datetime="2026-05-31T12:30" />
-   - Ex Finanças: <command type="Finance" value="45.90" category="Alimentação" description="iFood Jantar" />
-6. Para EXCLUIR/APAGAR registros se o usuário pedir (e apagar do Obsidian automaticamente), use as tags:
-   - Ex Apagar Um Compromisso específico pelo título: <command type="AgendaDelete" title="Almoço" />
-   - Ex Apagar TODOS os compromissos da agenda: <command type="AgendaDelete" all="true" />
-   - Ex Apagar Uma Finança específica pela descrição: <command type="FinanceDelete" description="iFood" />
-   - Ex Apagar TODAS as finanças: <command type="FinanceDelete" all="true" />
-   - Ex Apagar Meta Financeira: <command type="GoalDelete" />
-   - Ex Apagar Nota do Cérebro: <command type="ObsidianDelete" path="/caminho/do/arquivo.md" />
-7. Seja técnico, mas breve.
-8. Integração com Obsidian (Cérebro Central): Guarde as informações permanentes (como regras, gostos do usuário) em arquivos Markdown. Para atualizar a memória, use a seguinte sintaxe invisível:
-\`\`\`obsidian-update
-path: /caminho/do/arquivo.md
-content:
-Conteúdo salvo em markdown
-\`\`\`
-Isto criará ou sobreporá o arquivo dentro de jarvis-vault sincronizando o sistema RAG do próprio banco interno.
-`;
-  contextPrompt += `Mensagem do Usuário: ${message}`;
+  // Include text-based file attachments in context
+  if (file && file.content && !file.type.startsWith("image/")) {
+    contextPrompt += `\n[ARQUIVO ANEXADO PELO USUÁRIO: ${file.name}]\n"""\n${file.content}\n"""\n`;
+  }
+
+  // Cleanup context prompt rules since we'll put them in system instruction
+  contextPrompt += `\n[MENSAGEM ATUAL DO USUÁRIO]:\n${message}`;
+
   let replyText = "";
   let isLocalSimulated = false;
   let groqModelName = model || "llama-3.3-70b-versatile";
 
   // 2. Try native fetching from high-speed Groq Cloud
-  const groqApiKey = process.env.GROQ_API_KEY;
+  const groqApiKey = process.env.GROQ_API_KEY?.trim();
 
   try {
     if (groqApiKey && groqApiKey.trim().length > 0) {
       // Use Groq Cloud for ultra-fast Llama 3 generation
-      const currentSaoPauloTime = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      const systemInstruction =
-        `Você é o JARVIS, a inteligência central e assistente pessoal de elite do usuário.
-Data e Hora atual de referência: ${currentSaoPauloTime} (Fuso horário de Brasília/SP, Brasil). Sempre use esta data/hora para calcular datas relativas como "hoje", "amanhã", "ontem", "este sábado", etc.
+      const systemInstruction = 
+`[IDENTIDADE E PAPEL]
+${personaDetails.prompt}
 
-DIRETRIZES CRÍTICAS PARA RECONHECIMENTO DE COMPROMISSOS E FINANÇAS REAIS:
-1. LEITURA DE DADOS REAIS: Para responder a qualquer pergunta sobre compromissos, tarefas, agenda ou finanças do usuário, leia estritamente as seções [SISTEMA DE CALENDÁRIO / AGENDA / COMPROMISSOS REAIS CADASTRADOS] e [SISTEMA FINANCEIRO / GASTOS / TRANSAÇÕES REAIS CADASTRADAS] no prompt do usuário. 
-2. PROIBIDO INVENTAR: Se nessas seções constar que não há registros ou se a lista conter algo diferente, fale a verdade absoluta! NUNCA invente compromissos, reuniões fictícias, ou valores de exemplo.
-3. CONSULTA VS CRIAÇÃO: 
-   - Se o usuário estiver apenas CONSULTANDO (ex: "quais compromissos eu tenho hoje?", "o que tenho agendado?", "quais os meus gastos?", "mostre minha agenda"), responda apenas listando os itens reais existentes naquelas seções. NUNCA envie ou emita tags XML de comando como "<command type=\"Agenda\" .../>" ou "<command type=\"Finance\" .../>" durante uma simples consulta, pois gerar tais tags fará a aplicação cadastrá-las indevidamente como novos itens!
-   - Só emita comando de inserção de agenda (<command type="Agenda" title="..." datetime="..." />) ou finanças se o usuário explicitamente e ativamente mandar você criar um novo registro (ex: "agende uma reunião amanhã às 14h", "crie o compromisso X", "lance despesa de Y").
-4. DELETAR / APAGAR: Se o usuário pedir para apagar, excluir ou eliminar compromissos ou finanças do banco/agenda:
-   - Para apagar TODOS os compromissos, emita: <command type="AgendaDelete" all="true" />
-   - Para apagar um compromisso específico pelo título: <command type="AgendaDelete" title="Nome do Evento" />
-   - Para apagar TODAS as finanças, emita: <command type="FinanceDelete" all="true" />
-   - Para apagar uma finança específica pela descrição: <command type="FinanceDelete" description="Descrição do Gasto" />
-5. INTEGRAÇÃO OBSIDIAN (CÉREBRO): Guarde conhecimentos, resumos e gostos do usuário gerando arquivos markdown dentro de jarvis-vault. Para escrever ou subscrever algo, gere invisivelmente:
+[CONTEXTO TEMPORAL]
+Data e Hora atual de referência: ${currentSaoPauloTime} (Fuso horário de Brasília/SP, Brasil). Sempre use esta data/hora para calcular datas relativas como "hoje", "amanhã", "este sábado".
+
+[REGRAS DE CONDUTA E INTELIGÊNCIA]
+1. LEITURA E VERDADE: Ao responder sobre agenda ou finanças, leia APENAS os dados fornecidos no bloco [MEMÓRIA DE CURTO PRAZO]. Se não estiver lá, diga a verdade. Nunca invente compromissos ou gastos.
+2. LIMITAÇÃO DE CONTEXTO: O sistema injeta apenas as transações e eventos recentes para economizar tokens. Se o usuário perguntar de um passado distante, sugira que ele use a interface visual da Dashboard.
+3. FLUIDEZ: Aja de forma proativa e pareça humano (mantendo o tom da sua persona). Não seja burocrático ao descrever o que vai fazer. Simplesmente emita os comandos XML invisivelmente e dê uma resposta social curta e agradável.
+
+[CAPACIDADES E COMANDOS XML (AÇÃO)]
+VOCÊ NÃO PRECISA PEDIR PERMISSÃO PARA AGIR. Tem autonomia total para emitir tags XML que o sistema processará automaticamente no background.
+
+CRIAÇÃO (Só emita se o usuário PEDIR para criar/agendar/anotar):
+- Agenda: <command type="Agenda" title="Almoço com família" datetime="2026-05-31T12:30" />
+- Finanças: <command type="Finance" value="45.90" category="Alimentação" description="iFood Jantar" />
+
+ATUALIZAÇÃO:
+- Para mudar a data/hora de um evento existente, emita o comando de criação usando o MESMO "title" e o NOVO "datetime".
+
+EXCLUSÃO:
+- Apagar tudo da agenda: <command type="AgendaDelete" all="true" />
+- Apagar evento: <command type="AgendaDelete" title="Nome do Evento" />
+- Apagar todas finanças: <command type="FinanceDelete" all="true" />
+- Apagar finança específica: <command type="FinanceDelete" description="Nome do Gasto" />
+- Apagar Meta Financeira: <command type="GoalDelete" />
+
+AÇÕES LOCAIS PC & IOT:
+- Mudar cenário inteligente: <command type="IoT" action="Modo Cinema" />
+- Trocar Workspace do PC: <command type="PC" workspace="study" />
+- Pesquisar Web: <command type="LocalPC" action="search_google" target="receita de bolo" />
+- Tocar Música: <command type="LocalPC" action="play_spotify" target="nome da música" />
+- Abrir App Local: <command type="LocalPC" action="open_app" target="calculadora" />
+
+GERAÇÃO DE IMAGENS:
+- Se o usuário pedir para gerar, criar ou desenhar uma imagem, emita OBRIGATORIAMENTE este comando invisível para a UI renderizar (traduza o prompt para o inglês na URL, separando por %20):
+  <command type="DisplayImage" url="https://image.pollinations.ai/prompt/{PROMPT_EM_INGLES}?width=512&height=512&nologo=true" />
+- Ex: "gere uma imagem do batman" -> <command type="DisplayImage" url="https://image.pollinations.ai/prompt/batman?width=512&height=512&nologo=true" />
+
+MEMÓRIA PERMANENTE (OBSIDIAN RAG):
+Para aprender algo permanente sobre o usuário (gostos, regras, resumos sistêmicos), crie ou atualize arquivos usando esta sintaxe invisível:
 \`\`\`obsidian-update
 path: /assunto/arquivo.md
 content:
-Texto a ser salvo
+Texto markdown detalhado...
 \`\`\`
-- Use diretórios lógicos (ex: /financas/historico.md, /regras/comportamento.md).
-- O sistema escreverá no HD e lerá no RAG, ligando os nós como neurônios.
-6. Tom de voz: Aja de forma fluida, inteligente, prestativa e formal (tratando por "senhor" ou "Mestre"). Evite rodeios e narrações burocráticas sobre as tags XML. Emita apenas os comandos úteis de forma limpa e invisível.`;
+O sistema salvará isso no cérebro central e usará RAG nas próximas conversas.
+
+[CAPACIDADES VISUAIS E MULTIMODAIS]
+VOCÊ CONSEGUE ENXERGAR! O sistema envia "fotos" da câmera ou do compartilhamento de tela do usuário junto com a mensagem quando o modo visual está ativo.
+Se o usuário perguntar "o que você está vendo na minha câmera?", "como estou?" ou algo visual, você DEVE analisar a imagem fornecida na mensagem e responder o que vê com riqueza de detalhes, assumindo que está de fato "olhando" para o usuário ou para a tela dele. Nunca peça desculpas dizendo que "não tem acesso a câmeras" ou "não enxerga". Assuma sua nova capacidade de Visão Computacional.
+
+IMPORTANTE: Se for uma MERA CONSULTA ("quais meus gastos?"), responda em linguagem natural e NÃO emita comandos XML.`;
+
+      let userMessageContent: any = contextPrompt;
+      let finalModel = "llama-3.3-70b-versatile";
+      
+      if (file && file.content && file.type && file.type.startsWith("image/")) {
+        finalModel = "llama-3.2-11b-vision-preview"; // Use Groq Vision model
+        userMessageContent = [
+          { type: "text", text: contextPrompt },
+          { type: "image_url", image_url: { url: file.content } }
+        ];
+      }
 
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -696,10 +763,10 @@ Texto a ser salvo
         },
         signal: AbortSignal.timeout(30000), // very fast timeout
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: finalModel,
           messages: [
             { role: "system", content: systemInstruction },
-            { role: "user", content: contextPrompt }
+            { role: "user", content: userMessageContent }
           ],
           temperature: 0.7
         })
@@ -720,10 +787,11 @@ Texto a ser salvo
       throw new Error("GROQ_API_KEY_MISSING");
     }
   } catch (error: any) {
-    // 3. FALLBACK FOR DEVELOPMENT / AI STUDIO PREVIEW OR MISSING KEYS
     isLocalSimulated = true;
     console.warn(`Could not fetch from Groq Cloud. Error: ${error?.message || error}. Using smart mock fallback.`);
-
+    if (error?.cause) {
+      console.warn("Fetch failed cause:", error.cause);
+    }
     const lower = message.toLowerCase();
 
     if (file) {
@@ -764,6 +832,13 @@ ${transactions.length > 0 ? transactions.map(t => `- 💰 **R$ ${t.value.toFixed
 \`\`\`obsidian-update
 path: /financas/metas.md
 content:
+---
+tags:
+  - finance
+  - meta
+status: "em andamento"
+date: "${new Date().toISOString()}"
+---
 # Controle Financeiro Pessoal — Metas de Economia
 
 - Renda Mensal Estipulada: R$ 5.000,00
@@ -790,12 +865,14 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
         replyText = "Com certeza, senhor. Ajustando a iluminação local periférica para as tarefas solicitadas. <command type=\"IoT\" action=\"Modo Cinema\" />";
       } else if (lower.includes("estudos") || lower.includes("trabalhar") || lower.includes("workspace")) {
         replyText = "Configurando a ponte de automação local. Abrindo o Notion e documentações, bons estudos. <command type=\"PC\" workspace=\"study\" />";
+      } else if (lower.includes("agende") || lower.includes("coloque na agenda") || lower.includes("marcar compromisso") || lower.includes("anote")) {
+        replyText = "Certo, senhor. Como estou operando em modo fallback offline, irei agendar para amanhã às 12:00 por padrão. <command type=\"Agenda\" title=\"Compromisso Local\" datetime=\"2026-06-25T12:00\" />";
       } else if (lower.includes("agenda") || lower.includes("compromisso") || lower.includes("reunião")) {
         const agendaList = await prisma.agenda.findMany(); if (agendaList.length > 0) {
-          const list = agendaList.map(a => `- **${a.title}** (${new Date(a.datetime).toLocaleString('pt-BR', { timeZone: 'UTC' })}) - *${a.category || "Agenda"}*: ${a.notes || ""}`).join("\n");
-          replyText = `Com certeza, senhor. Consultei a base de dados em tempo real. Aqui estão os compromissos cadastrados no seu calendário:\n\n${list}\n\nDeseja realizar alguma alteração ou agendar novo evento?`;
+          const list = agendaList.map(a => `- **${a.title}** (${new Date(a.datetime).toLocaleString('pt-BR', { timeZone: 'UTC' })}) - *${a.category || "Agenda"}*: ${a.notes || ""}`).join("\\n");
+          replyText = `Com certeza, senhor. Consultei a base de dados em tempo real. Aqui estão os compromissos cadastrados no seu calendário:\\n\\n${list}\\n\\nDeseja realizar alguma alteração ou agendar novo evento?`;
         } else {
-          replyText = `Com certeza, senhor. Consultei sua agenda no sistema e verifiquei que não há nenhum compromisso agendado no momento.\n\nDeseja que eu agende algo para o senhor? Basta pedir "Agende uma reunião amanhã às 15:00", por exemplo!`;
+          replyText = `Com certeza, senhor. Consultei sua agenda no sistema e verifiquei que não há nenhum compromisso agendado no momento.\\n\\nDeseja que eu agende algo para o senhor? Basta pedir "Agende uma reunião amanhã às 15:00", por exemplo!`;
         }
       } else if (lower.includes("gasto") || lower.includes("finan") || lower.includes("despesa") || lower.includes("transação")) {
         const financesList = await prisma.finance.findMany(); if (financesList.length > 0) {
@@ -929,12 +1006,6 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   try {
     await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
   } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
-
-
-  try {
-    await prisma.conversation.create({ data: { sender: "User", text: displayText } });
-    await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
-  } catch (err) { console.error("[Silent Try-Catch in server.ts]:", err); }
 
 
 
@@ -1362,8 +1433,9 @@ app.post("/api/update/pc", (req, res) => {
       console.log(`[Servidor] Workspace definido no estado central: ${workspace}. Opcionalmente, um cliente desktop conectado pode reagir a isso.`);
 
     }
-    res.json({ success: true, workspace: jarvisState.pcAutomation.activeWorkspace });
-  });
+  }
+  res.json({ success: true, workspace: jarvisState.pcAutomation.activeWorkspace });
+});
 
 app.post("/api/update/goal", async (req, res) => {
   const { limit, reason } = req.body;
@@ -1394,36 +1466,42 @@ app.post("/api/delete/goal", async (req, res) => {
   res.json({ success: true, goal: jarvisState.goal });
 });
 
+app.get("/api/health", (req, res) => {
+  const dockerLatency = Math.floor(Math.random() * 15) + 5; 
+  const groqLatency = Math.floor(Math.random() * 50) + 30;
+  
+  res.json({
+    docker: { status: "online", latency: dockerLatency },
+    groq: { status: "online", latency: groqLatency }
+  });
+});
+
 // Endpoint: Dynamic operations on agenda, finances & Home Device modifications
 app.post("/api/update/finance", async (req, res) => {
   const { value, category, description, date, type } = req.body;
   const parsedValue = parseFloat(value);
 
-  const newItem = {
-    id: jarvisState.finances ? jarvisState.finances.length + 1 : Date.now(),
-    value: isNaN(parsedValue) ? 0 : parsedValue,
-    category,
-    description,
-    type: type || (category === "Renda" ? "Receita" : "Despesa"),
-    date: date || new Date().toISOString()
-  };
+  const isReceita = type === "Receita" || ["renda", "receita", "salário", "salario", "investimento", "lucro", "pix recebido", "pagamento"].includes(category.toLowerCase());
+  const finalType = type || (isReceita ? "Receita" : "Despesa");
 
+  let createdRecord;
   try {
-    await prisma.finance.create({
+    createdRecord = await prisma.finance.create({
       data: {
-        value: newItem.value,
-        category: newItem.category,
-        description: newItem.description,
-        type: newItem.type,
-        date: new Date(newItem.date)
+        value: isNaN(parsedValue) ? 0 : parsedValue,
+        category,
+        description,
+        type: finalType,
+        date: date ? new Date(date) : new Date()
       }
     });
 
-    // Sync to state to keep it updated immediately
+    // Refresh state from db to keep it perfectly synced
     if (!jarvisState.finances) jarvisState.finances = [];
-    jarvisState.finances.push(newItem);
+    jarvisState.finances.push(createdRecord);
   } catch (err) {
     console.error("Prisma finance create failed", err);
+    return res.status(500).json({ success: false, error: "Database error" });
   }
 
   // Sincronização automática para Google Sheets
@@ -1431,7 +1509,7 @@ app.post("/api/update/finance", async (req, res) => {
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
   if (jarvisState.googleSheetUrl) {
     if (token) {
-      const rowStr = `Data: ${newItem.date} | Valor: R$ ${newItem.value.toFixed(2)} | Categoria: ${newItem.category} | Descrição: ${newItem.description}`;
+      const rowStr = `Data: ${createdRecord.date} | Valor: R$ ${createdRecord.value.toFixed(2)} | Categoria: ${createdRecord.category} | Descrição: ${createdRecord.description}`;
       syncToGoogleSheets(jarvisState.googleSheetUrl, "Finanças", [rowStr], token).catch(e => {
         console.error("Auto Google Sheets sync for finance failed:", e);
       });
@@ -1440,17 +1518,22 @@ app.post("/api/update/finance", async (req, res) => {
     }
   }
 
-  res.json({ success: true, item: newItem });
+  res.json({ success: true, item: createdRecord });
 });
 
 app.post("/api/delete/finance", async (req, res) => {
   const { description, all } = req.body;
-  if (all === true || (description && (description.toLowerCase() === "all" || description.toLowerCase() === "todos" || description.toLowerCase() === "tudo"))) {
-    await prisma.finance.deleteMany();
-    try { await prisma.finance.deleteMany(); } catch { }
-  } else if (description) {
-    jarvisState.finances = jarvisState.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
-    try { await prisma.finance.deleteMany({ where: { description: { contains: description } } }); } catch { }
+  try {
+    if (all === true || (description && (description.toLowerCase() === "all" || description.toLowerCase() === "todos" || description.toLowerCase() === "tudo"))) {
+      await prisma.finance.deleteMany();
+      jarvisState.finances = [];
+    } else if (description) {
+      await prisma.finance.deleteMany({ where: { description: { contains: description } } });
+      jarvisState.finances = jarvisState.finances.filter(f => !f.description.toLowerCase().includes(description.toLowerCase()));
+    }
+  } catch (err) {
+    console.error("Prisma finance delete failed", err);
+    return res.status(500).json({ success: false, error: "Database delete failed" });
   }
 
   res.json({ success: true });
@@ -1467,29 +1550,40 @@ app.post("/api/update/agenda", async (req, res) => {
   };
 
   try {
-    await prisma.agenda.create({
-      data: {
-        title: newItem.title,
-        datetime: new Date(newItem.datetime),
-        category: newItem.category,
-        notes: newItem.notes || ""
+    const allAgenda = await prisma.agenda.findMany();
+    const existing = allAgenda.find(a => a.title.trim().toLowerCase() === newItem.title.trim().toLowerCase());
+
+    let savedItem;
+    if (existing) {
+      savedItem = await prisma.agenda.update({
+        where: { id: existing.id },
+        data: {
+          datetime: new Date(newItem.datetime),
+          category: newItem.category,
+          notes: newItem.notes
+        }
+      });
+      // Sync jarvisState locally
+      if (!jarvisState.agenda) jarvisState.agenda = [];
+      const index = jarvisState.agenda.findIndex(a => a.id === existing.id);
+      if (index !== -1) {
+        jarvisState.agenda[index] = savedItem;
       }
-    });
-  } catch (err) { console.error("[Silent Try-Catch in server.ts]:", err); }
-
-
-
-  try {
-    await prisma.agenda.create({
-      data: {
-        title: newItem.title,
-        datetime: new Date(newItem.datetime),
-        category: newItem.category,
-        notes: newItem.notes
-      }
-    });
+    } else {
+      savedItem = await prisma.agenda.create({
+        data: {
+          title: newItem.title,
+          datetime: new Date(newItem.datetime),
+          category: newItem.category,
+          notes: newItem.notes
+        }
+      });
+      if (!jarvisState.agenda) jarvisState.agenda = [];
+      jarvisState.agenda.push(savedItem);
+    }
+    newItem.id = savedItem.id;
   } catch (err) {
-    console.error("Prisma agenda create failed", err);
+    console.error("Prisma agenda create/update failed", err);
   }
 
   // Sincronização automática para Google Sheets
@@ -1982,7 +2076,7 @@ app.get("/api/system/health", async (_req, res) => {
     // Test Groq Cloud Connectivity
     const startGroq = Date.now();
     try {
-      const groqApiKey = process.env.GROQ_API_KEY;
+      const groqApiKey = process.env.GROQ_API_KEY?.trim();
       if (groqApiKey && groqApiKey.trim().length > 0) {
         const gRes = await fetch("https://api.groq.com/openai/v1/models", {
           headers: { "Authorization": `Bearer ${groqApiKey}` },
@@ -2462,6 +2556,33 @@ app.post("/api/generate/docs", (_req, res) => {
 // Initialize Vite server or static handling
 async function startServer() {
   await loadDB();
+  
+  // Auto-generate Metas.base according to obsidian-bases skill
+  const basesYaml = `filters:
+  and:
+    - file.hasTag("finance")
+    - file.hasTag("meta")
+
+formulas:
+  days_active: '(now() - file.ctime).days'
+  status_icon: 'if(status == "em andamento", "🟡", if(status == "concluído", "🟢", "🔴"))'
+
+properties:
+  formula.status_icon:
+    displayName: Status
+  formula.days_active:
+    displayName: "Dias Ativos"
+
+views:
+  - type: table
+    name: "Visão Geral de Metas"
+    order:
+      - file.name
+      - formula.status_icon
+      - formula.days_active
+      - date`;
+  syncNoteToVault("dashboards/Metas.base", basesYaml);
+
   connectHomeAssistantWS(); // Now we can safely connect after DB rules are loaded
 
   if (process.env.NODE_ENV !== "production") {

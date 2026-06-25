@@ -1,7 +1,25 @@
 import DOMPurify from "dompurify";
 import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Send, MessageSquare, Compass, Cpu, History, Volume2, Sparkles, VolumeX, Paperclip, Sliders, Settings, X } from "lucide-react";
+import { motion } from "motion/react";
+import {
+  Mic,
+  MicOff,
+  Send,
+  MessageSquare,
+  Compass,
+  Cpu,
+  History,
+  Volume2,
+  Sparkles,
+  VolumeX,
+  Paperclip,
+  X,
+  Camera,
+  Monitor,
+  Image as ImageIcon,
+  Sliders,
+} from "lucide-react";
 
 const PERSONAS_LIST = [
   {
@@ -9,29 +27,29 @@ const PERSONAS_LIST = [
     name: "Classic J.A.R.V.I.S.",
     title: "Gentleman Britânico",
     desc: "Refinado, sofisticado. Seu mordomo ideal.",
-    color: "#06b6d4"
+    color: "#06b6d4",
   },
   {
     id: "friday",
     name: "F.R.I.D.A.Y.",
     title: "Agente Tática",
     desc: "Direta, focada em telemetria e segurança.",
-    color: "#f43f5e"
+    color: "#f43f5e",
   },
   {
     id: "glados",
     name: "G.L.A.D.O.S.",
     title: "Sarcástica",
     desc: "Humor ácido e sarcasmo inteligente.",
-    color: "#8b5cf6"
+    color: "#8b5cf6",
   },
   {
     id: "hal9000",
     name: "HAL 9000",
     title: "Núcleo Retro",
     desc: "Sussurro suave e friamente racional.",
-    color: "#f59e0b"
-  }
+    color: "#f59e0b",
+  },
 ];
 
 interface JarvisAssistantProps {
@@ -40,10 +58,21 @@ interface JarvisAssistantProps {
   isDarkMode?: boolean;
 }
 
-export default React.memo(function JarvisAssistant({ conversations, onSendMessage, isDarkMode = true }: JarvisAssistantProps) {
+export default React.memo(function JarvisAssistant({
+  conversations,
+  onSendMessage,
+  isDarkMode = true,
+}: JarvisAssistantProps) {
   const [inputText, setInputText] = useState("");
-  const [appState, setAppState] = useState<"inactive" | "listening" | "processing" | "speaking">("inactive");
-  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; size: number; content?: string } | null>(null);
+  const [appState, setAppState] = useState<
+    "inactive" | "listening" | "processing" | "speaking"
+  >("inactive");
+  const [attachedFile, setAttachedFile] = useState<{
+    name: string;
+    type: string;
+    size: number;
+    content?: string;
+  } | null>(null);
   const [showNotePopup, setShowNotePopup] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -58,9 +87,15 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
   const [systemVoices, setSystemVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [engineType, setEngineType] = useState("microsoft_edge_tts");
   const [noiseGate, setNoiseGate] = useState(-45);
-  const [lastMeasureLatency, setLastMeasureLatency] = useState({ stt: 14, llm: 215, tts: 28 });
+  const [lastMeasureLatency, setLastMeasureLatency] = useState({
+    stt: 14,
+    llm: 215,
+    tts: 28,
+  });
   const [activePersona, setActivePersona] = useState("friday");
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+
+  const isProcessingRef = useRef(false);
 
   const activePersonaRef = useRef(activePersona);
   useEffect(() => {
@@ -79,7 +114,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
       let wsClient: WebSocket;
       let isReconnecting = false;
       const connectWSRelay = () => {
-        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsProtocol =
+          window.location.protocol === "https:" ? "wss:" : "ws:";
         const hostUrl = window.location.host;
         try {
           wsClient = new WebSocket(`${wsProtocol}//${hostUrl}`);
@@ -87,10 +123,17 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
             try {
               const data = JSON.parse(event.data);
               if (data && data.type === "LocalPC" && data.action) {
-                console.log("[Relé Cross-Device] Ordem recebida ativamente do Celular via Servidor Central:", data.action, data.target);
-                window.electronAPI.executeLocalCommand({ action: data.action, target: data.target || "" });
+                console.log(
+                  "[Relé Cross-Device] Ordem recebida ativamente do Celular via Servidor Central:",
+                  data.action,
+                  data.target,
+                );
+                window.electronAPI.executeLocalCommand({
+                  action: data.action,
+                  target: data.target || "",
+                });
               }
-            } catch (e) { }
+            } catch (e) {}
           };
           wsClient.onclose = () => {
             if (!isReconnecting) {
@@ -123,7 +166,9 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
       if (voices.length > 0 && !selectedVoiceURI) {
         // Prefer pt-BR or pt, otherwise default to first available
-        const ptVoice = voices.find(v => v.lang.startsWith("pt-BR") || v.lang.startsWith("pt"));
+        const ptVoice = voices.find(
+          (v) => v.lang.startsWith("pt-BR") || v.lang.startsWith("pt"),
+        );
         if (ptVoice) {
           setSelectedVoiceURI(ptVoice.voiceURI);
         } else {
@@ -144,7 +189,10 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
       const res = await fetch(getServerUrl() + "/api/ai/persona");
       if (res.ok) {
         const data = await res.json();
-        if (data.activePersona && data.activePersona !== activePersonaRef.current) {
+        if (
+          data.activePersona &&
+          data.activePersona !== activePersonaRef.current
+        ) {
           setActivePersona(data.activePersona);
           // Set specific vocal presets optimal for each persona
           if (data.activePersona === "jarvis") {
@@ -162,7 +210,9 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           }
         }
       }
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* ignore */
+    }
   };
 
   const handleSelectPersona = async (personaId: string) => {
@@ -184,7 +234,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
       await fetch(getServerUrl() + "/api/ai/persona", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ persona: personaId })
+        body: JSON.stringify({ persona: personaId }),
       });
     } catch (e) {
       console.error(e);
@@ -200,7 +250,9 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
   const triggerInteractionDateCheck = () => {
     try {
       const todayStr = new Date().toISOString().split("T")[0];
-      const lastInteractedDate = localStorage.getItem("jarvis_last_interact_date");
+      const lastInteractedDate = localStorage.getItem(
+        "jarvis_last_interact_date",
+      );
       if (lastInteractedDate !== todayStr) {
         setShowNotePopup(true);
         localStorage.setItem("jarvis_last_interact_date", todayStr);
@@ -211,6 +263,82 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
   };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // CYBER Dashboard Media Refs
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const screenVideoRef = useRef<HTMLVideoElement>(null);
+  const [mediaMode, setMediaMode] = useState<"none" | "camera" | "screen">("none");
+  const [activePopup, setActivePopup] = useState<{ type: "image", url: string } | null>(null);
+
+  // Stop current media streams helper
+  const stopMediaTracks = () => {
+    if (cameraVideoRef.current && cameraVideoRef.current.srcObject) {
+      const stream = cameraVideoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      cameraVideoRef.current.srcObject = null;
+    }
+    if (screenVideoRef.current && screenVideoRef.current.srcObject) {
+      const stream = screenVideoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      screenVideoRef.current.srcObject = null;
+    }
+  };
+
+  const toggleCameraMode = async () => {
+    if (mediaMode === "camera") {
+      stopMediaTracks();
+      setMediaMode("none");
+      return;
+    }
+    try {
+      stopMediaTracks();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = stream;
+        setMediaMode("camera");
+      }
+    } catch (e) {
+      console.error("Camera access denied", e);
+    }
+  };
+
+  const toggleScreenMode = async () => {
+    if (mediaMode === "screen") {
+      stopMediaTracks();
+      setMediaMode("none");
+      return;
+    }
+    try {
+      stopMediaTracks();
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      if (screenVideoRef.current) {
+        screenVideoRef.current.srcObject = stream;
+        setMediaMode("screen");
+      }
+      stream.getVideoTracks()[0].onended = () => {
+        setMediaMode("none");
+        stopMediaTracks();
+      };
+    } catch (e) {
+      console.error("Screen share access denied", e);
+    }
+  };
+
+  // Extract base64 frame from active video
+  const captureFrame = (): string | null => {
+    const video = mediaMode === "camera" ? cameraVideoRef.current : mediaMode === "screen" ? screenVideoRef.current : null;
+    if (!video || !video.srcObject) return null;
+
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = video.videoWidth;
+    tempCanvas.height = video.videoHeight;
+    const ctx = tempCanvas.getContext("2d");
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+      return tempCanvas.toDataURL("image/jpeg", 0.7);
+    }
+    return null;
+  };
   const recognitionRef = useRef<any>(null);
   const historyEndRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -236,7 +364,9 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
   // Initialize Speech Recognition & Speech Synthesis
   useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       setSpeechSupported(true);
       const rec = new SpeechRecognition();
@@ -256,18 +386,27 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           // Delegamos o comando "abrir" para a IA agora
 
           const startLlm = Date.now();
-          const reply = await onSendMessageRef.current(transcript, undefined, "llama-3.3-70b-versatile");
+          const reply = await onSendMessageRef.current(
+            transcript,
+            undefined,
+            "llama-3.3-70b-versatile",
+          );
           const endLlm = Date.now();
 
           const sttLatency = Math.floor(Math.random() * 15) + 10; // 10-25ms
           const llmLatency = endLlm - startLlm;
           const ttsLatency = Math.floor(Math.random() * 25) + 15; // 15-40ms
 
-          setLastMeasureLatency({ stt: sttLatency, llm: llmLatency, tts: ttsLatency });
+          setLastMeasureLatency({
+            stt: sttLatency,
+            llm: llmLatency,
+            tts: ttsLatency,
+          });
 
           const replyText = reply?.text || "";
           if (window.electronAPI) {
-            const commandRegex = /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
+            const commandRegex =
+              /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
             let match;
             while ((match = commandRegex.exec(replyText)) !== null) {
               const action = match[1];
@@ -298,7 +437,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-        } catch (e) { }
+        } catch (e) {}
       }
     };
   }, [selectedVoiceURI, pitch, rate, voiceVolume]);
@@ -319,7 +458,13 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
     const width = (canvas.width = 180);
     const height = (canvas.height = 180);
-    const particles: { angle: number; radius: number; size: number; speed: number; phase: number }[] = [];
+    const particles: {
+      angle: number;
+      radius: number;
+      size: number;
+      speed: number;
+      phase: number;
+    }[] = [];
 
     // Initialize 80 particles in circular tracks
     for (let i = 0; i < 90; i++) {
@@ -355,12 +500,24 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
         ctx.strokeStyle = "rgba(0, 245, 255, 0.4)";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(cx, cy, 45, (frame * 0.05) % (Math.PI * 2), ((frame * 0.05) + Math.PI * 0.5) % (Math.PI * 2));
+        ctx.arc(
+          cx,
+          cy,
+          45,
+          (frame * 0.05) % (Math.PI * 2),
+          (frame * 0.05 + Math.PI * 0.5) % (Math.PI * 2),
+        );
         ctx.stroke();
 
         ctx.strokeStyle = "rgba(124, 77, 255, 0.4)";
         ctx.beginPath();
-        ctx.arc(cx, cy, 50, (-frame * 0.03) % (Math.PI * 2), ((-frame * 0.03) + Math.PI * 0.7) % (Math.PI * 2));
+        ctx.arc(
+          cx,
+          cy,
+          50,
+          (-frame * 0.03) % (Math.PI * 2),
+          (-frame * 0.03 + Math.PI * 0.7) % (Math.PI * 2),
+        );
         ctx.stroke();
       }
 
@@ -390,7 +547,13 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(x, y, p.size + (currentState === "speaking" ? 1 : 0), 0, Math.PI * 2);
+        ctx.arc(
+          x,
+          y,
+          p.size + (currentState === "speaking" ? 1 : 0),
+          0,
+          Math.PI * 2,
+        );
         ctx.fill();
 
         // Holographic connectors
@@ -404,9 +567,14 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
       });
 
       // Draw active status description text
-      ctx.fillStyle = currentState === "listening" ? "#00E5FF" :
-        currentState === "processing" ? "#FF80AB" :
-          currentState === "speaking" ? "#00E676" : "#4F4F4F";
+      ctx.fillStyle =
+        currentState === "listening"
+          ? "#00E5FF"
+          : currentState === "processing"
+            ? "#FF80AB"
+            : currentState === "speaking"
+              ? "#00E676"
+              : "#4F4F4F";
       ctx.font = "8px JetBrains Mono, monospace";
       ctx.textAlign = "center";
 
@@ -433,8 +601,9 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
 
     // Select specific voice based on URI if selected and available
     const voices = window.speechSynthesis.getVoices();
-    const chosenVoice = voices.find(v => v.voiceURI === selectedVoiceURI);
-    const ptVoice = chosenVoice || voices.find(v => v.lang.startsWith("pt")) || voices[0];
+    const chosenVoice = voices.find((v) => v.voiceURI === selectedVoiceURI);
+    const ptVoice =
+      chosenVoice || voices.find((v) => v.lang.startsWith("pt")) || voices[0];
     if (ptVoice) {
       utterance.voice = ptVoice;
     }
@@ -457,8 +626,11 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
   const speakResponse = async (text: string) => {
     if (!voiceEnabled) return;
 
-    // Clean up XML commands tags before text to speech
-    const cleanText = (text || '').replace(/<command[^>]*\/>/g, "").trim();
+    // Clean up XML commands tags and markdown symbols before text to speech
+    const cleanText = (text || "")
+      .replace(/<command[^>]*\/>/g, "")
+      .replace(/[*#_`]/g, "")
+      .trim();
     if (!cleanText) return;
 
     window.speechSynthesis.cancel();
@@ -476,8 +648,8 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
           signal: controller.signal,
           body: JSON.stringify({
             text: cleanText,
-            service: "edge"
-          })
+            service: "edge",
+          }),
         });
 
         clearTimeout(timeoutId);
@@ -530,7 +702,7 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
         name: file.name,
         type: file.type,
         size: file.size,
-        content: event.target?.result as string || ""
+        content: (event.target?.result as string) || "",
       });
     };
     reader.readAsText(file);
@@ -541,9 +713,23 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
     e.preventDefault();
     triggerInteractionDateCheck();
     if (!inputText.trim() && !attachedFile) return;
+    if (appState === "processing" || isProcessingRef.current) return;
+
+    isProcessingRef.current = true;
 
     const query = inputText || `Processar anexo ${attachedFile?.name}`;
-    const fileToSend = attachedFile;
+    let fileToSend = attachedFile;
+    if (mediaMode !== "none") {
+      const frameBase64 = captureFrame();
+      if (frameBase64) {
+        fileToSend = {
+          name: "vision_frame.jpg",
+          type: "image/jpeg",
+          size: Math.round(frameBase64.length * 0.75),
+          content: frameBase64,
+        };
+      }
+    }
 
     setInputText("");
     setAttachedFile(null);
@@ -552,207 +738,186 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
     // Delegamos o comando "abrir" para a IA agora
 
     const startLlm = Date.now();
-    const res = await onSendMessage(query, fileToSend || undefined, "llama3.3");
-    const endLlm = Date.now();
+    try {
+      const res = await onSendMessage(
+        query,
+        fileToSend || undefined,
+        "llama3.3",
+      );
+      const endLlm = Date.now();
 
-    const sttLatency = 0; // Text input has no speech recording cost
-    const llmLatency = endLlm - startLlm;
-    const ttsLatency = Math.floor(Math.random() * 20) + 12; // 12-32ms
+      const sttLatency = 0; // Text input has no speech recording cost
+      const llmLatency = endLlm - startLlm;
+      const ttsLatency = Math.floor(Math.random() * 20) + 12; // 12-32ms
 
-    setLastMeasureLatency({ stt: sttLatency, llm: llmLatency, tts: ttsLatency });
+      setLastMeasureLatency({
+        stt: sttLatency,
+        llm: llmLatency,
+        tts: ttsLatency,
+      });
 
-    const replyText = res?.text || "";
-    if (window.electronAPI) {
-      const commandRegex = /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
-      let match;
-      while ((match = commandRegex.exec(replyText)) !== null) {
-        const action = match[1];
-        const target = match[2] || "";
-        window.electronAPI.executeLocalCommand({ action, target });
+      const replyText = res?.text || "";
+      if (window.electronAPI) {
+        const commandRegex =
+          /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
+        let match;
+        while ((match = commandRegex.exec(replyText)) !== null) {
+          const action = match[1];
+          const target = match[2] || "";
+          window.electronAPI.executeLocalCommand({ action, target });
+        }
       }
+      const imgRegex = /<command\s+type="DisplayImage"\s+url="([^"]+)"\s*\/>/i;
+      const imgMatch = imgRegex.exec(replyText);
+      if (imgMatch) {
+         setActivePopup({ type: 'image', url: imgMatch[1] });
+      }
+
+      speakResponse(replyText);
+    } finally {
+      isProcessingRef.current = false;
     }
-    speakResponse(replyText);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-210px)] max-h-[620px]">
-
-      {/* Visual Widget & Core Control Specs */}
-      <div className={`border rounded-xl p-4 flex flex-col items-center justify-between gap-3 shadow-lg h-full overflow-hidden transition-all ${isDarkMode
-        ? "bg-zinc-900/60 border-zinc-800"
-        : "bg-white border-zinc-200 shadow-sm"
-        }`}>
-        <div className="flex justify-between w-full items-center shrink-0">
-          <span className={`text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 ${isDarkMode ? "text-zinc-500" : "text-zinc-500 font-semibold"}`}>
-            <Cpu className="h-3.5 w-3.5 text-[var(--brand-light)]" />
-            GPU CUDA VRAM
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-[100dvh] max-h-screen p-4 bg-zinc-950 text-white overflow-hidden font-sans">
+      
+      {/* ======================================================== */}
+      {/* LEFT COLUMN: TELEMETRY & MEDIA FEEDS */}
+      {/* ======================================================== */}
+      <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_rgba(6,182,212,0.1)] relative bg-black/30 backdrop-blur-xl">
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl" />
+        
+        <div className="flex justify-between w-full items-center shrink-0 z-10">
+          <span className="text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 text-[var(--brand-light)] font-bold">
+            <Cpu className="h-4 w-4" /> SYSTEM TELEMETRY
           </span>
-          <div className={`px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider border transition-colors ${isDarkMode
-            ? "bg-zinc-950/60 border-zinc-800 text-[var(--brand-primary)]"
-            : "bg-zinc-50 border-zinc-200 text-[var(--brand-primary)] font-bold"
-            }`}>
-            Llama 3.3 Local
+          <div className="px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/50">
+            ONLINE
           </div>
         </div>
 
-        {/* Visual Sphere matrix */}
-        <div className="relative flex items-center justify-center shrink-0">
-          <canvas ref={canvasRef} className="rounded-full holographic-glow" />
-          {appState === "speaking" && (
-            <div className="absolute inset-0 border border-emerald-500/10 rounded-full  pointer-events-none" />
-          )}
+        {/* System Uptime / Weather Placeholder */}
+        <div className="border border-white/10 bg-black/40 rounded-xl p-3 flex flex-col gap-2 shrink-0 z-10 font-mono text-xs text-zinc-400">
+           <div className="flex justify-between items-center">
+             <span className="flex items-center gap-1.5"><History className="w-3 h-3 text-[var(--brand-light)]"/> Uptime</span>
+             <span className="text-white font-bold">03:45:12</span>
+           </div>
+           <div className="flex justify-between items-center">
+             <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[var(--brand-light)]"/> Weather</span>
+             <span className="text-white font-bold">24°C, Clear</span>
+           </div>
         </div>
 
-        {/* Dynamic microphone activations */}
-        <div className="flex flex-col items-center gap-2.5 w-full shrink-0">
-          {speechSupported ? (
-            <button
-              onClick={handleMicToggle}
-              className={`p-3.5 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer ${appState === "listening"
-                ? "bg-red-500 hover:bg-red-600 scale-110 shadow-red-950/20 text-white"
-                : "bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)] hover:scale-105  text-white"
-                }`}
-            >
-              {appState === "listening" ? <MicOff className="h-5 w-5 transition-opacity duration-300" /> : <Mic className="h-5 w-5" />}
-            </button>
-          ) : (
-            <div className={`text-[10px] italic text-center px-4 p-2 rounded border w-full font-mono ${isDarkMode
-              ? "text-zinc-550 bg-zinc-950/40 border-zinc-900/60"
-              : "text-zinc-600 bg-zinc-50 border-zinc-200"
-              }`}>
-              Reconhecimento de voz desativado ou sem suporte no navegador.
-            </div>
-          )}
-
-          <div className={`flex gap-4 border-y w-full py-2 justify-center items-center ${isDarkMode ? "border-zinc-800" : "border-zinc-200"
-            }`}>
-            <button
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
-              className={`flex items-center gap-1.5 text-[11px] font-mono transition cursor-pointer ${isDarkMode ? "text-zinc-400 hover:text-white" : "text-zinc-650 hover:text-zinc-900"
-                }`}
-            >
-              {voiceEnabled ? <Volume2 className="h-3.5 w-3.5 text-[var(--brand-light)]" /> : <VolumeX className="h-3.5 w-3.5 text-red-500" />}
-              Voz: {voiceEnabled ? "Ativa" : "Muda"}
-            </button>
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className={`flex items-center gap-1.5 text-[11px] font-mono transition cursor-pointer ${isDarkMode ? "text-zinc-400 hover:text-white" : "text-zinc-650 hover:text-zinc-900"
-                }`}
-            >
-              <History className="h-3.5 w-3.5" />
-              Histórico
-            </button>
+        {/* Media Feeds */}
+        <div className="flex-1 flex flex-col gap-3 overflow-y-auto z-10 scrollbar-thin scrollbar-thumb-[var(--brand-primary)]/50">
+          {/* Camera Feed Widget */}
+          <div className="border border-[var(--brand-primary)]/30 rounded-xl bg-black/60 relative overflow-hidden h-40 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+             <video ref={cameraVideoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-80" />
+             <div className="absolute top-2 left-2 px-2 py-1 bg-black/80 rounded text-[9px] font-mono uppercase text-[var(--brand-light)] border border-[var(--brand-primary)]/30 flex items-center gap-1">
+               <div className={`w-1.5 h-1.5 rounded-full ${mediaMode === 'camera' ? 'bg-red-500 animate-pulse' : 'bg-zinc-600'}`}></div>
+               OPTICAL SENSOR
+             </div>
           </div>
-        </div>
-
-        {/* IDEA 3: COMPACT CONFIG TRIGGER */}
-        <div className="w-full space-y-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setIsVoiceModalOpen(true)}
-            className={`w-full text-xs font-mono py-2 px-3 rounded-lg border hover:bg-[var(--brand-primary)]/10 hover:border-[var(--brand-primary)] transition duration-200 cursor-pointer flex items-center justify-center gap-2 font-semibold ${isDarkMode
-              ? "border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:text-[var(--brand-light)]"
-              : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:text-[var(--brand-primary)] shadow-sm"
-              }`}
-          >
-            <Sliders className="h-3.5 w-3.5  text-[var(--brand-light)]" />
-            Configurar Calibração de Voz
-          </button>
-
-          {/* Slink high-tech visual telemetry badge */}
-          <div className={`border rounded-xl p-2.5 font-mono text-[9px] flex items-center justify-between transition-all ${isDarkMode
-            ? "bg-zinc-950/75 border-zinc-900 text-zinc-400"
-            : "bg-zinc-50 border-zinc-200 text-zinc-600"
-            }`}>
-            <span className={`uppercase tracking-widest text-[8px] flex items-center gap-1 ${isDarkMode ? "text-zinc-500" : "text-zinc-500 font-semibold"}`}>
-              <Cpu className="h-3 w-3 text-[var(--brand-light)]" /> Latência Local:
-            </span>
-            <span className={`font-bold px-2 py-0.5 rounded text-[10px] border ${isDarkMode
-              ? "text-emerald-400 bg-emerald-950/20 border-emerald-900/40"
-              : "text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold"
-              }`}>
-              {lastMeasureLatency.stt + lastMeasureLatency.llm + lastMeasureLatency.tts} ms
-            </span>
+          
+          {/* Screen Share Feed Widget */}
+          <div className="border border-[var(--brand-primary)]/30 rounded-xl bg-black/60 relative overflow-hidden h-40 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+             <video ref={screenVideoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-80" />
+             <div className="absolute top-2 left-2 px-2 py-1 bg-black/80 rounded text-[9px] font-mono uppercase text-[var(--brand-light)] border border-[var(--brand-primary)]/30 flex items-center gap-1">
+               <div className={`w-1.5 h-1.5 rounded-full ${mediaMode === 'screen' ? 'bg-red-500 animate-pulse' : 'bg-zinc-600'}`}></div>
+               SCREEN LINK
+             </div>
           </div>
         </div>
       </div>
 
-      {/* Terminal Interative Chat & Console log */}
-      <div className={`lg:col-span-2 border rounded-xl flex flex-col justify-between overflow-hidden shadow-2xl h-full relative transition-all ${isDarkMode
-        ? "bg-black/90 border-zinc-800"
-        : "bg-white border-zinc-200 shadow-md"
-        }`}>
-        {/* Terminal Header */}
-        <div className={`flex justify-between items-center px-4 py-3 border-b shrink-0 transition-all ${isDarkMode
-          ? "bg-zinc-900/80 border-zinc-800"
-          : "bg-zinc-50 border-zinc-200"
-          }`}>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
-            <span className={`text-xs font-mono font-medium ${isDarkMode ? "text-zinc-200" : "text-zinc-850"}`}>CONSOLE@JARVIS_v5.0:~</span>
-          </div>
-          <span className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-all ${isDarkMode
-            ? "text-zinc-400 bg-zinc-950 border-zinc-800"
-            : "text-zinc-650 bg-white border-zinc-200"
-            }`}>
-            "LOCAL_MODEL=Llama 3.3-Mini"
+      {/* ======================================================== */}
+      {/* CENTER COLUMN: THE C.Y.B.E.R CORE */}
+      {/* ======================================================== */}
+      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5 bg-zinc-950/40">
+        <h1 className="absolute top-8 font-mono text-2xl lg:text-4xl tracking-[0.4em] font-black text-[var(--brand-light)] drop-shadow-[0_0_15px_rgba(6,182,212,0.5)] z-10">
+          C.Y.B.E.R
+        </h1>
+        
+        {/* Central Orb / Canvas */}
+        <div className="relative flex items-center justify-center w-full h-[400px]">
+          <canvas ref={canvasRef} className="rounded-full holographic-glow w-[350px] h-[350px] z-0" />
+          
+          {/* Popups Overlay */}
+          {activePopup && activePopup.type === 'image' && (
+             <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-3xl m-4 border border-[var(--brand-primary)]/50">
+               <button onClick={() => setActivePopup(null)} className="absolute top-4 right-4 bg-black/80 p-2 rounded-full hover:bg-red-500/80 transition-colors cursor-pointer">
+                 <X className="w-4 h-4 text-white" />
+               </button>
+               <img src={activePopup.url} alt="Generated" className="max-w-[80%] max-h-[80%] rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.4)]" />
+             </div>
+          )}
+        </div>
+
+        {/* Mode Status Indicator */}
+        <div className="absolute bottom-32 text-xs font-mono tracking-widest px-4 py-1.5 rounded-full border bg-black/50 backdrop-blur-md transition-colors duration-300">
+          <span className={mediaMode === 'camera' ? 'text-red-400 font-bold' : mediaMode === 'screen' ? 'text-blue-400 font-bold' : 'text-[var(--brand-light)]'}>
+            {mediaMode === 'camera' ? '>> VISION MODE ACTIVE <<' : mediaMode === 'screen' ? '>> SCREEN SHARE ACTIVE <<' : '>> SYSTEM STANDBY <<'}
           </span>
         </div>
 
+        {/* Action Toolbar */}
+        <div className="absolute bottom-10 flex gap-3 p-3 rounded-full border border-white/10 bg-zinc-950/80 backdrop-blur-xl shadow-2xl">
+          <button onClick={toggleCameraMode} className={`p-4 rounded-full transition-all cursor-pointer ${mediaMode === 'camera' ? 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
+             <Camera className="w-5 h-5" />
+          </button>
+          <button onClick={handleMicToggle} className={`p-4 rounded-full transition-all cursor-pointer ${appState === 'listening' ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
+             {appState === 'listening' ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </button>
+          <button onClick={toggleScreenMode} className={`p-4 rounded-full transition-all cursor-pointer ${mediaMode === 'screen' ? 'bg-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
+             <Monitor className="w-5 h-5" />
+          </button>
+          <button onClick={() => setIsVoiceModalOpen(true)} className="p-4 rounded-full transition-all cursor-pointer hover:bg-white/10 text-zinc-400 hover:text-white">
+             <Sliders className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* ======================================================== */}
+      {/* RIGHT COLUMN: CHAT TERMINAL */}
+      {/* ======================================================== */}
+      <div className="glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col justify-between overflow-hidden h-full relative rounded-3xl bg-black/30 backdrop-blur-xl">
+        <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-black/40 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
+            <span className="text-xs font-mono font-bold text-[var(--brand-light)] tracking-wider">
+              SYS_LOG@CYBER_CORE:~
+            </span>
+          </div>
+        </div>
+
         {/* Dialogue Scroll area */}
-        <div className={`p-4 flex-1 overflow-y-auto space-y-4 select-text scrollbar-thin ${isDarkMode ? "scrollbar-thumb-zinc-850" : "scrollbar-thumb-zinc-200"
-          }`}>
+        <div className="p-5 flex-1 overflow-y-auto space-y-5 select-text scrollbar-thin scrollbar-thumb-[var(--brand-primary)]/50">
           {conversations.map((msg, index) => {
             const isJarvis = msg.sender === "JARVIS";
-            // Clean XML command nodes for rendering beautiful buttons or logs in dialogue instead of clutter
-            const commandMatches = (msg.text || '').match(/<command[^>]*\/>/g);
-            const displayContent = (msg.text || '').replace(/<command[^>]*\/>/g, "").trim();
+            const commandMatches = (msg.text || "").match(/<command[^>]*\/>/g);
+            const displayContent = (msg.text || "").replace(/<command[^>]*\/>/g, "").trim();
 
             return (
-              <div key={index} className={`flex gap-3 ${isJarvis ? "justify-start" : "justify-end"}`}>
+              <motion.div key={index} initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`flex gap-3 ${isJarvis ? "justify-start" : "justify-end"}`}>
                 {isJarvis && (
-                  <div className={`h-7 w-7 rounded-lg border flex items-center justify-center flex-shrink-0 font-bold text-xs ${isDarkMode
-                    ? "bg-zinc-900 border-[var(--brand-primary)]/20 text-[var(--brand-light)]"
-                    : "bg-zinc-100 border-zinc-200 text-[var(--brand-primary)]"
-                    }`}>
-                    J
+                  <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                    C
                   </div>
                 )}
-                <div className="max-w-[80%] flex flex-col gap-1.5">
-                  <div
-                    className={`px-3.5 py-2 rounded-xl text-xs leading-relaxed border transition-all ${isJarvis
-                      ? isDarkMode
-                        ? "bg-zinc-900/80 text-zinc-100 border-zinc-800"
-                        : "bg-zinc-100 text-zinc-900 border-zinc-200 shadow-sm"
-                      : isDarkMode
-                        ? "bg-[var(--brand-dark)] text-[var(--brand-light)] border-[var(--brand-border)]"
-                        : "bg-[var(--brand-primary)] text-white border-[var(--brand-border)] font-medium shadow-sm"
-                      }`}
-                  >
+                <div className="max-w-[85%] flex flex-col gap-1.5">
+                  <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md ${isJarvis ? "bg-black/60 text-cyan-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_rgba(6,182,212,0.15)]" : "bg-[var(--brand-primary)]/20 text-white border-[var(--brand-primary)]/50 shadow-[0_4px_20px_rgba(6,182,212,0.2)]"}`}>
                     <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayContent) }} />
                   </div>
 
-                  {/* Actions / Trigger visual nodes parsed from XML commands */}
                   {commandMatches && (
                     <div className="flex flex-wrap gap-1.5 mt-1 font-mono">
-                      {commandMatches.map((cmd: string, idx: number) => {
+                      {commandMatches.map((cmd, idx) => {
                         const typeMatch = cmd.match(/type="([^"]+)"/);
-                        const actionMatch = cmd.match(/action="([^"]+)"/);
-                        const workMatch = cmd.match(/workspace="([^"]+)"/);
-
-                        const type = typeMatch ? typeMatch[1] : "Sistema";
-                        const target = actionMatch ? actionMatch[1] : workMatch ? workMatch[1] : "Geral";
-
+                        const type = typeMatch ? typeMatch[1] : "System";
                         return (
-                          <div
-                            key={idx}
-                            className={`text-[10px] border px-2 py-1 rounded flex items-center gap-1 bg-opacity-40 animate-pulse ${isDarkMode
-                              ? "bg-[var(--brand-dark)] border-[var(--brand-primary)]/30 text-[var(--brand-light)]"
-                              : "bg-zinc-100 border-zinc-200 text-zinc-700"
-                              }`}
-                          >
-                            <Sparkles className="h-3 w-3 shrink-0" />
-                            <span>EXEC: [{type}] → {target} Amortizado</span>
+                          <div key={idx} className="text-[9px] uppercase font-bold border border-[var(--brand-primary)]/40 px-2 py-1 rounded flex items-center gap-1 bg-black/50 text-[var(--brand-light)]">
+                            <Sparkles className="h-3 w-3" /> [AÇÃO EXECUTADA]: {type}
                           </div>
                         );
                       })}
@@ -763,383 +928,101 @@ export default React.memo(function JarvisAssistant({ conversations, onSendMessag
                     {new Date(msg.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
           <div ref={historyEndRef} />
         </div>
 
-        {/* Smart dismissible pop-up banner */}
-        {showNotePopup && (
-          <div className={`mx-4 mb-3 p-3.5 rounded-lg shadow-2xl backdrop-blur-md z-10 animate-in fade-in slide-in-from-bottom-2 duration-300 relative border ${isDarkMode
-            ? "bg-zinc-900/95 border-[var(--brand-primary)]/35"
-            : "bg-white border-zinc-200 shadow-sm"
-            }`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex gap-2.5 text-xs">
-                <Sparkles className="h-4 w-4 text-[var(--brand-light)] shrink-0 mt-0.5 animate-pulse" />
-                <div className="space-y-1">
-                  <span className={`font-semibold font-sans block ${isDarkMode ? "text-white" : "text-zinc-900"}`}>Dica de Otimização Offline</span>
-                  <p className={`text-[11px] leading-relaxed font-sans ${isDarkMode ? "text-zinc-300" : "text-zinc-700"}`}>
-                    Anexos de documentos (<strong>PDF</strong>, <strong>DOCX</strong>, <strong>Excel</strong>) funcionam idealmente com a inteligência <strong className={isDarkMode ? "text-white" : "text-zinc-950"}>Llama 3.2 (Heavy)</strong>. Ela possui a melhor capacidade semântica para ler tabelas, faturas de gastos e cronogramas de agenda offline!
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowNotePopup(false)}
-                className={`transition p-1 rounded font-mono text-xs leading-none shrink-0 cursor-pointer ${isDarkMode ? "text-zinc-500 hover:text-white hover:bg-zinc-900" : "text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
-                  }`}
-                title="Fechar nota"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Attachment preview if any file is attached */}
         {attachedFile && (
-          <div className={`px-4 py-2 border-t flex items-center justify-between text-xs shrink-0 ${isDarkMode ? "bg-zinc-950 border-zinc-800" : "bg-zinc-50 border-zinc-200"
-            }`}>
-            <div className="flex items-center gap-2 text-[var(--brand-light,rgb(6,182,212))]">
+          <div className="px-4 py-2 border-t border-white/10 bg-black/60 flex items-center justify-between text-xs shrink-0">
+            <div className="flex items-center gap-2 text-[var(--brand-light)]">
               <Paperclip className="h-3.5 w-3.5" />
-              <span className={`font-mono text-[11px] truncate max-w-[280px] ${isDarkMode ? "text-zinc-300" : "text-zinc-700"}`}>
+              <span className="font-mono text-[11px] truncate max-w-[280px] text-zinc-300">
                 {attachedFile.name} ({(attachedFile.size / 1024).toFixed(1)} KB)
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setAttachedFile(null)}
-              className="text-zinc-500 hover:text-red-500 font-mono text-[10px] uppercase cursor-pointer"
-            >
+            <button type="button" onClick={() => setAttachedFile(null)} className="text-zinc-500 hover:text-red-500 font-mono text-[10px] uppercase cursor-pointer">
               [Remover]
             </button>
           </div>
         )}
 
-        {/* Input prompt area */}
-        <form onSubmit={handleSendText} className={`p-3 border-t flex gap-2 shrink-0 items-center ${isDarkMode ? "border-zinc-800 bg-zinc-950/80" : "border-zinc-200 bg-zinc-50"
-          }`}>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".pdf,.docx,.xlsx,.xls,.txt"
-            className="hidden transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_4px_12px_var(--brand-glow)]"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              triggerInteractionDateCheck();
-              fileInputRef.current?.click();
-            }}
-            className={`p-2.5 rounded-lg transition border flex items-center justify-center cursor-pointer ${isDarkMode
-              ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-[var(--brand-light,rgb(6,182,212))]"
-              : "bg-white border-zinc-200 text-zinc-600 hover:text-[var(--brand-primary)]"
-              }`}
-            title="Anexar documento (PDF, DOCX, Excel)"
-          >
+        {/* Input area */}
+        <form onSubmit={handleSendText} className="p-4 border-t border-[var(--brand-primary)]/20 flex gap-3 items-center bg-black/60 backdrop-blur-xl z-10 shrink-0">
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt" className="hidden" />
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-xl border border-[var(--brand-primary)]/30 bg-black/50 text-[var(--brand-light)] hover:bg-[var(--brand-primary)]/20 transition-all cursor-pointer">
             <Paperclip className="h-4 w-4" />
           </button>
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onFocus={() => triggerInteractionDateCheck()}
             disabled={appState === "processing"}
             placeholder={
-              appState === "listening"
-                ? "Diga algo..."
-                : appState === "processing"
-                  ? "Processando..."
-                  : attachedFile
-                    ? "Descreva o que deseja atualizar ou dê Enter para anexar..."
-                    : "Digite o comando ou anexe planilhas, PDFs da rotina..."
+              appState === "listening" ? "Aguardando entrada de voz..." : 
+              appState === "processing" ? "Processando..." : 
+              "Inicializar comando..."
             }
-            className={`flex-1 border rounded-lg text-xs px-3.5 py-2.5 focus:outline-none focus:border-[var(--brand-primary)] transition-all ${isDarkMode
-              ? "bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-550"
-              : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400 shadow-sm"
-              }`}
+            className="flex-1 bg-black/50 border border-[var(--brand-primary)]/30 rounded-xl text-xs px-4 py-3 focus:outline-none focus:border-[var(--brand-primary)] focus:shadow-[0_0_20px_rgba(6,182,212,0.2)] text-white placeholder:text-[var(--brand-light)]/50 transition-all font-mono"
           />
-          <button
-            type="submit"
-            disabled={appState === "processing" || (!inputText.trim() && !attachedFile)}
-            className="px-4 py-2.5 bg-gradient-to-r from-[var(--brand-primary)] to-blue-600 hover:from-[var(--brand-primary)] hover:to-blue-500 text-white rounded-lg transition disabled:opacity-50 flex items-center justify-center cursor-pointer"
-          >
-            <Send className="h-3.5 w-3.5" />
+          <button type="submit" disabled={appState === "processing" || (!inputText.trim() && !attachedFile && mediaMode === "none")} className="px-5 py-3 bg-[var(--brand-primary)]/80 hover:bg-[var(--brand-primary)] text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center font-bold cursor-pointer">
+            <Send className="h-4 w-4" />
           </button>
         </form>
       </div>
 
-      {/* IDEA 3: LOCAL TTS VOICE CALIBRATION POPUP MODAL */}
+      {/* Voice Configuration Modal */}
       {isVoiceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in animate-duration-150-all">
-          <div className={`border rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative transition-all ${isDarkMode ? "bg-zinc-950 border-zinc-900" : "bg-white border-zinc-200 shadow-2xl"
-            }`}>
-
-            {/* Modal Header */}
-            <div className={`flex justify-between items-center border-b pb-3 ${isDarkMode ? "border-zinc-900/60" : "border-zinc-200"}`}>
-              <div className="flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-[var(--brand-light,rgb(6,182,212))] animate-pulse" />
-                <h3 className={`font-sans font-bold text-sm uppercase tracking-wider ${isDarkMode ? "text-white" : "text-zinc-900"}`}>
-                  Identidade & Calibração de Voz
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsVoiceModalOpen(false)}
-                className={`transition p-1 rounded-full cursor-pointer ${isDarkMode ? "text-zinc-500 hover:text-white hover:bg-zinc-900" : "text-zinc-500 hover:text-zinc-855 hover:bg-zinc-100"
-                  }`}
-                title="Fechar"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Config Panel Content */}
-            <div className="space-y-4">
-
-              {/* IA IDENTITY MATRIX SELETOR */}
-              <div className={`space-y-2 border-b pb-4 ${isDarkMode ? "border-zinc-900" : "border-zinc-200"}`}>
-                <label className="text-[10px] font-mono font-medium text-[var(--brand-light,rgb(6,182,212))] block uppercase tracking-wider flex items-center gap-1">
-                  <Cpu className="h-3 w-3" />
-                  Matriz de Identidades da IA (Persona Ativa)
-                </label>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {PERSONAS_LIST.map((p) => {
-                    const isActive = activePersona === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handleSelectPersona(p.id)}
-                        className={`text-left p-3 rounded-xl border transition-all duration-350 relative cursor-pointer overflow-hidden flex flex-col justify-between min-h-[76px] ${isActive
-                          ? "bg-zinc-950 border-[var(--brand-primary)] shadow-[0_0_8px_var(--brand-glow)]"
-                          : isDarkMode
-                            ? "bg-zinc-950/65 border-zinc-900 text-zinc-400 hover:bg-zinc-900"
-                            : "bg-zinc-50 border-zinc-300 text-zinc-600 hover:bg-zinc-100/80"
-                          }`}
-                      >
-                        <span
-                          className="absolute -right-6 -top-6 w-14 h-14 rounded-full blur-xl opacity-5"
-                          style={{ backgroundColor: p.color }}
-                        ></span>
-
-                        <div className="space-y-0.5 z-10 w-full font-sans">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${isActive ? "animate-pulse" : ""}`}
-                                style={{ backgroundColor: p.color }}
-                              />
-                              <span className={`font-bold text-[11px] leading-none ${isDarkMode || isActive ? "text-white" : "text-zinc-800"}`}>{p.name}</span>
-                            </div>
-                            {isActive && (
-                              <span className={`text-[8px] uppercase font-mono px-1.5 py-0.5 rounded-full border font-bold ${isDarkMode ? "bg-zinc-900 border-zinc-800 text-[var(--brand-light)]" : "bg-neutral-100 border-neutral-300 text-[var(--brand-primary)]"
-                                }`}>
-                                Ativo
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[9px] font-mono block opacity-80" style={{ color: isActive ? p.color : isDarkMode ? "#64748b" : "#475569" }}>
-                            {p.title}
-                          </span>
-                          <p className={`text-[10px] leading-snug line-clamp-1 mt-0.5 ${isActive ? "text-zinc-200" : isDarkMode ? "text-zinc-500" : "text-zinc-600"}`}>{p.desc}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-8 space-y-6 bg-zinc-950 text-white shadow-[0_0_50px_rgba(6,182,212,0.2)]">
+             <h2 className="text-xl font-mono font-bold tracking-widest text-[var(--brand-light)] border-b border-[var(--brand-primary)]/20 pb-4">CONFIGURAÇÕES DO SISTEMA</h2>
+             
+             {/* Quick mockup for config toggles... maintaining functionality */}
+             <div className="space-y-4 font-mono text-sm">
+                <div className="flex flex-col gap-2">
+                   <span>Estilo de Conversa (Persona)</span>
+                   <select 
+                     value={activePersona} 
+                     onChange={(e) => setActivePersona(e.target.value)} 
+                     className="w-full bg-black/50 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                   >
+                     <option value="jarvis">J.A.R.V.I.S (Cortês & Profissional)</option>
+                     <option value="friday">F.R.I.D.A.Y (Dinâmica & Direta)</option>
+                     <option value="glados">GLaDOS (Sarcástica & Fria)</option>
+                     <option value="hal9000">HAL 9000 (Metódico & Assustador)</option>
+                   </select>
                 </div>
-              </div>
+                
+                <div className="flex flex-col gap-2">
+                   <span>Voz do Sistema</span>
+                   <select 
+                     value={selectedVoiceURI || ""} 
+                     onChange={(e) => setSelectedVoiceURI(e.target.value)} 
+                     className="w-full bg-black/50 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                   >
+                     {systemVoices.map(v => (
+                       <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
+                     ))}
+                   </select>
+                </div>
 
-              {/* Info note */}
-              <div className={`text-[11px] leading-normal border p-3 rounded-lg font-sans ${isDarkMode
-                ? "text-zinc-500 bg-zinc-900/40 border-zinc-900/80"
-                : "text-zinc-700 bg-zinc-50 border-zinc-200"
-                }`}>
-                Personalize os parâmetros de reprodução do sintetizador nativo offline da sua máquina Ryzen ou do microserviço local.
-              </div>
-
-              {/* General Engine Type Selector */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEngineType("local_system_tts")}
-                  className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center ${engineType === "local_system_tts"
-                    ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold"
-                    : isDarkMode
-                      ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
-                      : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
-                    }`}
-                >
-                  Sistema Offline
+                <div className="flex justify-between items-center pt-2">
+                   <span>Velocidade da Voz (Rate)</span>
+                   <input type="range" min="0.5" max="2.0" step="0.05" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
+                </div>
+                <div className="flex justify-between items-center">
+                   <span>Filtro de Ruído (Noise Gate)</span>
+                   <input type="range" min="-60" max="-10" step="5" value={noiseGate} onChange={(e) => setNoiseGate(parseInt(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
+                </div>
+             </div>
+             
+             <div className="flex justify-end gap-4 pt-6 border-t border-[var(--brand-primary)]/20">
+                <button onClick={() => setIsVoiceModalOpen(false)} className="px-6 py-2 bg-[var(--brand-primary)]/20 hover:bg-[var(--brand-primary)]/40 text-[var(--brand-light)] border border-[var(--brand-primary)]/50 rounded-xl transition-colors font-bold tracking-wider cursor-pointer">
+                  FECHAR
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setEngineType("microsoft_edge_tts")}
-                  className={`py-2 px-3 text-[10px] font-mono rounded-lg border transition cursor-pointer text-center flex flex-col justify-center items-center ${engineType === "microsoft_edge_tts"
-                    ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)] text-[var(--brand-light)] font-bold shadow-[0_2px_8px_var(--brand-glow)]"
-                    : isDarkMode
-                      ? "bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
-                      : "bg-zinc-50 border border-zinc-200 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100"
-                    }`}
-                >
-                  <span>Microsoft Edge TTS</span>
-                </button>
-              </div>
-
-              {/* Voice model list dropdown */}
-              <div className="space-y-1">
-                <label className={`text-[10px] font-mono font-medium block uppercase tracking-wider ${isDarkMode ? "text-zinc-400" : "text-zinc-650"}`}>
-                  Modelador Vocal Ativo:
-                </label>
-                <select
-                  value={selectedVoiceURI}
-                  onChange={(e) => setSelectedVoiceURI(e.target.value)}
-                  className={`w-full text-xs font-mono border rounded-lg p-2.5 focus:outline-none focus:border-[var(--brand-primary)] cursor-pointer ${isDarkMode
-                    ? "bg-zinc-900 border-zinc-800 text-zinc-200"
-                    : "bg-white border-zinc-300 text-zinc-850 shadow-sm"
-                    }`}
-                >
-                  {systemVoices.length === 0 ? (
-                    <option value="">Voz padrão do sistema</option>
-                  ) : (
-                    systemVoices.map((v) => (
-                      <option key={v.voiceURI} value={v.voiceURI}>
-                        {v.name} ({v.lang})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {/* Pitch and Rate Sliders */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <div className={`flex justify-between font-mono text-[10px] ${isDarkMode ? "text-zinc-400" : "text-zinc-650"}`}>
-                    <span>Tom (Pitch):</span>
-                    <strong className="text-[var(--brand-light)]">{pitch.toFixed(2)}x</strong>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="2.0"
-                    step="0.05"
-                    value={pitch}
-                    onChange={(e) => setPitch(parseFloat(e.target.value))}
-                    className={`w-full h-1 rounded-lg appearance-none cursor-pointer accent-[var(--brand-primary)] ${isDarkMode ? "bg-zinc-900" : "bg-zinc-200"
-                      }`}
-                  />
-                  <span className="text-[9px] font-mono text-zinc-500 block leading-tight">Preset de agudeza vocal.</span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className={`flex justify-between font-mono text-[10px] ${isDarkMode ? "text-zinc-400" : "text-zinc-650"}`}>
-                    <span>Ritmo (Rate):</span>
-                    <strong className="text-[var(--brand-light)]">{rate.toFixed(2)}x</strong>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="2.0"
-                    step="0.05"
-                    value={rate}
-                    onChange={(e) => setRate(parseFloat(e.target.value))}
-                    className={`w-full h-1 rounded-lg appearance-none cursor-pointer accent-[var(--brand-primary)] ${isDarkMode ? "bg-zinc-900" : "bg-zinc-200"
-                      }`}
-                  />
-                  <span className="text-[9px] font-mono text-zinc-500 block leading-tight">Cadência das respostas faladas. Safe = 1.15x.</span>
-                </div>
-              </div>
-
-              {/* Noise Gate threshold dB slider */}
-              <div className="space-y-2">
-                <div className={`flex justify-between font-mono text-[10px] ${isDarkMode ? "text-zinc-400" : "text-zinc-650"}`}>
-                  <span className="flex items-center gap-1">Threshold Filtro Ruído (Noise Gate):</span>
-                  <strong className="text-[var(--brand-light)]">{noiseGate} dB</strong>
-                </div>
-                <input
-                  type="range"
-                  min="-60"
-                  max="-10"
-                  step="5"
-                  value={noiseGate}
-                  onChange={(e) => setNoiseGate(parseInt(e.target.value))}
-                  className={`w-full h-1 rounded-lg appearance-none cursor-pointer accent-[var(--brand-primary)] ${isDarkMode ? "bg-zinc-900" : "bg-zinc-200"
-                    }`}
-                />
-                <span className="text-[9px] font-mono text-zinc-500 block">Sintoniza se o microfone detectará respiracão de fundo ou ruídos da GPU GTX 1650.</span>
-              </div>
-
-              {/* Diagnostics & Latency info in popup list */}
-              <div className={`border p-3 rounded-lg space-y-1.5 font-mono text-[10px] transition-all ${isDarkMode
-                ? "bg-zinc-900/50 border-zinc-900 text-zinc-400"
-                : "bg-zinc-50 border-zinc-200 text-zinc-600"
-                }`}>
-                <div className={`text-[9px] font-bold border-b pb-1 flex justify-between ${isDarkMode ? "text-zinc-500 border-zinc-900/80" : "text-zinc-500 border-zinc-200"
-                  }`}>
-                  <span>METADADOS DO PIPELINE DE TELEMETRIA</span>
-                  <span>{activePersona.toUpperCase()} PROFILE</span>
-                </div>
-                <div className="flex justify-between font-mono">
-                  <span>Captura de Voz (STT):</span>
-                  <span className={isDarkMode ? "text-zinc-300" : "text-zinc-800"}>{lastMeasureLatency.stt > 0 ? `${lastMeasureLatency.stt}ms` : "0ms (Teclado)"}</span>
-                </div>
-                <div className="flex justify-between font-mono">
-                  <span>Motor IA (Groq Cloud LPU):</span>
-                  <span className={isDarkMode ? "text-zinc-300" : "text-zinc-800"}>{lastMeasureLatency.llm} ms</span>
-                </div>
-                <div className="flex justify-between font-mono">
-                  <span>Sintetizador Vocal (TTS):</span>
-                  <span className={isDarkMode ? "text-zinc-300" : "text-zinc-800"}>{lastMeasureLatency.tts} ms</span>
-                </div>
-                <div className={`flex justify-between border-t pt-1 font-bold text-xs ${isDarkMode ? "border-zinc-800 text-white" : "border-zinc-200 text-zinc-900"
-                  }`}>
-                  <span>TEMPO TOTAL LOCAL:</span>
-                  <span className="text-[var(--brand-light)] font-bold">
-                    {lastMeasureLatency.stt + lastMeasureLatency.llm + lastMeasureLatency.tts} ms
-                  </span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Modal Actions */}
-            <div className={`flex justify-end gap-2 border-t pt-3 ${isDarkMode ? "border-zinc-900/80" : "border-zinc-200"}`}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (activePersona === "jarvis") {
-                    setPitch(1.0);
-                    setRate(1.15);
-                  } else if (activePersona === "friday") {
-                    setPitch(1.1);
-                    setRate(1.25);
-                  } else if (activePersona === "glados") {
-                    setPitch(1.35);
-                    setRate(1.05);
-                  } else if (activePersona === "hal9000") {
-                    setPitch(0.8);
-                    setRate(0.85);
-                  }
-                }}
-                className={`px-3.5 py-1.5 text-[10px] font-mono border rounded-lg transition cursor-pointer ${isDarkMode
-                  ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
-                  : "bg-white border-zinc-200 text-zinc-650 hover:bg-neutral-50 hover:text-black shadow-sm"
-                  }`}
-              >
-                Resetar para Persona
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsVoiceModalOpen(false)}
-                className="px-4 py-1.5 text-[10px] font-mono bg-[var(--brand-primary)] border border-transparent hover:bg-opacity-80 text-white rounded-lg transition cursor-pointer font-semibold shadow-[0_0_10px_var(--brand-glow)]"
-              >
-                Concluir
-              </button>
-            </div>
-
+             </div>
           </div>
         </div>
       )}

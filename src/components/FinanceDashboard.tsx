@@ -23,7 +23,7 @@ export default function FinanceDashboard({
     e.preventDefault();
     if (!financeForm.value || !financeForm.description) return;
     try {
-      const categoryToUse = financeForm.type === "Receita" ? "Renda" : financeForm.category;
+      const categoryToUse = financeForm.type === "Receita" ? "Receita" : financeForm.category;
       await fetchAutenticado("/api/update/finance", {
         method: "POST",
         body: JSON.stringify({
@@ -57,7 +57,7 @@ export default function FinanceDashboard({
     const { income, expense } = systemState.finances.reduce(
         (acc: any, f: any) => {
         const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
-        if (f.category === "Renda") acc.income += val;
+        if (f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) acc.income += val;
         else acc.expense += val;
         return acc;
         },
@@ -84,23 +84,25 @@ export default function FinanceDashboard({
     if (!systemState?.finances) return Object.keys(limites).map(c => ({ category: c, gasto: 0, limite: limites[c] }));
     const gastos: Record<string, number> = {};
     systemState.finances.forEach((f: any) => {
-      if (f.category !== "Renda") {
+      if (f.type !== "Receita" && !["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) {
         const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
-        gastos[f.category] = (gastos[f.category] || 0) + val;
+        const cat = f.category || "Outros";
+        gastos[cat] = (gastos[cat] || 0) + val;
       }
     });
 
-    return Object.keys(limites).map((c) => ({
+    const allCategories = Array.from(new Set([...Object.keys(limites), ...Object.keys(gastos)]));
+    return allCategories.map((c) => ({
       category: c,
       gasto: gastos[c] || 0,
-      limite: limites[c],
+      limite: limites[c] || 0,
     }));
   };
   const categoryChartData = getCategoryData();
 
   return (
     <div className="space-y-6 animate-fade-in">
-        <div className="flex justify-between items-center bg-zinc-950/80 p-4 border border-zinc-800 rounded-xl">
+        <div className="flex justify-between items-center glass-panel p-4 rounded-2xl">
             <div className="flex flex-col">
             <h3 className="text-[var(--brand-light)] font-mono text-[11px] font-bold uppercase tracking-widest flex items-center gap-2">
                 <Copy className="h-4 w-4" /> Exportação Contábil
@@ -115,7 +117,7 @@ export default function FinanceDashboard({
             </button>
         </div>
 
-        <div id="finance-report-area" className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-4 -m-4 bg-[#09090b] rounded-xl">
+        <div id="finance-report-area" className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-4 -m-4 bg-transparent rounded-xl">
             {/* Financial Summary & Chart */}
             <div className="holographic-card p-5 space-y-6">
             <div>

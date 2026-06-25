@@ -102,7 +102,7 @@ export async function loadDB() {
             if (ha.hiddenDevices) jarvisState.homeAssistant.hiddenDevices = JSON.parse(ha.hiddenDevices);
             if (ha.modesConfig) jarvisState.homeAssistant.modesConfig = JSON.parse(ha.modesConfig);
         }
-    } catch (e) {
-        console.error("[Silent Try-Catch in server.ts -> database.ts]:", e);
+    } catch (e: any) {
+        console.error("[Database Load Error]: Fallback memory sync failed.", e?.message || e);
     }
 }

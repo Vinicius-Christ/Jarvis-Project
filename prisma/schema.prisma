@@ -1,10 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -21,37 +16,37 @@ model Finance {
 }
 
 model Agenda {
-  id          Int      @id @default(autoincrement())
-  title       String
-  datetime    DateTime
-  category    String
-  notes       String?
+  id       Int      @id @default(autoincrement())
+  title    String
+  datetime DateTime
+  category String
+  notes    String?
 }
 
 model Goal {
-  id          Int      @id @default(autoincrement())
-  limit       Float
-  reason      String
+  id     Int    @id @default(autoincrement())
+  limit  Float
+  reason String
 }
 
 model Conversation {
-  id        Int      @id @default(autoincrement())
-  sender    String
-  text      String
-  time      DateTime @default(now())
+  id     Int      @id @default(autoincrement())
+  sender String
+  text   String
+  time   DateTime @default(now())
 }
 
 model HomeAssistantState {
-  id            Int      @id @default(autoincrement())
-  ip            String   @default("")
-  token         String   @default("")
-  ambientPreset String   @default("Normal")
-  lights        String   @default("{}")
-  ac            String   @default("{}")
-  devices       String   @default("[]")
-  wsStatus      String   @default("disconnected")
-  hiddenDevices String   @default("[]")
-  modesConfig   String   @default("{}")
+  id            Int    @id @default(autoincrement())
+  ip            String @default("")
+  token         String @default("")
+  ambientPreset String @default("Normal")
+  lights        String @default("{}")
+  ac            String @default("{}")
+  devices       String @default("[]")
+  wsStatus      String @default("disconnected")
+  hiddenDevices String @default("[]")
+  modesConfig   String @default("{}")
 }
 
 model AppConfig {

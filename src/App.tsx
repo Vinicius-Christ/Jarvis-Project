@@ -285,6 +285,10 @@ export default function App() {
             const valueMatch = attributesStr.match(/value="([^"]+)"/);
             const catMatch = attributesStr.match(/category="([^"]+)"/);
             const descMatch = attributesStr.match(/description="([^"]+)"/);
+            const typeMatchAttr = attributesStr.match(/typeAttr="([^"]+)"/); // AI might use type="..." but type is already the main command type, let's look for financeType or just look for type="..." inside the match? No, wait, type is the XML tag's type!
+            // Wait, the AI tag is <command type="Finance" financeType="Receita" /> ?
+            const financeTypeMatch = attributesStr.match(/financeType="([^"]+)"/);
+            
             if (valueMatch && catMatch) {
               await fetch(getServerUrl() + "/api/update/finance", {
                 method: "POST",
@@ -292,11 +296,13 @@ export default function App() {
                 body: JSON.stringify({
                   value: parseFloat(valueMatch[1]),
                   category: catMatch[1],
+                  type: financeTypeMatch ? financeTypeMatch[1] : undefined,
                   description: descMatch
                     ? descMatch[1]
                     : "Inserido via voz/anexo JARVIS",
                 }),
               });
+              fetchSystemState(); // Refresh dashboard
             }
           } else if (type === "Agenda") {
             const titleMatch = attributesStr.match(/title="([^"]+)"/);
@@ -311,6 +317,7 @@ export default function App() {
                   category: "Trabalho",
                 }),
               });
+              fetchSystemState();
             }
           } else if (type === "PC") {
             const workspaceMatch = attributesStr.match(/workspace="([^"]+)"/);
@@ -709,16 +716,13 @@ export default function App() {
   return (
     <div
       style={themeStyles}
-      className={`w-full min-h-screen flex font-sans overflow-hidden select-none transition-all duration-300 bg-[size:20px_20px] bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] ${"dark bg-[#020408] text-zinc-300"
-        }`}
+      className={`w-full min-h-[100dvh] flex font-sans overflow-hidden select-none transition-all duration-500 bg-[size:32px_32px] bg-[linear-gradient(to_right,rgba(168,85,247,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(168,85,247,0.03)_1px,transparent_1px)] text-zinc-300`}
     >
       {/* Sidebar Navigation */}
       <aside
-        className={`glass-panel ${isSidebarOpen ? "w-64" : "w-16"} transition-all duration-300 flex flex-col border-r ${"border-zinc-900 bg-[#020408]"
-          } shrink-0 z-20`}
+        className={`glass-panel border-r border-purple-500/10 ${isSidebarOpen ? "w-64" : "w-16"} transition-all duration-500 flex flex-col shrink-0 z-20 shadow-[4px_0_30px_-10px_rgba(0,0,0,0.8)]`}
       >
-        <div className={`h-[73px] flex items-center justify-between p-4 border-b shrink-0 sticky top-0 bg-transparent ${"border-zinc-900 bg-[#020408]"
-          } z-30`}>
+        <div className="h-[73px] flex items-center justify-between p-4 border-b border-white/5 shrink-0 sticky top-0 bg-transparent z-30">
           {isSidebarOpen && (
             <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
               <Shield className="h-5 w-5 text-[var(--brand-light)] shrink-0" />

@@ -7,7 +7,7 @@ import fs from "fs";
 import { promisify } from "util";
 import si from "systeminformation";
 import dns from "dns";
-import WebSocket from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 import { EdgeTTS } from "node-edge-tts";
 import os from "os";
 import dotenv from "dotenv";
@@ -2161,13 +2161,13 @@ let updaterState = {
   remoteVersion: "5.0.0",
   remoteMessage: "",
   logs: [] as string[],
-  githubRepo: "Vinicius-Christ/Jarvis-Project-",
+  githubRepo: "Vinicius-Christ/Jarvis-Project",
   githubToken: ""
 };
 
 // If repo is configured in db, load it
 if (!jarvisState.githubRepo) {
-  jarvisState.githubRepo = "Vinicius-Christ/Jarvis-Project-";
+  jarvisState.githubRepo = "Vinicius-Christ/Jarvis-Project";
 
 } else {
   updaterState.githubRepo = jarvisState.githubRepo;
@@ -2198,13 +2198,14 @@ function copyFolderRecursiveSync(src: string, dest: string) {
     if (entry.isDirectory()) {
       copyFolderRecursiveSync(srcPath, destPath);
     } else {
-      fs.copyFileSync(srcPath, destPath);
+          fs.copyFileSync(srcPath, destPath);
     }
   }
 }
 
 app.get("/api/system/update/status", (_req, res) => {
-  updaterState.githubRepo = jarvisState.githubRepo || "Vinicius-Christ/Jarvis-Project-";
+  updaterState.progress = 0;
+  updaterState.githubRepo = jarvisState.githubRepo || "Vinicius-Christ/Jarvis-Project";
   updaterState.githubToken = jarvisState.githubToken || "";
   res.json(updaterState);
 });
@@ -2242,7 +2243,7 @@ app.get("/api/system/update/check", async (_req, res) => {
       "Accept": "application/vnd.github.v3+json"
     };
     if (updaterState.githubToken) {
-      headers["Authorization"] = `token ${updaterState.githubToken}`;
+      headers["Authorization"] = `Bearer ${updaterState.githubToken}`;
     }
 
     const commitRes = await fetch(
@@ -2359,7 +2360,7 @@ app.post("/api/system/update/run", (_req, res) => {
         // Fetch zip
         const headers: Record<string, string> = { "User-Agent": "JARVIS-Suite-Downloader" };
         if (updaterState.githubToken) {
-          headers["Authorization"] = `token ${updaterState.githubToken}`;
+          headers["Authorization"] = `Bearer ${updaterState.githubToken}`;
         }
 
         const zipRes = await fetch(zipUrl, {
@@ -2623,7 +2624,7 @@ views:
     console.log(`JARVIS API Server running on port ${PORT}`);
   });
 
-  const wssRelay = new WebSocket.Server({ server });
+  const wssRelay = new WebSocketServer({ server });
   wssRelay.on("connection", (ws) => {
     console.log("[WS Relay] Dispositivo Frontend conectado à malha Cross-Device.");
   });

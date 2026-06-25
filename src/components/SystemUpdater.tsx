@@ -8,7 +8,7 @@ interface SystemUpdaterProps {
 }
 
 export default React.memo(function SystemUpdater({ updateState, onRefresh }: SystemUpdaterProps) {
-  const [repoInput, setRepoInput] = useState(updateState?.githubRepo || "Vinicius-Christ/Jarvis-Project-");
+  const [repoInput, setRepoInput] = useState(updateState?.githubRepo || "Vinicius-Christ/Jarvis-Project");
   const [tokenInput, setTokenInput] = useState(updateState?.githubToken || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isChecking, setIsChecking] = useState(false);

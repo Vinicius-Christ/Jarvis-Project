@@ -1,7 +1,7 @@
 import DOMPurify from "dompurify";
 import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect, useRef } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Mic,
   MicOff,
@@ -19,6 +19,8 @@ import {
   Monitor,
   Image as ImageIcon,
   Sliders,
+  StopCircle,
+  Radio,
 } from "lucide-react";
 
 const PERSONAS_LIST = [
@@ -94,8 +96,15 @@ export default React.memo(function JarvisAssistant({
   });
   const [activePersona, setActivePersona] = useState("friday");
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
 
   const isProcessingRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const isContinuousModeRef = useRef(isContinuousMode);
+  useEffect(() => {
+    isContinuousModeRef.current = isContinuousMode;
+  }, [isContinuousMode]);
 
   const activePersonaRef = useRef(activePersona);
   useEffect(() => {
@@ -128,7 +137,7 @@ export default React.memo(function JarvisAssistant({
                   data.action,
                   data.target,
                 );
-                window.electronAPI.executeLocalCommand({
+                (window.electronAPI as any).executeLocalCommand({
                   action: data.action,
                   target: data.target || "",
                 });
@@ -409,9 +418,9 @@ export default React.memo(function JarvisAssistant({
               /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
             let match;
             while ((match = commandRegex.exec(replyText)) !== null) {
-              const action = match[1];
-              const target = match[2] || "";
-              window.electronAPI.executeLocalCommand({ action, target });
+              if (typeof window !== "undefined" && window.electronAPI && (window.electronAPI as any).executeLocalCommand) {
+                (window.electronAPI as any).executeLocalCommand({ action: match[1], target: match[2] || "" });
+              }
             }
           }
           speakResponse(replyText);
@@ -427,7 +436,18 @@ export default React.memo(function JarvisAssistant({
 
       rec.onend = () => {
         // Only return to inactive if we didn't initiate processing/speaking
-        setAppState((prev) => (prev === "listening" ? "inactive" : prev));
+        setAppState((prev) => {
+          if (prev === "listening") {
+            if (isContinuousModeRef.current) {
+              setTimeout(() => {
+                try { recognitionRef.current?.start(); } catch (e) {}
+              }, 100);
+              return "listening";
+            }
+            return "inactive";
+          }
+          return prev;
+        });
       };
 
       recognitionRef.current = rec;
@@ -449,34 +469,15 @@ export default React.memo(function JarvisAssistant({
     }
   }, [conversations.length]);
 
-  // Animated canvas circles resembling Tony Stark's HUD
+  // Tech-Noir / Cybernetic Core Visualizer
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const width = (canvas.width = 180);
-    const height = (canvas.height = 180);
-    const particles: {
-      angle: number;
-      radius: number;
-      size: number;
-      speed: number;
-      phase: number;
-    }[] = [];
-
-    // Initialize 80 particles in circular tracks
-    for (let i = 0; i < 90; i++) {
-      particles.push({
-        angle: Math.random() * Math.PI * 2,
-        radius: 25 + Math.random() * 40,
-        size: 1 + Math.random() * 1.5,
-        speed: 0.01 + Math.random() * 0.02,
-        phase: Math.random() * Math.PI * 2,
-      });
-    }
-
+    const width = (canvas.width = 250);
+    const height = (canvas.height = 250);
     let frame = 0;
 
     const render = () => {
@@ -486,102 +487,78 @@ export default React.memo(function JarvisAssistant({
       const cy = height / 2;
       const currentState = appStateRef.current;
 
-      // Draw subtle holographic grid rings
-      ctx.strokeStyle = "rgba(0, 229, 255, 0.06)";
+      const currentPersona = PERSONAS_LIST.find((p) => p.id === activePersonaRef.current);
+      const primaryColor = currentPersona ? currentPersona.color : "#06b6d4";
+
+      // 1. Draw outer subtle tracking ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, 100, 0, Math.PI * 2);
+      ctx.strokeStyle = `${primaryColor}22`; // 13% opacity
       ctx.lineWidth = 1;
-      for (let r = 20; r <= 70; r += 15) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      ctx.stroke();
 
-      // Draw spinning arcs depending on the active state
-      if (currentState === "processing") {
-        ctx.strokeStyle = "rgba(0, 245, 255, 0.4)";
+      // 2. Dashed rotating HUD ring
+      const rotationSpeed = currentState === "processing" ? 0.05 : 0.01;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(frame * rotationSpeed);
+      ctx.beginPath();
+      ctx.arc(0, 0, 85, 0, Math.PI * 2);
+      ctx.setLineDash([20, 10, 5, 10, 40, 15]);
+      ctx.strokeStyle = `${primaryColor}66`; // 40% opacity
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+
+      // 3. Inner pulsating computational core
+      let pulse = 0;
+      let coreOpacity = 0.15;
+      let waveScale = 0;
+
+      if (currentState === "listening") {
+        pulse = Math.sin(frame * 0.05) * 5;
+        coreOpacity = 0.3 + Math.sin(frame * 0.05) * 0.15;
+      } else if (currentState === "processing") {
+        pulse = Math.random() * 4;
+        coreOpacity = 0.5 + Math.random() * 0.2;
+      } else if (currentState === "speaking") {
+        pulse = Math.sin(frame * 0.2) * 8;
+        coreOpacity = 0.4 + Math.sin(frame * 0.2) * 0.3;
+        waveScale = Math.abs(Math.sin(frame * 0.15)) * 15;
+
+        // Radial audio transmission waves
+        ctx.beginPath();
+        ctx.arc(cx, cy, 50 + pulse + waveScale, 0, Math.PI * 2);
+        ctx.strokeStyle = `${primaryColor}88`;
         ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(
-          cx,
-          cy,
-          45,
-          (frame * 0.05) % (Math.PI * 2),
-          (frame * 0.05 + Math.PI * 0.5) % (Math.PI * 2),
-        );
-        ctx.stroke();
-
-        ctx.strokeStyle = "rgba(124, 77, 255, 0.4)";
-        ctx.beginPath();
-        ctx.arc(
-          cx,
-          cy,
-          50,
-          (-frame * 0.03) % (Math.PI * 2),
-          (-frame * 0.03 + Math.PI * 0.7) % (Math.PI * 2),
-        );
+        ctx.setLineDash([]);
         ctx.stroke();
       }
 
-      // Render the particles with custom styles per state
-      particles.forEach((p, idx) => {
-        p.angle += p.speed;
-        let radiusOffset = 0;
-        let color = "rgba(100, 116, 139, 0.5)"; // Default passive zinc
+      // Core Solid Orb
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = primaryColor;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 40 + pulse, 0, Math.PI * 2);
+      
+      // Hex to RGB for dynamic opacity
+      ctx.fillStyle = `${primaryColor}${Math.floor(coreOpacity * 255)
+        .toString(16)
+        .padStart(2, "0")}`;
+      ctx.fill();
 
-        if (currentState === "listening") {
-          // Pulsing blue dots
-          radiusOffset = Math.sin(p.phase + frame * 0.1) * 4;
-          color = `rgba(0, 229, 255, ${0.4 + Math.sin(p.phase + frame * 0.05) * 0.2})`;
-        } else if (currentState === "processing") {
-          // Rapid revolving cyan loops
-          p.angle += p.speed * 2;
-          color = "rgba(0, 229, 255, 0.7)";
-        } else if (currentState === "speaking") {
-          // Wave amplitude reactive points
-          radiusOffset = Math.sin(p.angle * 6 + frame * 0.15) * 8;
-          const hue = (180 + idx * 2) % 360;
-          color = `hsla(${hue}, 100%, 60%, 0.7)`;
-        }
+      // Reset shadow for text
+      ctx.shadowBlur = 0;
 
-        const x = cx + Math.cos(p.angle) * (p.radius + radiusOffset);
-        const y = cy + Math.sin(p.angle) * (p.radius + radiusOffset);
-
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(
-          x,
-          y,
-          p.size + (currentState === "speaking" ? 1 : 0),
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
-
-        // Holographic connectors
-        if (currentState === "listening" && idx % 15 === 0) {
-          ctx.strokeStyle = "rgba(0, 229, 255, 0.15)";
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        }
-      });
-
-      // Draw active status description text
-      ctx.fillStyle =
-        currentState === "listening"
-          ? "#00E5FF"
-          : currentState === "processing"
-            ? "#FF80AB"
-            : currentState === "speaking"
-              ? "#00E676"
-              : "#4F4F4F";
-      ctx.font = "8px JetBrains Mono, monospace";
+      // 4. Data readout text
+      ctx.fillStyle = currentState === "inactive" ? "#4F4F4F" : primaryColor;
+      ctx.font = "10px 'JetBrains Mono', monospace";
       ctx.textAlign = "center";
 
-      let text = "JARVIS DEACTIVATED";
-      if (currentState === "listening") text = "LISTENING SENHOR...";
-      if (currentState === "processing") text = "AI CUDA COMPUTING";
-      if (currentState === "speaking") text = "JARVIS RESPONDING";
+      let text = "SYS. STANDBY";
+      if (currentState === "listening") text = "AWAITING INPUT";
+      if (currentState === "processing") text = "COMPUTING...";
+      if (currentState === "speaking") text = "TRANSMITTING";
 
       ctx.fillText(text, cx, cy + 4);
 
@@ -596,6 +573,7 @@ export default React.memo(function JarvisAssistant({
   }, []);
 
   const speakLocalResponse = (cleanText: string) => {
+    const isQuestion = cleanText.trim().endsWith("?");
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = "pt-BR";
 
@@ -613,7 +591,12 @@ export default React.memo(function JarvisAssistant({
     utterance.volume = voiceVolume;
 
     utterance.onend = () => {
-      setAppState("inactive");
+      if (isContinuousModeRef.current || isQuestion) {
+        setAppState("listening");
+        setTimeout(() => { try { recognitionRef.current?.start(); } catch(e){} }, 100);
+      } else {
+        setAppState("inactive");
+      }
     };
 
     utterance.onerror = () => {
@@ -632,6 +615,8 @@ export default React.memo(function JarvisAssistant({
       .replace(/[*#_`]/g, "")
       .trim();
     if (!cleanText) return;
+
+    const isQuestion = cleanText.endsWith("?");
 
     window.speechSynthesis.cancel();
     setAppState("speaking");
@@ -659,13 +644,19 @@ export default React.memo(function JarvisAssistant({
           const url = URL.createObjectURL(blob);
           const audio = new Audio(url);
           audio.onended = () => {
-            setAppState("inactive");
             URL.revokeObjectURL(url);
+            if (isContinuousModeRef.current || isQuestion) {
+              setAppState("listening");
+              setTimeout(() => { try { recognitionRef.current?.start(); } catch(e){} }, 100);
+            } else {
+              setAppState("inactive");
+            }
           };
           audio.onerror = () => {
             URL.revokeObjectURL(url);
             speakLocalResponse(cleanText);
           };
+          audioRef.current = audio;
           audio.play().catch(() => {
             URL.revokeObjectURL(url);
             speakLocalResponse(cleanText);
@@ -684,11 +675,20 @@ export default React.memo(function JarvisAssistant({
   const handleMicToggle = () => {
     triggerInteractionDateCheck();
     if (appState === "listening") {
+      setIsContinuousMode(false);
       recognitionRef.current?.stop();
     } else {
       window.speechSynthesis.cancel();
+      if (audioRef.current) audioRef.current.pause();
       recognitionRef.current?.start();
     }
+  };
+
+  const handleInterrupt = () => {
+    window.speechSynthesis.cancel();
+    if (audioRef.current) audioRef.current.pause();
+    setAppState("inactive");
+    setIsContinuousMode(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -717,7 +717,7 @@ export default React.memo(function JarvisAssistant({
 
     isProcessingRef.current = true;
 
-    const query = inputText || `Processar anexo ${attachedFile?.name}`;
+    const query = inputText || (mediaMode !== "none" ? `Análise de Visão Computacional (Spatial Intelligence): Descreva em detalhes os objetos, a cena, leia os textos visíveis e infira o contexto da imagem de forma altamente analítica. Atue como um especialista em visão de máquina e relate exatamente o que o sensor capturou.` : `Processar anexo ${attachedFile?.name}`);
     let fileToSend = attachedFile;
     if (mediaMode !== "none") {
       const frameBase64 = captureFrame();
@@ -764,7 +764,7 @@ export default React.memo(function JarvisAssistant({
         while ((match = commandRegex.exec(replyText)) !== null) {
           const action = match[1];
           const target = match[2] || "";
-          window.electronAPI.executeLocalCommand({ action, target });
+          (window.electronAPI as any).executeLocalCommand({ action, target });
         }
       }
       const imgRegex = /<command\s+type="DisplayImage"\s+url="([^"]+)"\s*\/>/i;
@@ -840,8 +840,9 @@ export default React.memo(function JarvisAssistant({
         </h1>
         
         {/* Central Orb / Canvas */}
-        <div className="relative flex items-center justify-center w-full h-[400px]">
-          <canvas ref={canvasRef} className="rounded-full holographic-glow w-[350px] h-[350px] z-0" />
+        {/* Central Orb / Canvas */}
+        <div className="relative flex flex-col items-center justify-center w-full flex-1">
+          <canvas ref={canvasRef} className="rounded-full w-[250px] h-[250px] z-0" />
           
           {/* Popups Overlay */}
           {activePopup && activePopup.type === 'image' && (
@@ -852,6 +853,24 @@ export default React.memo(function JarvisAssistant({
                <img src={activePopup.url} alt="Generated" className="max-w-[80%] max-h-[80%] rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.4)]" />
              </div>
           )}
+
+          {/* Interrupt Button (Below Core) */}
+          <div className="h-16 mt-6 flex items-center justify-center w-full z-30">
+            <AnimatePresence>
+              {appState === "speaking" && (
+                <motion.button
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 15 }}
+                  onClick={handleInterrupt}
+                  className="flex items-center justify-center gap-2 px-6 py-2 bg-red-500/10 rounded-full border border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.2)] text-red-400 hover:bg-red-500/30 hover:border-red-400 hover:text-red-300 transition-all cursor-pointer backdrop-blur-md"
+                >
+                  <StopCircle className="w-5 h-5" />
+                  <span className="text-[11px] font-mono font-bold tracking-widest uppercase">Interromper</span>
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Mode Status Indicator */}
@@ -868,6 +887,17 @@ export default React.memo(function JarvisAssistant({
           </button>
           <button onClick={handleMicToggle} className={`p-4 rounded-full transition-all cursor-pointer ${appState === 'listening' ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
              {appState === 'listening' ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </button>
+          <button onClick={() => {
+            const newMode = !isContinuousMode;
+            setIsContinuousMode(newMode);
+            if (newMode && appState === "inactive") {
+              recognitionRef.current?.start();
+            } else if (!newMode && appState === "listening") {
+              recognitionRef.current?.stop();
+            }
+          }} className={`p-4 rounded-full transition-all cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] shadow-[0_0_15px_var(--brand-glow-strong)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
+             <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-pulse' : ''}`} />
           </button>
           <button onClick={toggleScreenMode} className={`p-4 rounded-full transition-all cursor-pointer ${mediaMode === 'screen' ? 'bg-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
              <Monitor className="w-5 h-5" />

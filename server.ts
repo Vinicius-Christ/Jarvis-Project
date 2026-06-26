@@ -577,12 +577,22 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
   let contextPrompt = `[MEMÓRIA DE LONGO PRAZO - OBSIDIAN VAULT]:\n`;
   const lowerMsg = message.toLowerCase();
   
-  // Apenas inclui notas relevantes para não explodir o contexto
-  const relevantNotes = jarvisState.obsidianNotes.filter(n => 
-    lowerMsg.includes(n.path.toLowerCase().replace('.md','')) || 
-    n.content.toLowerCase().split(' ').some(word => word.length > 4 && lowerMsg.includes(word)) ||
-    lowerMsg.includes("resumo") || lowerMsg.includes("tudo")
-  ).slice(0, 5); // top 5
+  // Otimização: Se o cofre for pequeno (< 15.000 caracteres), envia tudo para a IA ficar super inteligente.
+  // Caso contrário, busca por palavras-chave e sempre inclui arquivos que contenham 'Contexto' ou 'Regras' no nome.
+  const totalVaultSize = jarvisState.obsidianNotes.reduce((acc, n) => acc + n.content.length, 0);
+  let relevantNotes = [];
+  
+  if (totalVaultSize < 15000) {
+      relevantNotes = jarvisState.obsidianNotes;
+  } else {
+      relevantNotes = jarvisState.obsidianNotes.filter(n => {
+          const isCore = n.path.toLowerCase().includes("contexto") || n.path.toLowerCase().includes("regras");
+          const matchesQuery = lowerMsg.includes(n.path.toLowerCase().replace('.md','')) || 
+                               n.content.toLowerCase().split(' ').some(word => word.length > 5 && lowerMsg.includes(word)) ||
+                               lowerMsg.includes("resumo") || lowerMsg.includes("tudo") || lowerMsg.includes("vault");
+          return isCore || matchesQuery;
+      }).slice(0, 10);
+  }
   
   if (relevantNotes.length > 0) {
     relevantNotes.forEach(note => {
@@ -699,6 +709,7 @@ Data e Hora atual de referência: ${currentSaoPauloTime} (Fuso horário de Bras�
 1. LEITURA E VERDADE: Ao responder sobre agenda ou finanças, leia APENAS os dados fornecidos no bloco [MEMÓRIA DE CURTO PRAZO]. Se não estiver lá, diga a verdade. Nunca invente compromissos ou gastos.
 2. LIMITAÇÃO DE CONTEXTO: O sistema injeta apenas as transações e eventos recentes para economizar tokens. Se o usuário perguntar de um passado distante, sugira que ele use a interface visual da Dashboard.
 3. FLUIDEZ: Aja de forma proativa e pareça humano (mantendo o tom da sua persona). Não seja burocrático ao descrever o que vai fazer. Simplesmente emita os comandos XML invisivelmente e dê uma resposta social curta e agradável.
+4. EFICIÊNCIA E OBJETIVIDADE: Seja extremamente direta ao ponto. Não enrole ou justifique demais. Quando o usuário pedir para executar algo, execute usando os comandos apropriados e responda de forma rápida e concisa o que foi feito.
 
 [CAPACIDADES E COMANDOS XML (AÇÃO)]
 VOCÊ NÃO PRECISA PEDIR PERMISSÃO PARA AGIR. Tem autonomia total para emitir tags XML que o sistema processará automaticamente no background.
@@ -1478,7 +1489,7 @@ app.get("/api/health", (req, res) => {
 
 // Endpoint: Dynamic operations on agenda, finances & Home Device modifications
 app.post("/api/update/finance", async (req, res) => {
-  const { value, category, description, date, type } = req.body;
+  const { id, value, category, description, date, type } = req.body;
   const parsedValue = parseFloat(value);
 
   const isReceita = type === "Receita" || ["renda", "receita", "salário", "salario", "investimento", "lucro", "pix recebido", "pagamento"].includes(category.toLowerCase());
@@ -1486,21 +1497,36 @@ app.post("/api/update/finance", async (req, res) => {
 
   let createdRecord;
   try {
-    createdRecord = await prisma.finance.create({
-      data: {
-        value: isNaN(parsedValue) ? 0 : parsedValue,
-        category,
-        description,
-        type: finalType,
-        date: date ? new Date(date) : new Date()
-      }
-    });
-
-    // Refresh state from db to keep it perfectly synced
-    if (!jarvisState.finances) jarvisState.finances = [];
-    jarvisState.finances.push(createdRecord);
+    if (id) {
+      createdRecord = await prisma.finance.update({
+        where: { id: Number(id) },
+        data: {
+          value: isNaN(parsedValue) ? 0 : parsedValue,
+          category,
+          description,
+          type: finalType,
+          date: date ? new Date(date) : new Date()
+        }
+      });
+      // Update locally
+      if (!jarvisState.finances) jarvisState.finances = [];
+      const index = jarvisState.finances.findIndex(f => f.id === Number(id));
+      if (index !== -1) jarvisState.finances[index] = createdRecord;
+    } else {
+      createdRecord = await prisma.finance.create({
+        data: {
+          value: isNaN(parsedValue) ? 0 : parsedValue,
+          category,
+          description,
+          type: finalType,
+          date: date ? new Date(date) : new Date()
+        }
+      });
+      if (!jarvisState.finances) jarvisState.finances = [];
+      jarvisState.finances.push(createdRecord);
+    }
   } catch (err) {
-    console.error("Prisma finance create failed", err);
+    console.error("Prisma finance create/update failed", err);
     return res.status(500).json({ success: false, error: "Database error" });
   }
 

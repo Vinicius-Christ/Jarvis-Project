@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { DollarSign, Copy, Trash2, Info, ChevronRight, PieChart } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import React, { useState, useMemo } from 'react';
+import { DollarSign, Copy, Trash2, Info, ChevronRight, PieChart as PieChartIcon, Edit2, TrendingUp, TrendingDown, Wallet, Target } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ComposedChart, Area, PieChart, Pie, Legend } from 'recharts';
 import { fetchAutenticado } from '../lib/api';
 
 interface FinanceDashboardProps {
@@ -12,11 +12,13 @@ interface FinanceDashboardProps {
   handleDeleteGoal: () => void;
 }
 
+const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#14b8a6', '#6366f1'];
+
 export default function FinanceDashboard({
   systemState, fetchSystemState, handleExportPDF, handleFileUpload, handleDeleteFinance, handleDeleteGoal
 }: FinanceDashboardProps) {
   
-  const [financeForm, setFinanceForm] = useState({ value: "", type: "Despesa", category: "Educação", description: "" });
+  const [financeForm, setFinanceForm] = useState({ id: null as number | null, value: "", type: "Despesa", category: "Educação", description: "" });
   const [goalForm, setGoalForm] = useState({ limit: "", reason: "" });
 
   const handleFinanceSubmit = async (e: React.FormEvent) => {
@@ -31,9 +33,10 @@ export default function FinanceDashboard({
           category: categoryToUse,
           description: financeForm.description,
           date: new Date().toISOString().split("T")[0],
+          id: financeForm.id
         }),
       });
-      setFinanceForm({ value: "", type: "Despesa", category: "Educação", description: "" });
+      setFinanceForm({ id: null, value: "", type: "Despesa", category: "Educação", description: "" });
       fetchSystemState();
     } catch { /* ignore */ }
   };
@@ -51,37 +54,101 @@ export default function FinanceDashboard({
     } catch { /* ignore */ }
   };
 
+  const handleEditFinance = (item: any) => {
+    setFinanceForm({
+      id: item.id,
+      value: item.value.toString(),
+      type: item.type || "Despesa",
+      category: item.category || "Educação",
+      description: item.description || ""
+    });
+    document.getElementById("finance-report-area")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const currentGoal = systemState?.goal || { limit: 1500, reason: "Aposentadoria" };
-  const getGuardadoTotal = () => {
-    if (!systemState?.finances) return 0;
-    const { income, expense } = systemState.finances.reduce(
+  
+  const { totalIncome, totalExpense, guardado } = useMemo(() => {
+    if (!systemState?.finances) return { totalIncome: 0, totalExpense: 0, guardado: 0 };
+    const res = systemState.finances.reduce(
         (acc: any, f: any) => {
-        const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
-        if (f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) acc.income += val;
-        else acc.expense += val;
-        return acc;
+          const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
+          if (f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) acc.income += val;
+          else acc.expense += val;
+          return acc;
         },
         { income: 0, expense: 0 }
     );
-    return Math.max(0, income - expense);
-  };
-  const guardado = getGuardadoTotal();
-
-  const getSavingsData = () => {
-    const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"];
-    let history = 0;
-    return months.map((m, i) => {
-      history += i === 5 ? guardado - history : (guardado / 6) * (1 + (Math.random() * 0.4 - 0.2));
-      return { mes: m, guardado: Math.max(0, Math.floor(history)) };
-    });
-  };
-  const savingsData = getSavingsData();
-
-  const getCategoryData = () => {
-    const limites: Record<string, number> = {
-      Serviços: 400, Educação: 800, Lazer: 300, Alimentação: 1000, Saúde: 300,
+    return {
+        totalIncome: res.income,
+        totalExpense: res.expense,
+        guardado: res.income - res.expense
     };
-    if (!systemState?.finances) return Object.keys(limites).map(c => ({ category: c, gasto: 0, limite: limites[c] }));
+  }, [systemState?.finances]);
+
+  const savingsData = useMemo(() => {
+    const monthlyData: Record<string, { income: number, expense: number }> = {};
+    
+    const today = new Date();
+    const boundaryDate = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+    
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthlyData[key] = { income: 0, expense: 0 };
+    }
+    
+    let accumulatedSavings = 0;
+
+    if (systemState?.finances) {
+        systemState.finances.forEach((f: any) => {
+           if (!f.date) return;
+           const [yearStr, monthStr, dayStr] = f.date.split('T')[0].split('-');
+           const localDate = new Date(parseInt(yearStr), parseInt(monthStr)-1, parseInt(dayStr) || 1);
+           
+           if (isNaN(localDate.getTime())) return;
+           
+           const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
+           const isIncome = f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase());
+           
+           if (localDate < boundaryDate) {
+               if (isIncome) accumulatedSavings += val;
+               else accumulatedSavings -= val;
+           } else {
+               const monthKey = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}`;
+               if (monthlyData[monthKey]) {
+                   if (isIncome) monthlyData[monthKey].income += val;
+                   else monthlyData[monthKey].expense += val;
+               } else {
+                   // Se por acaso for de um mês no futuro (improvável, mas possível)
+                   if (isIncome) accumulatedSavings += val;
+                   else accumulatedSavings -= val;
+               }
+           }
+        });
+    }
+
+    const sortedKeys = Object.keys(monthlyData).sort();
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    
+    return sortedKeys.map(key => {
+        const data = monthlyData[key];
+        const monthSavings = data.income - data.expense;
+        accumulatedSavings += monthSavings;
+        const [year, month] = key.split('-');
+        const label = `${monthNames[parseInt(month, 10) - 1]}/${year.slice(2)}`;
+        
+        return { 
+           mes: label, 
+           acumulado: accumulatedSavings,
+           receita: data.income,
+           despesa: data.expense,
+           saldo: monthSavings
+        };
+    });
+  }, [systemState?.finances]);
+
+  const categoryChartData = useMemo(() => {
+    if (!systemState?.finances) return [];
     const gastos: Record<string, number> = {};
     systemState.finances.forEach((f: any) => {
       if (f.type !== "Receita" && !["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) {
@@ -91,407 +158,354 @@ export default function FinanceDashboard({
       }
     });
 
-    const allCategories = Array.from(new Set([...Object.keys(limites), ...Object.keys(gastos)]));
-    return allCategories.map((c) => ({
-      category: c,
-      gasto: gastos[c] || 0,
-      limite: limites[c] || 0,
-    }));
-  };
-  const categoryChartData = getCategoryData();
+    return Object.keys(gastos).map(c => ({
+      name: c,
+      value: gastos[c]
+    })).sort((a, b) => b.value - a.value);
+  }, [systemState?.finances]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-        <div className="flex justify-between items-center glass-panel p-4 rounded-2xl">
+    <div className="space-y-6 animate-fade-in pb-12">
+        <div className="flex justify-between items-center glass-panel p-4 rounded-2xl bg-gradient-to-r from-zinc-900 to-zinc-950 border border-zinc-800 shadow-xl">
             <div className="flex flex-col">
-            <h3 className="text-[var(--brand-light)] font-mono text-[11px] font-bold uppercase tracking-widest flex items-center gap-2">
-                <Copy className="h-4 w-4" /> Exportação Contábil
-            </h3>
-            <span className="text-zinc-500 font-mono text-[10px] mt-1">Gerar Snapshot PDF do Balanço Atual e Evolução.</span>
+                <h3 className="text-[var(--brand-light)] font-mono text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                    <Wallet className="h-5 w-5" /> Inteligência Financeira
+                </h3>
+                <span className="text-zinc-500 font-mono text-[11px] mt-1">Análise de Fluxo de Caixa e Projeções</span>
             </div>
             <button 
                 onClick={handleExportPDF}
-                className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg text-[11px] font-bold font-mono uppercase tracking-widest transition-all flex items-center gap-2"
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600 hover:border-zinc-400 px-4 py-2 rounded-lg text-[11px] font-bold font-mono uppercase tracking-widest transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
                 Exportar .PDF <ChevronRight className="h-3 w-3" />
             </button>
         </div>
 
-        <div id="finance-report-area" className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-4 -m-4 bg-transparent rounded-xl">
-            {/* Financial Summary & Chart */}
-            <div className="holographic-card p-5 space-y-6">
-            <div>
-                <h3 className="text-xs font-mono font-medium text-[var(--brand-light)] uppercase flex items-center gap-1.5 mb-1">
-                <DollarSign className="h-4 w-4" />
-                Balanço e Metas Financeiras
-                </h3>
-                <p className="text-[10px] text-zinc-500">
-                Monitoramento e progresso anual de economia
-                </p>
+        {/* Top KPIs */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-zinc-950 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <TrendingUp className="h-16 w-16 text-emerald-500" />
+                </div>
+                <span className="text-[11px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Total de Receitas</span>
+                <span className="text-2xl font-semibold text-emerald-400">R$ {totalIncome.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
-
-            <div className="space-y-3">
-                <div className="flex justify-between items-baseline bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                <span className="text-[10px] text-zinc-500 font-mono">
-                    Meta de Economia Mensal
+            <div className="bg-zinc-950 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <TrendingDown className="h-16 w-16 text-red-500" />
+                </div>
+                <span className="text-[11px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Total de Despesas</span>
+                <span className="text-2xl font-semibold text-red-400">R$ {totalExpense.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            </div>
+            <div className="bg-zinc-950 border border-[var(--brand-primary)] p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group shadow-[0_0_20px_var(--brand-glow)]">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Wallet className="h-16 w-16 text-[var(--brand-light)]" />
+                </div>
+                <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Saldo Atual (Líquido)</span>
+                <span className={`text-3xl font-bold ${guardado >= 0 ? 'text-[var(--brand-light)]' : 'text-red-500'}`}>
+                    R$ {guardado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </span>
-                <span className="text-sm font-semibold text-white">
-                    R$ {typeof currentGoal.limit === 'number' && !isNaN(currentGoal.limit) ? currentGoal.limit.toFixed(2) : '0.00'}
-                </span>
-                </div>
-                <div className="flex justify-between items-baseline bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                <span className="text-[10px] text-emerald-500 font-mono">
-                    Valor Total Guardado/Disponível
-                </span>
-                <span className="text-xl font-light text-emerald-400 font-mono">
-                    R$ {typeof guardado === 'number' && !isNaN(guardado) ? guardado.toFixed(2) : '0.00'}
-                </span>
-                </div>
-                <div className="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-900 group">
-                <div className="flex items-baseline gap-2">
-                    <span className="text-[10px] text-zinc-500 font-mono">
-                    Motivo da Meta
-                    </span>
-                    <span className="text-xs text-white">
-                    {currentGoal.reason}
-                    </span>
-                </div>
-                {currentGoal.limit > 0 && (
-                    <button
-                        onClick={handleDeleteGoal}
-                        className="text-zinc-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Apagar Meta Atual"
-                    >
-                        <Trash2 className="h-3 w-3" />
-                    </button>
-                )}
-                </div>
             </div>
+        </div>
 
-            <form
-                onSubmit={handleGoalSubmit}
-                className="space-y-3 pt-3 border-t border-zinc-800"
-            >
-                <h4 className="text-[11px] uppercase tracking-widest text-zinc-400 font-mono font-bold">
-                Ajustar Meta Financeira
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={goalForm.limit}
-                    onChange={(e) =>
-                    setGoalForm({ ...goalForm, limit: e.target.value })
-                    }
-                    placeholder="Valor Final R$"
-                    className="bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[var(--brand-border)]"
-                />
-                <input
-                    type="text"
-                    required
-                    value={goalForm.reason}
-                    onChange={(e) =>
-                    setGoalForm({ ...goalForm, reason: e.target.value })
-                    }
-                    placeholder="Motivo (ex: Carro)"
-                    className="bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[var(--brand-border)]"
-                />
-                </div>
-                <button
-                type="submit"
-                className="w-full bg-zinc-800 hover:bg-[var(--brand-dark)] border border-zinc-700 hover:border-[var(--brand-border)] text-zinc-300 hover:text-white rounded py-2 text-xs font-mono uppercase tracking-wider transition-all"
-                >
-                Atualizar Meta
-                </button>
-            </form>
-
-            <div className="h-44 pt-4 border-t border-zinc-800">
-                <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono mb-2">
-                Evolução de Economia
-                </h4>
-                <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={savingsData}>
-                    <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#27272a"
-                    vertical={false}
-                    />
-                    <XAxis
-                    dataKey="mes"
-                    stroke="#52525b"
-                    fontSize={9}
-                    tickLine={false}
-                    />
-                    <YAxis
-                    stroke="#52525b"
-                    fontSize={8}
-                    tickLine={false}
-                    />
-                    <Tooltip
-                    contentStyle={{
-                        backgroundColor: "#09090b",
-                        borderColor: "#27272a",
-                    }}
-                    labelStyle={{ color: "#a1a1aa", fontSize: 10 }}
-                    />
-                    <Line
-                    type="monotone"
-                    dataKey="guardado"
-                    stroke="var(--brand-primary)"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: "var(--brand-light)" }}
-                    activeDot={{ r: 6 }}
-                    />
-                </LineChart>
-                </ResponsiveContainer>
-            </div>
-            </div>
-
-            {/* Form & Table */}
-            <div className="holographic-card p-5 col-span-1 xl:col-span-2 flex flex-col space-y-6">
-            <div>
-                <h3 className="text-xs font-mono font-medium text-[var(--brand-light)] uppercase tracking-widest border-l border-[var(--brand-primary)] pl-2 mb-4">
-                Lançamento Manual & RAG Financeiro
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <form
-                    onSubmit={handleFinanceSubmit}
-                    className="space-y-3 bg-zinc-950 border border-zinc-800 p-4 rounded-xl"
-                >
-                    <h4 className="text-[11px] text-zinc-400 font-mono mb-2">
-                    Registrar nova despesa/ganho
-                    </h4>
+        <div id="finance-report-area" className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            
+            {/* Lado Esquerdo: Metas e Lançamento */}
+            <div className="space-y-6">
+                
+                {/* Meta Financeira */}
+                <div className="holographic-card p-5 space-y-5 rounded-2xl bg-zinc-950/50 border border-zinc-800/80 backdrop-blur-md">
                     <div>
-                    <label className="text-[10px] text-zinc-500 block mb-1">
-                        Descrição
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        value={financeForm.description}
-                        onChange={(e) =>
-                        setFinanceForm({
-                            ...financeForm,
-                            description: e.target.value,
-                        })
-                        }
-                        placeholder="Ex: Conta de Luz"
-                        className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
-                    />
+                        <h3 className="text-xs font-mono font-medium text-[var(--brand-light)] uppercase flex items-center gap-2 mb-1">
+                            <Target className="h-4 w-4" /> Meta de Economia Mensal
+                        </h3>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                    <div>
-                        <label className="text-[10px] text-zinc-500 block mb-1">
-                        Valor
-                        </label>
-                        <input
-                        type="number"
-                        step="0.01"
-                        required
-                        value={financeForm.value}
-                        onChange={(e) =>
-                            setFinanceForm({
-                            ...financeForm,
-                            value: e.target.value,
-                            })
-                        }
-                        placeholder="R$"
-                        className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-[10px] text-zinc-500 block mb-1">
-                        Tipo
-                        </label>
-                        <select
-                        value={financeForm.type}
-                        onChange={(e) =>
-                            setFinanceForm({
-                            ...financeForm,
-                            type: e.target.value,
-                            })
-                        }
-                        className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
-                        >
-                        <option value="Receita">Receita</option>
-                        <option value="Despesa">Despesa</option>
-                        </select>
-                    </div>
-                    </div>
-                    {financeForm.type === "Despesa" && (
-                    <div>
-                        <label className="text-[10px] text-zinc-500 block mb-1">
-                        Categoria de Despesa
-                        </label>
-                        <select
-                        value={financeForm.category}
-                        onChange={(e) =>
-                            setFinanceForm({
-                            ...financeForm,
-                            category: e.target.value,
-                            })
-                        }
-                        className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
-                        >
-                        <option value="Serviços">Serviços</option>
-                        <option value="Educação">Educação</option>
-                        <option value="Lazer">Lazer</option>
-                        <option value="Alimentação">Alimentação</option>
-                        <option value="Saúde">Saúde</option>
-                        </select>
-                    </div>
-                    )}
-                    <button
-                    type="submit"
-                    className="w-full mt-2 bg-zinc-800 hover:bg-[var(--brand-dark)] border border-zinc-700 hover:border-[var(--brand-border)] text-zinc-300 hover:text-white rounded py-2 text-xs font-mono uppercase tracking-wider transition-all"
-                    >
-                    Lançar Registro
-                    </button>
-                </form>
 
-                <div className="bg-[var(--brand-glow)] border border-[var(--brand-border)] p-4 rounded-xl flex flex-col justify-center items-center text-center space-y-3">
-                    <div className="text-[var(--brand-light)] h-8 w-8 rounded-full bg-black/50 flex items-center justify-center border border-[var(--brand-dark)]">
-                    <Info className="h-4 w-4" />
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-zinc-800/50">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-zinc-500 font-mono">Objetivo</span>
+                                <span className="text-sm font-semibold text-zinc-200">{currentGoal.reason}</span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] text-zinc-500 font-mono">Valor Limite</span>
+                                <span className="text-sm font-semibold text-[var(--brand-light)]">R$ {typeof currentGoal.limit === 'number' && !isNaN(currentGoal.limit) ? currentGoal.limit.toFixed(2) : '0.00'}</span>
+                            </div>
+                        </div>
+                        
+                        {/* Barra de Progresso do Saldo vs Meta */}
+                        <div className="bg-black/40 p-4 rounded-xl border border-zinc-800/50">
+                            <div className="flex justify-between text-[10px] font-mono text-zinc-400 mb-2">
+                                <span>Progresso da Meta</span>
+                                <span>{currentGoal.limit > 0 ? Math.max(0, (guardado / currentGoal.limit) * 100).toFixed(1) : 0}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-2.5 overflow-hidden">
+                                <div className="h-2.5 rounded-full transition-all duration-1000 ease-out" 
+                                     style={{ width: `${Math.min(100, Math.max(0, currentGoal.limit > 0 ? (guardado / currentGoal.limit) * 100 : 0))}%`, 
+                                              backgroundColor: guardado >= currentGoal.limit ? '#10b981' : 'var(--brand-primary)' }}>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                    <h4 className="text-xs font-bold text-white mb-1">
-                        Lançamento por IA RAG
-                    </h4>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed mb-3">
-                        A IA pode ler PDFS, documentos e planilhas,
-                        extraindo os dados e lançando automaticamente.
-                        Também funciona por comando de voz!
-                    </p>
-                    <label className="cursor-pointer bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-white text-xs font-mono py-2 px-4 rounded shadow-[0_0_10px_var(--brand-glow-strong)] transition-all">
-                        Fazer Upload Extrato (PDF)
-                        <input
-                        type="file"
-                        className="hidden transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_var(--brand-glow)]"
-                        onChange={(e) =>
-                            handleFileUpload(e, "Finanças")
-                        }
-                        accept=".pdf,.xml,.csv"
-                        />
-                    </label>
-                    </div>
-                </div>
-                </div>
-            </div>
 
-            <div className="border-t border-zinc-800 pt-4">
-                <h4 className="text-[11px] uppercase tracking-widest text-[var(--brand-light)] font-mono mb-2">
-                Monitoramento de Despesas (Limites do Obsidian)
-                </h4>
-                <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                    data={categoryChartData}
-                    layout="vertical"
-                    margin={{ top: 0, right: 30, left: 0, bottom: 0 }}
-                    >
-                    <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="#27272a"
-                        horizontal={true}
-                        vertical={false}
-                    />
-                    <XAxis
-                        type="number"
-                        stroke="#52525b"
-                        fontSize={9}
-                        tickLine={false}
-                    />
-                    <YAxis
-                        type="category"
-                        dataKey="category"
-                        stroke="#52525b"
-                        fontSize={9}
-                        tickLine={false}
-                        width={80}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                        backgroundColor: "#09090b",
-                        borderColor: "#18181b",
-                        }}
-                        labelStyle={{ color: "#a1a1aa", fontSize: 10 }}
-                    />
-                    <Bar
-                        dataKey="gasto"
-                        name="Gasto Atual"
-                        fill="var(--brand-primary)"
-                        radius={[0, 4, 4, 0]}
-                        barSize={12}
-                    >
-                        {categoryChartData.map((entry, index) => (
-                        <React.Fragment key={`cell-${index}`}>
-                            <Cell
-                            fill={
-                                entry.gasto > entry.limite
-                                ? "#ef4444"
-                                : "var(--brand-primary)"
-                            }
+                    <form onSubmit={handleGoalSubmit} className="space-y-3 pt-3 border-t border-zinc-800/50">
+                        <div className="grid grid-cols-2 gap-2">
+                            <input
+                                type="number" step="0.01" required
+                                value={goalForm.limit}
+                                onChange={(e) => setGoalForm({ ...goalForm, limit: e.target.value })}
+                                placeholder="Valor R$"
+                                className="bg-black/60 border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[var(--brand-border)] transition-colors"
                             />
-                        </React.Fragment>
-                        ))}
-                    </Bar>
-                    <Bar
-                        dataKey="limite"
-                        name="Limite Definido"
-                        fill="#3f3f46"
-                        radius={[0, 4, 4, 0]}
-                        barSize={12}
-                    />
-                    </BarChart>
-                </ResponsiveContainer>
+                            <input
+                                type="text" required
+                                value={goalForm.reason}
+                                onChange={(e) => setGoalForm({ ...goalForm, reason: e.target.value })}
+                                placeholder="Motivo (ex: Viagem)"
+                                className="bg-black/60 border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[var(--brand-border)] transition-colors"
+                            />
+                        </div>
+                        <button type="submit" className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg py-2.5 text-xs font-mono uppercase tracking-wider transition-all">
+                            Ajustar Meta
+                        </button>
+                    </form>
                 </div>
+
+                {/* Formulario de Lançamento */}
+                <div className="holographic-card p-5 rounded-2xl bg-zinc-950/50 border border-zinc-800/80 backdrop-blur-md">
+                    <h3 className="text-xs font-mono font-medium text-[var(--brand-light)] uppercase tracking-widest flex items-center gap-2 mb-4">
+                        <Edit2 className="h-4 w-4" /> Lançamento Rápido
+                    </h3>
+                    
+                    <form onSubmit={handleFinanceSubmit} className="space-y-4">
+                        <div>
+                            <label className="text-[10px] text-zinc-500 font-mono block mb-1">Descrição</label>
+                            <input
+                                type="text" required
+                                value={financeForm.description}
+                                onChange={(e) => setFinanceForm({ ...financeForm, description: e.target.value })}
+                                placeholder="Ex: Supermercado"
+                                className="w-full bg-black/60 border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] transition-colors"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-[10px] text-zinc-500 font-mono block mb-1">Valor</label>
+                                <input
+                                    type="number" step="0.01" required
+                                    value={financeForm.value}
+                                    onChange={(e) => setFinanceForm({ ...financeForm, value: e.target.value })}
+                                    placeholder="R$"
+                                    className="w-full bg-black/60 border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-zinc-500 font-mono block mb-1">Tipo</label>
+                                <select
+                                    value={financeForm.type}
+                                    onChange={(e) => setFinanceForm({ ...financeForm, type: e.target.value })}
+                                    className="w-full bg-black/60 border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] transition-colors"
+                                >
+                                    <option value="Receita">Receita</option>
+                                    <option value="Despesa">Despesa</option>
+                                </select>
+                            </div>
+                        </div>
+                        {financeForm.type === "Despesa" && (
+                            <div>
+                                <label className="text-[10px] text-zinc-500 font-mono block mb-1">Categoria</label>
+                                <select
+                                    value={financeForm.category}
+                                    onChange={(e) => setFinanceForm({ ...financeForm, category: e.target.value })}
+                                    className="w-full bg-black/60 border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] transition-colors"
+                                >
+                                    <option value="Serviços">Serviços</option>
+                                    <option value="Educação">Educação</option>
+                                    <option value="Lazer">Lazer</option>
+                                    <option value="Alimentação">Alimentação</option>
+                                    <option value="Saúde">Saúde</option>
+                                    <option value="Moradia">Moradia</option>
+                                    <option value="Transporte">Transporte</option>
+                                    <option value="Outros">Outros</option>
+                                </select>
+                            </div>
+                        )}
+                        <button type="submit" className="w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-black font-bold rounded-lg py-3 text-xs font-mono uppercase tracking-wider transition-all shadow-[0_0_15px_var(--brand-glow)]">
+                            {financeForm.id ? "Salvar Alteração" : "Lançar Registro"}
+                        </button>
+                        {financeForm.id && (
+                            <button
+                                type="button"
+                                onClick={() => setFinanceForm({ id: null, value: "", type: "Despesa", category: "Educação", description: "" })}
+                                className="w-full bg-transparent hover:bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-lg py-2 text-xs font-mono uppercase tracking-wider transition-all"
+                            >
+                                Cancelar
+                            </button>
+                        )}
+                    </form>
+
+                    <div className="mt-6 pt-5 border-t border-zinc-800/50">
+                        <label className="cursor-pointer flex items-center justify-center gap-2 w-full border border-dashed border-[var(--brand-primary)] bg-[var(--brand-primary)]/5 hover:bg-[var(--brand-primary)]/10 text-[var(--brand-light)] text-xs font-mono py-4 px-4 rounded-xl transition-all text-center">
+                            <Info className="h-4 w-4" /> Importar Extrato (PDF/CSV) via IA
+                            <input
+                                type="file"
+                                className="hidden"
+                                onChange={(e) => handleFileUpload(e, "Finanças")}
+                                accept=".pdf,.xml,.csv"
+                            />
+                        </label>
+                    </div>
+                </div>
+
             </div>
 
-            <div className="flex-1 min-h-[200px] overflow-x-auto mt-4 pt-4 border-t border-zinc-800">
-                <table className="w-full text-left font-mono text-[11px] border-collapse relative">
-                <thead className="sticky top-0 bg-zinc-900/90 backdrop-blur z-10">
-                    <tr className="border-b border-zinc-800 text-zinc-500">
-                    <th className="pb-2">Data e Hora (Local)</th>
-                    <th className="pb-2">Local/Lançamento</th>
-                    <th className="pb-2">Categoria</th>
-                    <th className="pb-2 text-right">Valor</th>
-                    <th className="pb-2"></th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-850">
-                    {systemState?.finances?.map((item: any) => (
-                    <tr key={item.id} className="text-zinc-300 group">
-                        <td className="py-2.5 text-zinc-500">
-                        {new Date(item.date).toLocaleString("pt-BR", {
-                            hour12: false,
-                        })}
-                        </td>
-                        <td className="py-2.5 font-semibold text-white">
-                        {item.description}
-                        </td>
-                        <td className="py-2.5">
-                        <span className="px-1.5 py-0.5 bg-zinc-950 border border-zinc-800 text-zinc-400 text-[10px] rounded">
-                            {item.category}
-                        </span>
-                        </td>
-                        <td className="py-2.5 text-right font-medium text-[var(--brand-light)]">
-                        R$ {typeof item.value === 'number' && !isNaN(item.value) ? item.value.toFixed(2) : '0.00'}
-                        </td>
-                        <td className="py-2.5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                            onClick={() => handleDeleteFinance(item.description)}
-                            className="text-zinc-600 hover:text-red-500 transition-colors px-2"
-                        >
-                            <Trash2 className="h-3 w-3" />
-                        </button>
-                        </td>
-                    </tr>
-                    ))}
-                </tbody>
-                </table>
-            </div>
+            {/* Lado Direito: Dashboards e Tabela */}
+            <div className="col-span-1 xl:col-span-2 flex flex-col space-y-6">
+                
+                {/* Gráficos */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Gráfico de Evolução (Composed) */}
+                    <div className="holographic-card p-5 rounded-2xl bg-zinc-950/50 border border-zinc-800/80 backdrop-blur-md h-[320px] flex flex-col">
+                        <h4 className="text-[11px] uppercase tracking-widest text-[var(--brand-light)] font-mono mb-4 flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4" /> Evolução de Fluxo de Caixa
+                        </h4>
+                        <div className="flex-1 w-full">
+                            {savingsData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={savingsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                                        <XAxis dataKey="mes" stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `R$${value >= 1000 ? (value/1000).toFixed(1)+'k' : value}`} />
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "8px" }}
+                                            itemStyle={{ fontSize: 11, fontFamily: "monospace" }}
+                                            labelStyle={{ color: "#a1a1aa", fontSize: 12, marginBottom: "8px", fontWeight: "bold" }}
+                                            formatter={(value: number) => [`R$ ${value.toFixed(2)}`, undefined]}
+                                        />
+                                        <Legend wrapperStyle={{ fontSize: 10, paddingTop: "10px" }} />
+                                        <Bar dataKey="receita" name="Receita" fill="#10b981" barSize={10} radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="despesa" name="Despesa" fill="#ef4444" barSize={10} radius={[4, 4, 0, 0]} />
+                                        <Line type="monotone" dataKey="acumulado" name="Acumulado" stroke="var(--brand-primary)" strokeWidth={3} dot={{ r: 4, fill: "black", stroke: "var(--brand-primary)", strokeWidth: 2 }} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-zinc-600 text-xs font-mono">Sem dados históricos</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Gráfico de Categorias (Pie) */}
+                    <div className="holographic-card p-5 rounded-2xl bg-zinc-950/50 border border-zinc-800/80 backdrop-blur-md h-[320px] flex flex-col">
+                        <h4 className="text-[11px] uppercase tracking-widest text-[var(--brand-light)] font-mono mb-4 flex items-center gap-2">
+                            <PieChartIcon className="h-4 w-4" /> Despesas por Categoria
+                        </h4>
+                        <div className="flex-1 w-full relative">
+                            {categoryChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={categoryChartData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            stroke="none"
+                                        >
+                                            {categoryChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "8px" }}
+                                            itemStyle={{ fontSize: 11, fontFamily: "monospace", color: "#fff" }}
+                                            formatter={(value: number) => [`R$ ${value.toFixed(2)}`, "Valor"]}
+                                        />
+                                        <Legend 
+                                            layout="vertical" 
+                                            verticalAlign="middle" 
+                                            align="right"
+                                            iconType="circle"
+                                            wrapperStyle={{ fontSize: 10, lineHeight: "24px" }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-zinc-600 text-xs font-mono">Sem dados de despesa</div>
+                            )}
+                            
+                            {/* Centro do Gráfico */}
+                            {categoryChartData.length > 0 && (
+                                <div className="absolute top-1/2 left-[50%] md:left-[35%] lg:left-[30%] xl:left-[35%] -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                                    <span className="block text-[10px] text-zinc-500 font-mono">Total</span>
+                                    <span className="block text-sm font-bold text-white">R$ {totalExpense.toFixed(0)}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabela de Transações */}
+                <div className="holographic-card rounded-2xl bg-zinc-950/50 border border-zinc-800/80 backdrop-blur-md overflow-hidden flex flex-col flex-1">
+                    <div className="p-4 border-b border-zinc-800/80 bg-black/20 flex justify-between items-center">
+                        <h4 className="text-[11px] uppercase tracking-widest text-zinc-300 font-mono font-bold">Histórico de Transações</h4>
+                    </div>
+                    <div className="flex-1 overflow-x-auto">
+                        <table className="w-full text-left font-mono text-[11px] border-collapse relative">
+                            <thead className="sticky top-0 bg-zinc-900/95 backdrop-blur z-10 shadow-sm">
+                                <tr className="text-zinc-500">
+                                    <th className="py-3 px-4 font-medium">Data</th>
+                                    <th className="py-3 px-4 font-medium">Descrição</th>
+                                    <th className="py-3 px-4 font-medium">Categoria</th>
+                                    <th className="py-3 px-4 font-medium text-right">Valor</th>
+                                    <th className="py-3 px-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-800/50">
+                                {systemState?.finances && systemState.finances.length > 0 ? (
+                                    systemState.finances.slice().sort((a: any, b: any) => {
+                                        const dA = new Date(a.date.split('T')[0]);
+                                        const dB = new Date(b.date.split('T')[0]);
+                                        return dB.getTime() - dA.getTime() || b.id - a.id;
+                                    }).map((item: any) => (
+                                        <tr key={item.id} className="text-zinc-300 group hover:bg-zinc-800/20 transition-colors">
+                                            <td className="py-3 px-4 text-zinc-500 whitespace-nowrap">
+                                                {item.date ? item.date.split('T')[0].split('-').reverse().join('/') : ''}
+                                            </td>
+                                            <td className="py-3 px-4 font-semibold text-white">
+                                                {item.description}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className={`px-2 py-1 rounded-md text-[10px] bg-black/40 border border-zinc-800 ${item.type === 'Receita' ? 'text-emerald-400 border-emerald-900/50' : 'text-zinc-400'}`}>
+                                                    {item.category}
+                                                </span>
+                                            </td>
+                                            <td className={`py-3 px-4 text-right font-medium ${item.type === 'Receita' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {item.type === 'Receita' ? '+' : '-'} R$ {typeof item.value === 'number' && !isNaN(item.value) ? item.value.toFixed(2) : '0.00'}
+                                            </td>
+                                            <td className="py-3 px-4 text-right opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                <button onClick={() => handleEditFinance(item)} className="text-zinc-500 hover:text-[var(--brand-primary)] transition-colors p-1" title="Editar">
+                                                    <Edit2 className="h-3.5 w-3.5" />
+                                                </button>
+                                                <button onClick={() => handleDeleteFinance(item.description)} className="text-zinc-500 hover:text-red-500 transition-colors p-1 ml-1" title="Excluir">
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={5} className="py-8 text-center text-zinc-500 text-xs font-mono">
+                                            Nenhuma transação registrada.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

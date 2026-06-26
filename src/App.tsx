@@ -52,6 +52,7 @@ import FinanceDashboard from "./components/FinanceDashboard";
 import MCPSettings from "./components/MCPSettings";
 import TokensManager from "./components/TokensManager";
 import UserManager from "./components/UserManager";
+import DatabaseViewer from "./components/DatabaseViewer";
 
 const CyberGauge = ({ value, onChange, color }: { value: number, onChange: (v: number) => void, color: string }) => {
   const radius = 30;
@@ -134,7 +135,7 @@ const HOLO_THEMES = {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    "jarvis" | "home" | "system" | "finance" | "agenda" | "settings" | "readme" | "diagnostics"
+    "jarvis" | "home" | "system" | "finance" | "agenda" | "database" | "settings" | "readme" | "diagnostics"
   >("jarvis");
   const [settingsTab, setSettingsTab] = useState<
     | "general"
@@ -843,6 +844,18 @@ export default function App() {
           </button>
 
           <button
+            onClick={() => setActiveTab("database")}
+            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "database"
+              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
+              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
+              }`}
+            title="Banco de Dados"
+          >
+            <Database className="h-4 w-4 shrink-0" />
+            {isSidebarOpen && <span>Banco de Dados</span>}
+          </button>
+
+          <button
             onClick={() => setActiveTab("settings")}
             className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "settings"
               ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
@@ -1502,7 +1515,15 @@ export default function App() {
                   </div>
                 )}
 
-                {/* TAB 4: CONFIGURAÇÕES & IOT */}
+                {/* TAB 5: DATABASE & RAG */}
+                {activeTab === "database" && (
+                  <DatabaseViewer
+                    systemState={systemState}
+                    fetchSystemState={fetchSystemState}
+                  />
+                )}
+
+                {/* TAB 6: CONFIGURAÇÕES & IOT */}
                 {activeTab === "settings" && (
                   <div className="flex h-[calc(100vh-140px)] w-full overflow-hidden border border-zinc-800/40 rounded-xl bg-black/20 animate-fade-in relative z-10 shadow-2xl">
                     {/* Left Sidebar for Tabs */}

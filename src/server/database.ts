@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import fs from 'fs';
+import path from 'path';
 
 export const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || "file:./prisma/dev.db" });
 export const prisma = new PrismaClient({ adapter });
@@ -104,5 +106,29 @@ export async function loadDB() {
         }
     } catch (e: any) {
         console.error("[Database Load Error]: Fallback memory sync failed.", e?.message || e);
+    }
+
+    // Sync Physical Obsidian Vault to Memory
+    try {
+        const vaultDir = process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault");
+        if (fs.existsSync(vaultDir)) {
+            jarvisState.obsidianNotes = [];
+            const readFilesRecursively = (dir: string) => {
+                const files = fs.readdirSync(dir);
+                for (const file of files) {
+                    const fullPath = path.join(dir, file);
+                    if (fs.statSync(fullPath).isDirectory()) {
+                        readFilesRecursively(fullPath);
+                    } else if (file.endsWith('.md')) {
+                        const relativePath = path.relative(vaultDir, fullPath).replace(/\\/g, '/');
+                        const content = fs.readFileSync(fullPath, 'utf-8');
+                        jarvisState.obsidianNotes.push({ path: relativePath, content });
+                    }
+                }
+            };
+            readFilesRecursively(vaultDir);
+        }
+    } catch (e: any) {
+        console.error("Erro ao carregar arquivos do Obsidian Vault:", e?.message);
     }
 }

@@ -848,6 +848,27 @@ export default React.memo(function JarvisAssistant({
               </motion.div>
             );
           })}
+          {appState === "processing" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="flex gap-3 justify-start"
+            >
+              <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                C
+              </div>
+              <div className="max-w-[85%] flex flex-col gap-1.5">
+                <div className="px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md bg-black/60 text-cyan-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_rgba(6,182,212,0.15)] flex items-center gap-2">
+                  <span className="font-mono text-xs text-zinc-400">Processando</span>
+                  <span className="flex gap-1 items-center h-2">
+                    <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" style={{ animationDelay: "0.15s" }} />
+                    <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" style={{ animationDelay: "0.3s" }} />
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
           <div ref={historyEndRef} />
         </div>
 

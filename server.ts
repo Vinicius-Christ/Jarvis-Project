@@ -13,6 +13,7 @@ import os from "os";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 import { prisma, adapter, jarvisState, loadDB, DB_STATE_KEY } from "./src/server/database";
 import { connectHomeAssistantWS, callHAService, haWS, haMessageId } from "./src/server/homeAssistant";
@@ -51,26 +52,30 @@ if (process.env.VITE_SERVER_URL) {
     allowedOrigins.push(url.origin);
   } catch { }
 }
+if (process.env.CLOUDFLARE_DOMAIN) {
+  allowedOrigins.push(`https://${process.env.CLOUDFLARE_DOMAIN}`);
+}
+
+const LOCAL_IP_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (
-      !origin ||
-      allowedOrigins.includes(origin) ||
-      origin.endsWith('.run.app') ||
-      origin.includes('ais-dev-') ||
-      origin.includes('ais-pre-') ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1') ||
-      origin.includes('192.168.') ||
-      origin.includes('10.') ||
-      origin.includes('172.') ||
-      /^http(s)?:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./.test(origin)
-    ) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] Origem bloqueada: ${origin}`);
-      callback(new Error('Bloqueado por CORS'));
+    if (!origin) {
+      return callback(null, true);
     }
+
+    // 1. Checagem exata na whitelist
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // 2. Validação estrita de IPs locais
+    if (LOCAL_IP_REGEX.test(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn(`[CORS] Origem bloqueada: ${origin}`);
+    callback(new Error('Bloqueado por CORS'));
   },
   credentials: true
 }));
@@ -78,15 +83,24 @@ app.use(cors({
 app.use(express.json());
 app.set("trust proxy", true); // Handle Cloudflare tunneling correctly
 
-const JWT_SECRET = process.env.JWT_SECRET || "jarvis_super_secret_key_007";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error("ERRO CRÍTICO: JWT_SECRET não configurado no arquivo .env!");
+  process.exit(1);
+}
 
 // Add the auth middleware
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", rateLimiter(5), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Missing credentials" });
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || user.password !== password) {
+  if (!user) {
+    return res.status(401).json({ error: "Credenciais inválidas" });
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
     return res.status(401).json({ error: "Credenciais inválidas" });
   }
 
@@ -100,8 +114,10 @@ app.get("/api/users", async (req, res) => {
 });
 app.post("/api/users", async (req, res) => {
   const { email, password, role } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Missing credentials" });
   try {
-    const user = await prisma.user.create({ data: { email, password, role: role || "user" }, select: { id: true, email: true, role: true } });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({ data: { email, password: hashedPassword, role: role || "user" }, select: { id: true, email: true, role: true } });
     res.json(user);
   } catch (e) {
     res.status(400).json({ error: "Failed to create user. Email may exist." });
@@ -111,7 +127,9 @@ app.put("/api/users/:id", async (req, res) => {
   const { email, password, role } = req.body;
   const data: any = {};
   if (email) data.email = email;
-  if (password) data.password = password;
+  if (password) {
+    data.password = await bcrypt.hash(password, 10);
+  }
   if (role) data.role = role;
   try {
     const user = await prisma.user.update({ where: { id: Number(req.params.id) }, data, select: { id: true, email: true, role: true } });
@@ -565,40 +583,72 @@ async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: strin
   }
 }
 
+const MAX_MESSAGE_LENGTH = 10000;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+function getRelevantVaultContext(notes: any[], userMessage: string, maxTokens = 1500): string {
+  const coreNotes = notes.filter(n =>
+    n.path.toLowerCase().includes("contexto") || n.path.toLowerCase().includes("regras")
+  );
+
+  const lowerMsg = userMessage.toLowerCase();
+  const stopwords = ["para", "sobre", "qual", "como", "você", "onde", "quem", "este", "esta", "nesse", "nesta"];
+  const keywords = lowerMsg
+    .split(/\s+/)
+    .map(w => w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))
+    .filter(w => w.length > 4 && !stopwords.includes(w));
+
+  const relatedNotes = notes.filter(n => {
+    const noteName = n.path.toLowerCase();
+    const isCore = noteName.includes("contexto") || noteName.includes("regras");
+    if (isCore) return false;
+
+    return keywords.some(kw => noteName.includes(kw) || n.content.toLowerCase().includes(kw)) ||
+           lowerMsg.includes(noteName.replace(".md", ""));
+  }).slice(0, 3); // Max 3 related notes
+
+  const selectedNotes = [...coreNotes, ...relatedNotes];
+  let contextPrompt = `[MEMÓRIA DE LONGO PRAZO - OBSIDIAN VAULT]:\n`;
+  let totalLength = 0;
+
+  for (const note of selectedNotes) {
+    const content = note.content.length > 500
+      ? note.content.slice(0, 500) + "\n*(conteúdo truncado para otimização de contexto)*"
+      : note.content;
+
+    const formattedNote = `--- ${note.path} ---\n${content}\n\n`;
+    if ((totalLength + formattedNote.length) / 4 > maxTokens) {
+      break;
+    }
+    contextPrompt += formattedNote;
+    totalLength += formattedNote.length;
+  }
+
+  if (selectedNotes.length === 0) {
+    contextPrompt += `*(Nenhuma nota de longo prazo acionada para o contexto atual)*\n`;
+  }
+
+  return contextPrompt;
+}
+
 app.post("/api/chat", rateLimiter(15), async (req, res) => {
   const { message, history, file, model } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: "Mensagem vazia." });
+  if (!message || typeof message !== "string") {
+    return res.status(400).json({ error: "Mensagem inválida ou vazia." });
+  }
+
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return res.status(400).json({ error: "Mensagem muito longa." });
+  }
+
+  if (file) {
+    if (file.size && file.size > MAX_FILE_SIZE) {
+      return res.status(400).json({ error: "Arquivo anexo excede o tamanho máximo de 10MB." });
+    }
   }
 
   // 1. Build prompt context using Obsidian Notes
-  let contextPrompt = `[MEMÓRIA DE LONGO PRAZO - OBSIDIAN VAULT]:\n`;
-  const lowerMsg = message.toLowerCase();
-  
-  // Otimização: Se o cofre for pequeno (< 15.000 caracteres), envia tudo para a IA ficar super inteligente.
-  // Caso contrário, busca por palavras-chave e sempre inclui arquivos que contenham 'Contexto' ou 'Regras' no nome.
-  const totalVaultSize = jarvisState.obsidianNotes.reduce((acc, n) => acc + n.content.length, 0);
-  let relevantNotes = [];
-  
-  if (totalVaultSize < 15000) {
-      relevantNotes = jarvisState.obsidianNotes;
-  } else {
-      relevantNotes = jarvisState.obsidianNotes.filter(n => {
-          const isCore = n.path.toLowerCase().includes("contexto") || n.path.toLowerCase().includes("regras");
-          const matchesQuery = lowerMsg.includes(n.path.toLowerCase().replace('.md','')) || 
-                               n.content.toLowerCase().split(' ').some(word => word.length > 5 && lowerMsg.includes(word)) ||
-                               lowerMsg.includes("resumo") || lowerMsg.includes("tudo") || lowerMsg.includes("vault");
-          return isCore || matchesQuery;
-      }).slice(0, 10);
-  }
-  
-  if (relevantNotes.length > 0) {
-    relevantNotes.forEach(note => {
-      contextPrompt += `--- ${note.path} ---\n${note.content}\n\n`;
-    });
-  } else {
-    contextPrompt += `*(Nenhuma nota de longo prazo acionada para o contexto atual)*\n`;
-  }
+  let contextPrompt = getRelevantVaultContext(jarvisState.obsidianNotes, message);
 
   // 1b. Inject Real Agenda/Calendar database events (Context Limited)
   contextPrompt += `\n[MEMÓRIA DE CURTO PRAZO - AGENDA (Últimos 7 dias e Futuro)]:\n`;
@@ -763,6 +813,12 @@ IMPORTANTE: Se for uma MERA CONSULTA ("quais meus gastos?"), responda em linguag
         ];
       }
 
+      const recentHistory = (jarvisState.conversations || []).slice(-10);
+      const historyMessages = recentHistory.map((c: any) => ({
+        role: c.sender === "JARVIS" ? "assistant" : "user",
+        content: c.text
+      }));
+
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -774,6 +830,7 @@ IMPORTANTE: Se for uma MERA CONSULTA ("quais meus gastos?"), responda em linguag
           model: finalModel,
           messages: [
             { role: "system", content: systemInstruction },
+            ...historyMessages,
             { role: "user", content: userMessageContent }
           ],
           temperature: 0.7
@@ -1390,24 +1447,26 @@ app.post("/api/ai/persona", (req, res) => {
 });
 
 // Endpoint: Individual Docker Container Control Actions
+const VALID_CONTAINERS = ["n8n", "homeassistant", "redis", "chromadb", "postgres", "ollama"];
+const VALID_ACTIONS = ["start", "stop", "pause", "unpause", "restart"];
+
 app.post("/api/docker/action", (req, res) => {
   const { container, action } = req.body;
   if (!container || !action) return res.status(400).json({ error: "Faltam parâmetros." });
 
+  if (!VALID_CONTAINERS.includes(container)) {
+    return res.status(400).json({ error: "Container inválido." });
+  }
+  if (!VALID_ACTIONS.includes(action)) {
+    return res.status(400).json({ error: "Ação inválida." });
+  }
+
   console.log(`[DOCKER] Ação '${action}' solicitada para o container '${container}'`);
 
-  let cmd = "";
-  if (action === "start") cmd = `docker compose start ${container}`;
-  else if (action === "stop") cmd = `docker compose stop ${container}`;
-  else if (action === "pause") cmd = `docker compose pause ${container}`;
-  else if (action === "unpause") cmd = `docker compose unpause ${container}`;
-  else if (action === "restart") cmd = `docker compose restart ${container}`;
-
-  if (cmd) {
-    exec(cmd, { cwd: process.cwd(), timeout: 15000 }, (err) => {
-      // Ignorar erros de rede na sandbox
-    });
-  }
+  const cmd = `docker compose ${action} ${container}`;
+  exec(cmd, { cwd: process.cwd(), timeout: 15000 }, (err) => {
+    // Ignorar erros de rede na sandbox
+  });
 
   // Sincronizar o estado simulado local para que o preview na nuvem funcione perfeitamente
   if (!jarvisState.containerMockStates) {

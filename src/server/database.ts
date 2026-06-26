@@ -11,7 +11,7 @@ export const DB_STATE_KEY = "global_state";
 export let jarvisState: any = {
     githubRepo: "",
     githubToken: "",
-    googleSheetUrl: "https://docs.google.com/spreadsheets/d/13wmGhejq3V78ZHSHl-SxayDZM7pk9s3qYRPVtZnbhgg/edit?usp=sharing",
+    googleSheetUrl: process.env.GOOGLE_SHEETS_URL || "",
     systemActive: true,
     activePersona: "friday",
     containerMockStates: {
@@ -32,7 +32,7 @@ export let jarvisState: any = {
         ac: { state: "off", temp: 24 },
         devices: [] as any[],
         ip: "",
-        token: "COLOQUE_SEU_TOKEN_AQUI",
+        token: process.env.HA_TOKEN || "",
         wsStatus: "disconnected",
         hiddenDevices: [] as string[],
         modesConfig: {

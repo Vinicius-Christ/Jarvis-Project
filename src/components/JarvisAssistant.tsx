@@ -273,81 +273,7 @@ export default React.memo(function JarvisAssistant({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // CYBER Dashboard Media Refs
-  const cameraVideoRef = useRef<HTMLVideoElement>(null);
-  const screenVideoRef = useRef<HTMLVideoElement>(null);
-  const [mediaMode, setMediaMode] = useState<"none" | "camera" | "screen">("none");
   const [activePopup, setActivePopup] = useState<{ type: "image", url: string } | null>(null);
-
-  // Stop current media streams helper
-  const stopMediaTracks = () => {
-    if (cameraVideoRef.current && cameraVideoRef.current.srcObject) {
-      const stream = cameraVideoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      cameraVideoRef.current.srcObject = null;
-    }
-    if (screenVideoRef.current && screenVideoRef.current.srcObject) {
-      const stream = screenVideoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      screenVideoRef.current.srcObject = null;
-    }
-  };
-
-  const toggleCameraMode = async () => {
-    if (mediaMode === "camera") {
-      stopMediaTracks();
-      setMediaMode("none");
-      return;
-    }
-    try {
-      stopMediaTracks();
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (cameraVideoRef.current) {
-        cameraVideoRef.current.srcObject = stream;
-        setMediaMode("camera");
-      }
-    } catch (e) {
-      console.error("Camera access denied", e);
-    }
-  };
-
-  const toggleScreenMode = async () => {
-    if (mediaMode === "screen") {
-      stopMediaTracks();
-      setMediaMode("none");
-      return;
-    }
-    try {
-      stopMediaTracks();
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      if (screenVideoRef.current) {
-        screenVideoRef.current.srcObject = stream;
-        setMediaMode("screen");
-      }
-      stream.getVideoTracks()[0].onended = () => {
-        setMediaMode("none");
-        stopMediaTracks();
-      };
-    } catch (e) {
-      console.error("Screen share access denied", e);
-    }
-  };
-
-  // Extract base64 frame from active video
-  const captureFrame = (): string | null => {
-    const video = mediaMode === "camera" ? cameraVideoRef.current : mediaMode === "screen" ? screenVideoRef.current : null;
-    if (!video || !video.srcObject) return null;
-
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = video.videoWidth;
-    tempCanvas.height = video.videoHeight;
-    const ctx = tempCanvas.getContext("2d");
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-      return tempCanvas.toDataURL("image/jpeg", 0.7);
-    }
-    return null;
-  };
   const recognitionRef = useRef<any>(null);
   const historyEndRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -705,7 +631,11 @@ export default React.memo(function JarvisAssistant({
         content: (event.target?.result as string) || "",
       });
     };
-    reader.readAsText(file);
+    if (file.type.startsWith("image/")) {
+      reader.readAsDataURL(file);
+    } else {
+      reader.readAsText(file);
+    }
     e.target.value = "";
   };
 
@@ -717,19 +647,8 @@ export default React.memo(function JarvisAssistant({
 
     isProcessingRef.current = true;
 
-    const query = inputText || (mediaMode !== "none" ? `Análise de Visão Computacional (Spatial Intelligence): Descreva em detalhes os objetos, a cena, leia os textos visíveis e infira o contexto da imagem de forma altamente analítica. Atue como um especialista em visão de máquina e relate exatamente o que o sensor capturou.` : `Processar anexo ${attachedFile?.name}`);
+    const query = inputText || `Processar anexo ${attachedFile?.name}`;
     let fileToSend = attachedFile;
-    if (mediaMode !== "none") {
-      const frameBase64 = captureFrame();
-      if (frameBase64) {
-        fileToSend = {
-          name: "vision_frame.jpg",
-          type: "image/jpeg",
-          size: Math.round(frameBase64.length * 0.75),
-          content: frameBase64,
-        };
-      }
-    }
 
     setInputText("");
     setAttachedFile(null);
@@ -809,26 +728,7 @@ export default React.memo(function JarvisAssistant({
            </div>
         </div>
 
-        {/* Media Feeds */}
-        <div className="flex-1 flex flex-col gap-3 overflow-y-auto z-10 scrollbar-thin scrollbar-thumb-[var(--brand-primary)]/50">
-          {/* Camera Feed Widget */}
-          <div className="border border-[var(--brand-primary)]/30 rounded-xl bg-black/60 relative overflow-hidden h-40 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
-             <video ref={cameraVideoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-80" />
-             <div className="absolute top-2 left-2 px-2 py-1 bg-black/80 rounded text-[9px] font-mono uppercase text-[var(--brand-light)] border border-[var(--brand-primary)]/30 flex items-center gap-1">
-               <div className={`w-1.5 h-1.5 rounded-full ${mediaMode === 'camera' ? 'bg-red-500 animate-pulse' : 'bg-zinc-600'}`}></div>
-               OPTICAL SENSOR
-             </div>
-          </div>
-          
-          {/* Screen Share Feed Widget */}
-          <div className="border border-[var(--brand-primary)]/30 rounded-xl bg-black/60 relative overflow-hidden h-40 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
-             <video ref={screenVideoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-80" />
-             <div className="absolute top-2 left-2 px-2 py-1 bg-black/80 rounded text-[9px] font-mono uppercase text-[var(--brand-light)] border border-[var(--brand-primary)]/30 flex items-center gap-1">
-               <div className={`w-1.5 h-1.5 rounded-full ${mediaMode === 'screen' ? 'bg-red-500 animate-pulse' : 'bg-zinc-600'}`}></div>
-               SCREEN LINK
-             </div>
-          </div>
-        </div>
+
       </div>
 
       {/* ======================================================== */}
@@ -873,18 +773,8 @@ export default React.memo(function JarvisAssistant({
           </div>
         </div>
 
-        {/* Mode Status Indicator */}
-        <div className="absolute bottom-32 text-xs font-mono tracking-widest px-4 py-1.5 rounded-full border bg-black/50 backdrop-blur-md transition-colors duration-300">
-          <span className={mediaMode === 'camera' ? 'text-red-400 font-bold' : mediaMode === 'screen' ? 'text-blue-400 font-bold' : 'text-[var(--brand-light)]'}>
-            {mediaMode === 'camera' ? '>> VISION MODE ACTIVE <<' : mediaMode === 'screen' ? '>> SCREEN SHARE ACTIVE <<' : '>> SYSTEM STANDBY <<'}
-          </span>
-        </div>
-
         {/* Action Toolbar */}
         <div className="absolute bottom-10 flex gap-3 p-3 rounded-full border border-white/10 bg-zinc-950/80 backdrop-blur-xl shadow-2xl">
-          <button onClick={toggleCameraMode} className={`p-4 rounded-full transition-all cursor-pointer ${mediaMode === 'camera' ? 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
-             <Camera className="w-5 h-5" />
-          </button>
           <button onClick={handleMicToggle} className={`p-4 rounded-full transition-all cursor-pointer ${appState === 'listening' ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
              {appState === 'listening' ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
@@ -898,9 +788,6 @@ export default React.memo(function JarvisAssistant({
             }
           }} className={`p-4 rounded-full transition-all cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] shadow-[0_0_15px_var(--brand-glow-strong)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
              <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-pulse' : ''}`} />
-          </button>
-          <button onClick={toggleScreenMode} className={`p-4 rounded-full transition-all cursor-pointer ${mediaMode === 'screen' ? 'bg-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
-             <Monitor className="w-5 h-5" />
           </button>
           <button onClick={() => setIsVoiceModalOpen(true)} className="p-4 rounded-full transition-all cursor-pointer hover:bg-white/10 text-zinc-400 hover:text-white">
              <Sliders className="w-5 h-5" />
@@ -981,7 +868,7 @@ export default React.memo(function JarvisAssistant({
 
         {/* Input area */}
         <form onSubmit={handleSendText} className="p-4 border-t border-[var(--brand-primary)]/20 flex gap-3 items-center bg-black/60 backdrop-blur-xl z-10 shrink-0">
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt" className="hidden" />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" />
           <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-xl border border-[var(--brand-primary)]/30 bg-black/50 text-[var(--brand-light)] hover:bg-[var(--brand-primary)]/20 transition-all cursor-pointer">
             <Paperclip className="h-4 w-4" />
           </button>
@@ -997,7 +884,7 @@ export default React.memo(function JarvisAssistant({
             }
             className="flex-1 bg-black/50 border border-[var(--brand-primary)]/30 rounded-xl text-xs px-4 py-3 focus:outline-none focus:border-[var(--brand-primary)] focus:shadow-[0_0_20px_rgba(6,182,212,0.2)] text-white placeholder:text-[var(--brand-light)]/50 transition-all font-mono"
           />
-          <button type="submit" disabled={appState === "processing" || (!inputText.trim() && !attachedFile && mediaMode === "none")} className="px-5 py-3 bg-[var(--brand-primary)]/80 hover:bg-[var(--brand-primary)] text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center font-bold cursor-pointer">
+          <button type="submit" disabled={appState === "processing" || (!inputText.trim() && !attachedFile)} className="px-5 py-3 bg-[var(--brand-primary)]/80 hover:bg-[var(--brand-primary)] text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center font-bold cursor-pointer">
             <Send className="h-4 w-4" />
           </button>
         </form>

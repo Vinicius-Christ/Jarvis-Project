@@ -782,114 +782,43 @@ export default function App() {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-1.5 p-2 font-mono flex-1 overflow-y-auto overflow-x-hidden w-full">
-          <button
-            onClick={() => setActiveTab("jarvis")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "jarvis"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_4px_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="JARVIS Core"
-          >
-            <Sliders className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>JARVIS Core</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("home")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "home"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Casa Inteligente"
-          >
-            <Home className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Casa Inteligente</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("system")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "system"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Sistema & DevOps"
-          >
-            <Activity className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Sistema & DevOps</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("finance")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "finance"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Financeiro"
-          >
-            <Database className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Financeiro</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("agenda")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "agenda"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Agenda"
-          >
-            <BookOpen className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Agenda</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("database")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "database"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Banco de Dados"
-          >
-            <Database className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Banco de Dados</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "settings"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Configurações & IoT"
-          >
-            <Settings className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Configs & Integrações</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("diagnostics")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "diagnostics"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Diagnósticos & SSH"
-          >
-            <Terminal className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Diagnósticos & SSH</span>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("readme")}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer whitespace-nowrap w-full border ${activeTab === "readme"
-              ? "bg-[var(--brand-glow)] text-[var(--brand-light)] border-[var(--brand-border)] font-bold shadow-[0_0_12px_var(--brand-glow-strong)]"
-              : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/60"
-              }`}
-            title="Documentação Técnica (README)"
-          >
-            <Info className="h-4 w-4 shrink-0" />
-            {isSidebarOpen && <span>Documentação</span>}
-          </button>
+        <nav className="flex flex-col gap-1.5 p-2 font-mono flex-1 overflow-y-auto overflow-x-hidden w-full relative">
+          {[
+            { id: "jarvis", label: "JARVIS Core", icon: Sliders },
+            { id: "home", label: "Casa Inteligente", icon: Home },
+            { id: "system", label: "Sistema & DevOps", icon: Activity },
+            { id: "finance", label: "Financeiro", icon: Database },
+            { id: "agenda", label: "Agenda", icon: BookOpen },
+            { id: "database", label: "Banco de Dados", icon: Database },
+            { id: "settings", label: "Configs & Integrações", icon: Settings },
+            { id: "diagnostics", label: "Diagnósticos & SSH", icon: Terminal },
+            { id: "readme", label: "Documentação", icon: Info },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as any)}
+                className={`relative flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs transition-all duration-300 cursor-pointer whitespace-nowrap w-full group ${
+                  activeTab === item.id
+                    ? "text-[var(--brand-light)] font-bold"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40"
+                }`}
+                title={item.label}
+              >
+                {activeTab === item.id && (
+                  <motion.div
+                    layoutId="activeSidebarTabIndicator"
+                    className="absolute inset-0 bg-purple-500/10 border border-purple-500/40 rounded-lg shadow-[inset_0_0_12px_rgba(168,85,247,0.1),0_0_15px_rgba(168,85,247,0.2)]"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <Icon className="h-4 w-4 shrink-0 relative z-10" />
+                {isSidebarOpen && <span className="relative z-10">{item.label}</span>}
+              </button>
+            );
+          })}
 
           <div className="flex-1 mt-4"></div>
 
@@ -898,7 +827,7 @@ export default function App() {
               localStorage.removeItem("jarvis_token");
               window.location.reload();
             }}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer w-full text-red-500 hover:bg-red-500/10 hover:text-red-400"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer w-full text-red-500 hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 shadow-none hover:shadow-[0_0_10px_rgba(239,68,68,0.2)]"
             title="Sair"
           >
             <LogOut className="h-4 w-4 shrink-0" />

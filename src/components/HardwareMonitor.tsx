@@ -49,7 +49,7 @@ export function SystemHealthMonitor() {
   }, []);
 
   return (
-    <div className="glass-panel p-5 rounded-2xl space-y-4">
+    <div className="holographic-card hover-glow space-y-4">
       <div className="flex justify-between items-center border-b border-white/5 pb-2">
         <h3 className="text-xs font-mono font-bold tracking-widest text-[var(--brand-light)] uppercase flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 text-[var(--brand-light)] animate-pulse" />
@@ -158,7 +158,7 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
   }, []);
 
   return (
-    <div className="glass-panel p-5 rounded-2xl space-y-4">
+    <div className="holographic-card hover-glow space-y-4">
       <div className="flex justify-between items-center border-l border-[var(--brand-primary)] pl-2">
         <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase">
           Métricas de VRAM & Processamento

@@ -166,7 +166,7 @@ export default function FinanceDashboard({
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-        <div className="flex justify-between items-center glass-panel p-4 rounded-2xl bg-gradient-to-r from-zinc-900 to-zinc-950 border border-zinc-800 shadow-xl">
+        <div className="flex justify-between items-center holographic-card bg-gradient-to-r from-purple-900/20 to-zinc-950 border-purple-500/30 hover-glow">
             <div className="flex flex-col">
                 <h3 className="text-[var(--brand-light)] font-mono text-sm font-bold uppercase tracking-widest flex items-center gap-2">
                     <Wallet className="h-5 w-5" /> Inteligência Financeira
@@ -190,14 +190,14 @@ export default function FinanceDashboard({
                 <span className="text-[11px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Total de Receitas</span>
                 <span className="text-2xl font-semibold text-emerald-400">R$ {totalIncome.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
-            <div className="bg-zinc-950 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+            <div className="glass-panel hover-glow p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <TrendingDown className="h-16 w-16 text-red-500" />
                 </div>
                 <span className="text-[11px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Total de Despesas</span>
                 <span className="text-2xl font-semibold text-red-400">R$ {totalExpense.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
-            <div className="bg-zinc-950 border border-[var(--brand-primary)] p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group shadow-[0_0_20px_var(--brand-glow)]">
+            <div className="glass-panel hover-glow border-[var(--brand-primary)] p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group shadow-[0_0_20px_var(--brand-glow)]">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Wallet className="h-16 w-16 text-[var(--brand-light)]" />
                 </div>

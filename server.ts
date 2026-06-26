@@ -90,7 +90,7 @@ if (!JWT_SECRET) {
 }
 
 // Add the auth middleware
-app.post("/api/auth/login", rateLimiter(5), async (req, res) => {
+app.post("/api/auth/login", rateLimiter(50), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Missing credentials" });
 
@@ -289,7 +289,7 @@ function syncNoteToVault(notePath: string, content: string) {
 
 process.on("exit", () => {
   saveDBSync();
-  prisma.$disconnect().catch(() => {});
+  prisma.$disconnect().catch(() => { });
 });
 process.on("SIGINT", async () => {
   saveDBSync();
@@ -349,10 +349,10 @@ app.get('/api/health', async (_req, res) => {
     const cpuLoad = await si.currentLoad();
     const cpuData = await si.cpu();
     const graphics = await si.graphics();
-    
+
     // Simulate ping to groq and docker if needed
     let groqLatency = 42; // static or implement real ping
-    let dockerLatency = 7; 
+    let dockerLatency = 7;
 
     const gpu = graphics.controllers && graphics.controllers.length > 0 ? graphics.controllers[0] : null;
 
@@ -604,7 +604,7 @@ function getRelevantVaultContext(notes: any[], userMessage: string, maxTokens = 
     if (isCore) return false;
 
     return keywords.some(kw => noteName.includes(kw) || n.content.toLowerCase().includes(kw)) ||
-           lowerMsg.includes(noteName.replace(".md", ""));
+      lowerMsg.includes(noteName.replace(".md", ""));
   }).slice(0, 3); // Max 3 related notes
 
   const selectedNotes = [...coreNotes, ...relatedNotes];
@@ -652,18 +652,18 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
   // 1b. Inject Real Agenda/Calendar database events (Context Limited)
   contextPrompt += `\n[MEMÓRIA DE CURTO PRAZO - AGENDA (Últimos 7 dias e Futuro)]:\n`;
-  const agendaList = await prisma.agenda.findMany(); 
+  const agendaList = await prisma.agenda.findMany();
   if (agendaList.length > 0) {
     const nowTime = new Date().getTime();
     const pastWeekTime = nowTime - (7 * 24 * 60 * 60 * 1000);
     const relevantAgenda = jarvisState.agenda.filter(item => new Date(item.datetime).getTime() >= pastWeekTime);
-    
+
     if (relevantAgenda.length > 0) {
-        relevantAgenda.forEach(item => {
-          contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"}\n`;
-        });
+      relevantAgenda.forEach(item => {
+        contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"}\n`;
+      });
     } else {
-        contextPrompt += `*(Há eventos antigos arquivados, mas nenhum recente ou futuro na memória volátil)*\n`;
+      contextPrompt += `*(Há eventos antigos arquivados, mas nenhum recente ou futuro na memória volátil)*\n`;
     }
   } else {
     contextPrompt += `*(Nenhum compromisso agendado no calendário no momento)*\n`;
@@ -671,7 +671,7 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
   // 1c. Inject Real Finances database transactions (Context Limited)
   contextPrompt += `\n[MEMÓRIA DE CURTO PRAZO - FINANÇAS (Últimas 50 transações)]:\n`;
-  const financesList = await prisma.finance.findMany(); 
+  const financesList = await prisma.finance.findMany();
   if (financesList.length > 0) {
     const relevantFinances = jarvisState.finances.slice(-50);
     relevantFinances.forEach(item => {
@@ -746,8 +746,8 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
   try {
     if (groqApiKey && groqApiKey.trim().length > 0) {
       // Use Groq Cloud for ultra-fast Llama 3 generation
-      const systemInstruction = 
-`[IDENTIDADE E PAPEL]
+      const systemInstruction =
+        `[IDENTIDADE E PAPEL]
 ${personaDetails.prompt}
 
 [CONTEXTO TEMPORAL]
@@ -804,7 +804,7 @@ IMPORTANTE: Se for uma MERA CONSULTA ("quais meus gastos?"), responda em linguag
 
       let userMessageContent: any = contextPrompt;
       let finalModel = "llama-3.3-70b-versatile";
-      
+
       if (file && file.content && file.type && file.type.startsWith("image/")) {
         finalModel = "llama-3.2-11b-vision-preview"; // Use Groq Vision model
         userMessageContent = [
@@ -1534,9 +1534,9 @@ app.post("/api/delete/goal", async (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  const dockerLatency = Math.floor(Math.random() * 15) + 5; 
+  const dockerLatency = Math.floor(Math.random() * 15) + 5;
   const groqLatency = Math.floor(Math.random() * 50) + 30;
-  
+
   res.json({
     docker: { status: "online", latency: dockerLatency },
     groq: { status: "online", latency: groqLatency }
@@ -2280,7 +2280,7 @@ function copyFolderRecursiveSync(src: string, dest: string) {
     if (entry.isDirectory()) {
       copyFolderRecursiveSync(srcPath, destPath);
     } else {
-          fs.copyFileSync(srcPath, destPath);
+      fs.copyFileSync(srcPath, destPath);
     }
   }
 }
@@ -2639,7 +2639,7 @@ app.post("/api/generate/docs", (_req, res) => {
 // Initialize Vite server or static handling
 async function startServer() {
   await loadDB();
-  
+
   // Auto-generate Metas.base according to obsidian-bases skill
   const basesYaml = `filters:
   and:

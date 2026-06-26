@@ -94,7 +94,8 @@
 }
 
 .holographic-card {
-  @apply bg-zinc-950/40 border border-purple-900/30 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1);
+  @apply bg-zinc-950/40 border border-purple-900/30 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(40px) saturate(130%);
   -webkit-backdrop-filter: blur(40px) saturate(130%);
   box-shadow: 

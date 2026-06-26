@@ -435,8 +435,8 @@ function isOnlyConsultationQuery(userMessage: string): boolean {
 
   // Palavras-chave imperativas de CRIAÇÃO ou ATUALIZAÇÃO ativa
   const creationWords = [
-    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei",
-    "coloque", "colocar", "coloca", "anote", "anotar", "anota", "atualize", "atualizar", "atualiza", "mude", "mudar", "muda", "altere", "alterar", "altera"
+    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "adiciona", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei",
+    "coloque", "colocar", "coloca", "anote", "anotar", "anota", "atualize", "atualizar", "atualiza", "mude", "mudar", "muda", "altere", "alterar", "altera", "incluir", "inclui", "põe", "bota", "tirei"
   ];
 
   // Palavras-chave de exclusão ativa
@@ -962,13 +962,11 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   }
 
   // Higienização Inteligente contra alucinações e exemplar bias do LLM
-  const isQueryOnly = isOnlyConsultationQuery(message);
+  // Agora: Se o LLM ativamente decidiu criar um comando XML, NÃO suprimimos! 
+  // Somente se não houver um comando emitido (indicando que ele apenas fala e talvez alucine).
+  const isQueryOnly = isOnlyConsultationQuery(message) && !replyText.includes("<command");
 
   if (isQueryOnly) {
-    // 1. Remover terminalmente quaisquer tags XML de criação/agendamento geradas em consultas para não poluir
-    replyText = (replyText || '').replace(/<command\s+type="Agenda"\s+([^>]+)\/>/gi, "");
-    replyText = (replyText || '').replace(/<command\s+type="Finance"\s+([^>]+)\/>/gi, "");
-
     // 2. Se a agenda ou finanças reais estão vazias na base de dados, mas o LLM alucinou que há itens,
     // nós saneamos a resposta textual para que o usuário receba dados 100% verídicos do sistema!
     const msgLower = message.toLowerCase();
@@ -1416,12 +1414,54 @@ app.post("/api/docker/restart", async (req, res) => {
   const target = containerName === "ollama-local" ? "ollama" : containerName;
 
   if (target === "ollama") {
-    // If it's pure ollama running as a linux service, it's harder, but if it's dockerized:
-    exec(`docker restart ${target}`, { timeout: 15000 }, () => { });
-  } else {
-    exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => { });
+    // restart logic
   }
-  return res.json({ success: true });
+  res.json({ success: true });
+});
+
+app.get("/api/config/tokens", (_req, res) => {
+  res.json({
+    tokens: {
+      groqApiKey: process.env.GROQ_API_KEY || "",
+      githubToken: process.env.GITHUB_TOKEN || "",
+      haToken: process.env.HA_TOKEN || "",
+      telegramToken: process.env.TELEGRAM_TOKEN || "",
+      googleClientId: process.env.VITE_GOOGLE_CLIENT_ID || ""
+    }
+  });
+});
+
+app.post("/api/config/tokens", (req, res) => {
+  const { groqApiKey, githubToken, haToken, telegramToken, googleClientId } = req.body;
+
+  if (groqApiKey !== undefined) process.env.GROQ_API_KEY = groqApiKey;
+  if (githubToken !== undefined) process.env.GITHUB_TOKEN = githubToken;
+  if (haToken !== undefined) process.env.HA_TOKEN = haToken;
+  if (telegramToken !== undefined) process.env.TELEGRAM_TOKEN = telegramToken;
+  if (googleClientId !== undefined) process.env.VITE_GOOGLE_CLIENT_ID = googleClientId;
+
+  // Persist to .env
+  const envContent = `GROQ_API_KEY=${process.env.GROQ_API_KEY || ''}
+GITHUB_TOKEN=${process.env.GITHUB_TOKEN || ''}
+HA_TOKEN=${process.env.HA_TOKEN || ''}
+TELEGRAM_TOKEN=${process.env.TELEGRAM_TOKEN || ''}
+VITE_GOOGLE_CLIENT_ID=${process.env.VITE_GOOGLE_CLIENT_ID || ''}
+`;
+  try {
+    fs.writeFileSync(path.join(process.cwd(), ".env"), envContent, 'utf8');
+  } catch (e) {
+    console.error("Failed to write to .env", e);
+  }
+
+  res.json({ success: true });
+});
+
+// If it's pure ollama running as a linux service, it's harder, but if it's dockerized:
+exec(`docker restart ${target}`, { timeout: 15000 }, () => { });
+  } else {
+  exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => { });
+}
+return res.json({ success: true });
 });
 
 // Endpoint: Google Sheets Global Config

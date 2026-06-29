@@ -71,7 +71,7 @@ export default function FinanceDashboard({
     if (!systemState?.finances) return { totalIncome: 0, totalExpense: 0, guardado: 0 };
     const res = systemState.finances.reduce(
         (acc: any, f: any) => {
-          const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
+          const val = Math.abs(typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0);
           if (f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) acc.income += val;
           else acc.expense += val;
           return acc;
@@ -107,7 +107,7 @@ export default function FinanceDashboard({
            
            if (isNaN(localDate.getTime())) return;
            
-           const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
+           const val = Math.abs(typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0);
            const isIncome = f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase());
            
            if (localDate < boundaryDate) {
@@ -152,7 +152,7 @@ export default function FinanceDashboard({
     const gastos: Record<string, number> = {};
     systemState.finances.forEach((f: any) => {
       if (f.type !== "Receita" && !["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) {
-        const val = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
+        const val = Math.abs(typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0);
         const cat = f.category || "Outros";
         gastos[cat] = (gastos[cat] || 0) + val;
       }

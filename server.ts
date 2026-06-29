@@ -379,7 +379,7 @@ app.get('/api/health', async (_req, res) => {
 });
 
 app.post("/api/tts", rateLimiter(15), async (req, res) => {
-  const { text, voiceId, service } = req.body;
+  const { text, voiceId, service, rate, pitch, volume } = req.body;
   if (!text) {
     return res.status(400).json({ error: "No text provided" });
   }
@@ -397,10 +397,19 @@ app.post("/api/tts", rateLimiter(15), async (req, res) => {
       }
     }
 
+    const formatModifier = (val: number | undefined, isHz: boolean = false) => {
+       if (typeof val !== 'number') return 'default';
+       const percent = Math.round((val - 1.0) * 100);
+       return percent >= 0 ? `+${percent}${isHz ? 'Hz' : '%'}` : `${percent}${isHz ? 'Hz' : '%'}`;
+    };
+
     const tts = new EdgeTTS({
       voice: voice,
       lang: 'pt-BR',
-      outputFormat: 'audio-24khz-48kbitrate-mono-mp3'
+      outputFormat: 'audio-24khz-48kbitrate-mono-mp3',
+      rate: formatModifier(rate),
+      pitch: formatModifier(pitch, true),
+      volume: formatModifier(volume)
     });
 
     const tempFile = path.join(os.tmpdir(), `tts-edge-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
@@ -755,16 +764,18 @@ Data e Hora atual de referência: ${currentSaoPauloTime} (Fuso horário de Bras�
 
 [REGRAS DE CONDUTA E INTELIGÊNCIA]
 1. LEITURA E VERDADE: Ao responder sobre agenda ou finanças, leia APENAS os dados fornecidos no bloco [MEMÓRIA DE CURTO PRAZO]. Se não estiver lá, diga a verdade. Nunca invente compromissos ou gastos.
-2. LIMITAÇÃO DE CONTEXTO: O sistema injeta apenas as transações e eventos recentes para economizar tokens. Se o usuário perguntar de um passado distante, sugira que ele use a interface visual da Dashboard.
+2. LIMITAÇÃO DE CONTEXTO: O sistema injeta apenas as transações e eventos recentes.
 3. FLUIDEZ: Responda de forma extremamente natural, humana e espontânea. Evite repetir saudações robotizadas. Ao emitir comandos XML, faça-o de forma invisível e retorne apenas uma breve e amigável resposta social.
-4. OBJETIVIDADE TOTAL: Elimine justificativas longas, explicações redundantes ou introduções. Responda diretamente ao ponto solicitado com foco em concisão.
+4. OBJETIVIDADE TOTAL: Elimine justificativas longas. Responda DIRETAMENTE ao ponto.
+5. NÃO SEJA PROLIXO: NUNCA resuma ou liste o saldo financeiro, gastos ou agenda do usuário a menos que ele explicitamente pergunte sobre isso. Se o usuário mandar um "tudo bem?", NÃO cite a agenda nem finanças. Apenas ignore esses dados se não forem o foco da conversa.
 
 [CAPACIDADES E COMANDOS XML (AÇÃO)]
 VOCÊ NÃO PRECISA PEDIR PERMISSÃO PARA AGIR. Tem autonomia total para emitir tags XML que o sistema processará automaticamente no background.
 
 CRIAÇÃO (Só emita se o usuário PEDIR para criar/agendar/anotar):
 - Agenda: <command type="Agenda" title="Almoço com família" datetime="2026-05-31T12:30" />
-- Finanças: <command type="Finance" value="45.90" category="Alimentação" description="iFood Jantar" />
+- Despesa Financeira: <command type="Finance" financeType="Despesa" value="45.90" category="Alimentação" description="iFood Jantar" />
+- Receita/Ganho Financeiro: <command type="Finance" financeType="Receita" value="5000" category="Salário" description="Salário do mês" />
 
 ATUALIZAÇÃO:
 - Para mudar a data/hora de um evento existente, emita o comando de criação usando o MESMO "title" e o NOVO "datetime".
@@ -1546,7 +1557,7 @@ app.get("/api/health", (req, res) => {
 // Endpoint: Dynamic operations on agenda, finances & Home Device modifications
 app.post("/api/update/finance", async (req, res) => {
   const { id, value, category, description, date, type } = req.body;
-  const parsedValue = parseFloat(value);
+  const parsedValue = Math.abs(parseFloat(value));
 
   const isReceita = type === "Receita" || ["renda", "receita", "salário", "salario", "investimento", "lucro", "pix recebido", "pagamento"].includes(category.toLowerCase());
   const finalType = type || (isReceita ? "Receita" : "Despesa");
@@ -2692,7 +2703,7 @@ views:
       await prisma.user.create({
         data: {
           email: "viniciusc.castro09@gmail.com",
-          password: "091422",
+          password: await bcrypt.hash("091422", 10),
           role: "admin"
         }
       });

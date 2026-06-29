@@ -316,6 +316,16 @@ export default React.memo(function JarvisAssistant({
       rec.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
         if (transcript.trim()) {
+          if (isContinuousModeRef.current) {
+            const lower = transcript.toLowerCase();
+            // Checking for common misinterpretations of "Jarvis" in Portuguese
+            if (!lower.includes("jarvis") && !lower.includes("davis") && !lower.includes("chaves") && !lower.includes("charles")) {
+               // Wake word not detected. Stop to restart listener.
+               try { rec.stop(); } catch(e) {}
+               return;
+            }
+          }
+
           setAppState("processing");
 
           // Delegamos o comando "abrir" para a IA agora
@@ -356,21 +366,26 @@ export default React.memo(function JarvisAssistant({
       };
 
       rec.onerror = (e: any) => {
-        console.error("Speech recognition error:", e);
-        setAppState("inactive");
+        console.error("Speech recognition error:", e.error || e);
+        if (e.error === "no-speech" || e.error === "network") {
+           // Em caso de silêncio, ignoramos para que o onend lide com o restart silencioso no modo Wake Word
+        } else {
+           setAppState("inactive");
+        }
       };
 
       rec.onend = () => {
-        // Only return to inactive if we didn't initiate processing/speaking
         setAppState((prev) => {
-          if (prev === "listening") {
-            if (isContinuousModeRef.current) {
+          if (isContinuousModeRef.current) {
+            // Se o modo contínuo estiver ativo e a IA não estiver falando ou processando, reinicie o microfone
+            if (prev === "listening" || prev === "inactive") {
               setTimeout(() => {
                 try { recognitionRef.current?.start(); } catch (e) {}
-              }, 100);
+              }, 50);
               return "listening";
             }
-            return "inactive";
+          } else {
+            if (prev === "listening") return "inactive";
           }
           return prev;
         });
@@ -551,7 +566,7 @@ export default React.memo(function JarvisAssistant({
       // Trigger node edge TTS
       if (engineType === "microsoft_edge_tts") {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // Aumentado para 8s para evitar fallbacks desnecessários
 
         const res = await fetch(getServerUrl() + "/api/tts", {
           method: "POST",
@@ -560,6 +575,9 @@ export default React.memo(function JarvisAssistant({
           body: JSON.stringify({
             text: cleanText,
             service: "edge",
+            rate: rate,
+            pitch: pitch,
+            volume: voiceVolume
           }),
         });
 
@@ -786,7 +804,7 @@ export default React.memo(function JarvisAssistant({
             } else if (!newMode && appState === "listening") {
               recognitionRef.current?.stop();
             }
-          }} className={`p-4 rounded-full transition-all cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] shadow-[0_0_15px_var(--brand-glow-strong)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
+          }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`p-4 rounded-full transition-all cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] shadow-[0_0_15px_var(--brand-glow-strong)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
              <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-pulse' : ''}`} />
           </button>
           <button onClick={() => setIsVoiceModalOpen(true)} className="p-4 rounded-full transition-all cursor-pointer hover:bg-white/10 text-zinc-400 hover:text-white">

@@ -327,7 +327,7 @@ export default function App() {
             const financeTypeMatch = attributesStr.match(/financeType="([^"]+)"/);
             
             if (valueMatch && catMatch) {
-              await fetch(getServerUrl() + "/api/update/finance", {
+              await fetchAutenticado("/api/update/finance", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -345,7 +345,7 @@ export default function App() {
             const titleMatch = attributesStr.match(/title="([^"]+)"/);
             const dateMatch = attributesStr.match(/datetime="([^"]+)"/);
             if (titleMatch && dateMatch) {
-              await fetch(getServerUrl() + "/api/update/agenda", {
+              await fetchAutenticado("/api/update/agenda", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -359,7 +359,7 @@ export default function App() {
           } else if (type === "PC") {
             const workspaceMatch = attributesStr.match(/workspace="([^"]+)"/);
             if (workspaceMatch) {
-              await fetch(getServerUrl() + "/api/update/pc", {
+              await fetchAutenticado("/api/update/pc", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ workspace: workspaceMatch[1] }),
@@ -370,7 +370,7 @@ export default function App() {
             const allMatch = attributesStr.match(/all="([^"]+)"/);
             const isAll = (allMatch && allMatch[1] === "true") || attributesStr.includes("all=") || !descMatch;
 
-            await fetch(getServerUrl() + "/api/delete/finance", {
+            await fetchAutenticado("/api/delete/finance", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -383,7 +383,7 @@ export default function App() {
             const allMatch = attributesStr.match(/all="([^"]+)"/);
             const isAll = (allMatch && allMatch[1] === "true") || attributesStr.includes("all=") || !titleMatch;
 
-            await fetch(getServerUrl() + "/api/delete/agenda", {
+            await fetchAutenticado("/api/delete/agenda", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -392,13 +392,13 @@ export default function App() {
               }),
             });
           } else if (type === "GoalDelete") {
-            await fetch(getServerUrl() + "/api/delete/goal", {
+            await fetchAutenticado("/api/delete/goal", {
               method: "POST"
             });
           } else if (type === "ObsidianDelete") {
             const pathMatch = attributesStr.match(/path="([^"]+)"/);
             if (pathMatch) {
-              await fetch(getServerUrl() + "/api/delete/obsidian", {
+              await fetchAutenticado("/api/delete/obsidian", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ path: pathMatch[1] }),
@@ -439,7 +439,7 @@ export default function App() {
   // Change preset in Home Assistant
   const triggerPresetChange = async (presetName: string) => {
     try {
-      await fetch(getServerUrl() + "/api/update/iot", {
+      await fetchAutenticado("/api/update/iot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ presetName }),

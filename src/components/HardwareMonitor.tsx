@@ -65,7 +65,7 @@ export function SystemHealthMonitor() {
         <div>
           <div className="flex justify-between items-center text-[11px] mb-1">
             <span className="text-zinc-400 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary)]"></span>
               Latência do Docker
             </span>
             <span className="font-bold text-[var(--brand-light)]">
@@ -87,7 +87,7 @@ export function SystemHealthMonitor() {
         <div>
           <div className="flex justify-between items-center text-[11px] mb-1">
             <span className="text-zinc-400 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary)] animate-pulse"></span>
               Latência do Groq API
             </span>
             <span className="font-bold text-[var(--brand-light)]">
@@ -109,17 +109,17 @@ export function SystemHealthMonitor() {
         <div>
           <div className="flex justify-between items-center text-[11px] mb-1">
             <span className="text-zinc-400 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary)]"></span>
               API de Rede (RTT)
             </span>
-            <span className="font-bold text-emerald-400">
+            <span className="font-bold text-[var(--brand-light)]">
               {healthStatus.network.latency} ms
             </span>
           </div>
           <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden flex items-center">
             <motion.div
               layout
-              className="bg-emerald-500 h-full"
+              className="bg-[var(--brand-primary)] h-full"
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(100, Math.max(5, (healthStatus.network.latency / 120) * 100))}%` }}
               transition={{ duration: 0.5 }}
@@ -253,7 +253,7 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
         </div>
         <div className="flex justify-between">
           <span>Ponte Local</span>
-          <span className="text-emerald-400">Online via pm2/Docker</span>
+          <span className="text-[var(--brand-light)]">Online via pm2/Docker</span>
         </div>
       </div>
     </div>

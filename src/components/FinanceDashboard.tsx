@@ -166,7 +166,7 @@ export default function FinanceDashboard({
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-        <div className="flex justify-between items-center holographic-card bg-gradient-to-r from-purple-900/20 to-zinc-950 border-purple-500/30 hover-glow">
+        <div className="flex justify-between items-center holographic-card bg-gradient-to-r from-[var(--brand-dark)]/20 to-zinc-950 border-[var(--brand-primary)]/30 hover-glow">
             <div className="flex flex-col">
                 <h3 className="text-[var(--brand-light)] font-mono text-sm font-bold uppercase tracking-widest flex items-center gap-2">
                     <Wallet className="h-5 w-5" /> Inteligência Financeira
@@ -185,10 +185,10 @@ export default function FinanceDashboard({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-zinc-950 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <TrendingUp className="h-16 w-16 text-emerald-500" />
+                    <TrendingUp className="h-16 w-16 text-[var(--brand-primary)]" />
                 </div>
                 <span className="text-[11px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Total de Receitas</span>
-                <span className="text-2xl font-semibold text-emerald-400">R$ {totalIncome.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="text-2xl font-semibold text-[var(--brand-light)]">R$ {totalIncome.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
             <div className="glass-panel hover-glow p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -477,11 +477,11 @@ export default function FinanceDashboard({
                                                 {item.description}
                                             </td>
                                             <td className="py-3 px-4">
-                                                <span className={`px-2 py-1 rounded-md text-[10px] bg-black/40 border border-zinc-800 ${item.type === 'Receita' ? 'text-emerald-400 border-emerald-900/50' : 'text-zinc-400'}`}>
+                                                <span className={`px-2 py-1 rounded-md text-[10px] bg-black/40 border border-zinc-800 ${item.type === 'Receita' ? 'text-[var(--brand-light)] border-[var(--brand-dark)]/50' : 'text-zinc-400'}`}>
                                                     {item.category}
                                                 </span>
                                             </td>
-                                            <td className={`py-3 px-4 text-right font-medium ${item.type === 'Receita' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            <td className={`py-3 px-4 text-right font-medium ${item.type === 'Receita' ? 'text-[var(--brand-light)]' : 'text-red-400'}`}>
                                                 {item.type === 'Receita' ? '+' : '-'} R$ {typeof item.value === 'number' && !isNaN(item.value) ? item.value.toFixed(2) : '0.00'}
                                             </td>
                                             <td className="py-3 px-4 text-right opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">

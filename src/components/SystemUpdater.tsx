@@ -73,7 +73,7 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
         );
       case "available":
         return (
-          <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold rounded-full flex items-center gap-1.5 text-[10px]">
+          <span className="px-3 py-1 bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/30 text-[var(--brand-light)] font-bold rounded-full flex items-center gap-1.5 text-[10px]">
             <ArrowUpRight className="h-3 w-3 " /> ATUALIZAÇÃO DISPONÍVEL
           </span>
         );
@@ -85,13 +85,13 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
         );
       case "completed":
         return (
-          <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-full flex items-center gap-1.5 text-[10px]">
+          <span className="px-3 py-1 bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/30 text-[var(--brand-light)] font-bold rounded-full flex items-center gap-1.5 text-[10px]">
             <CheckCircle2 className="h-3 w-3" /> ATUALIZAÇÃO CONCLUÍDA
           </span>
         );
       case "up-to-date":
         return (
-          <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-full flex items-center gap-1.5 text-[10px]">
+          <span className="px-3 py-1 bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/30 text-[var(--brand-light)] font-bold rounded-full flex items-center gap-1.5 text-[10px]">
             <CheckCircle2 className="h-3 w-3" /> SISTEMA ATUALIZADO
           </span>
         );
@@ -132,7 +132,7 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
                   value={repoInput}
                   onChange={(e) => setRepoInput(e.target.value)}
                   placeholder="usuario/nome-repo"
-                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-cyan-500/50 rounded-lg p-2.5 text-xs text-white font-mono placeholder-zinc-700 outline-none"
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-[var(--brand-primary)]/50 rounded-lg p-2.5 text-xs text-white font-mono placeholder-zinc-700 outline-none"
                 />
               </div>
               <div>
@@ -142,7 +142,7 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxxx"
-                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-cyan-500/50 rounded-lg p-2.5 text-xs text-white font-mono placeholder-zinc-700 outline-none"
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-[var(--brand-primary)]/50 rounded-lg p-2.5 text-xs text-white font-mono placeholder-zinc-700 outline-none"
                 />
               </div>
             </div>
@@ -175,7 +175,7 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
               </div>
               <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
                 <span className="text-[9px] text-zinc-500 uppercase block">Commit Remoto</span>
-                <span className="text-sm font-bold text-cyan-400 font-mono block mt-0.5">{updateState?.remoteCommit || "unknown"}</span>
+                <span className="text-sm font-bold text-[var(--brand-light)] font-mono block mt-0.5">{updateState?.remoteCommit || "unknown"}</span>
               </div>
               <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
                 <span className="text-[9px] text-zinc-500 uppercase block">Versão Local</span>
@@ -209,7 +209,7 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
               disabled={updateState?.status !== "available" && updateState?.status !== "error"}
               className={`flex-1 py-2.5 font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer text-[11px]
                 ${updateState?.status === "available" 
-                  ? "bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_4px_12px_rgba(6,182,212,0.3)]" 
+                  ? "bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-black shadow-[0_4px_12px_rgba(6,182,212,0.3)]" 
                   : "bg-zinc-950 border border-zinc-800 text-zinc-600 cursor-not-allowed"
                 }
               `}
@@ -225,14 +225,14 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
       <div className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl">
         <div className="bg-zinc-900/60 border-b border-zinc-800 px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-cyan-400 animate-pulse" />
+            <Terminal className="h-4 w-4 text-[var(--brand-light)] animate-pulse" />
             <h4 className="font-bold text-white uppercase text-[10px] tracking-wider font-mono">Terminal Master — Atualizador</h4>
           </div>
           {updateState?.status === "updating" && (
-            <div className="flex items-center gap-2 text-[10px] text-cyan-400 font-bold">
+            <div className="flex items-center gap-2 text-[10px] text-[var(--brand-light)] font-bold">
               <span>PROGRESSO: {updateState?.progress}%</span>
               <div className="w-24 h-1.5 bg-zinc-900 border border-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-cyan-400 transition-all duration-300" style={{ width: `${updateState?.progress}%` }}></div>
+                <div className="h-full bg-[var(--brand-light)] transition-all duration-300" style={{ width: `${updateState?.progress}%` }}></div>
               </div>
             </div>
           )}
@@ -242,8 +242,8 @@ export default React.memo(function SystemUpdater({ updateState, onRefresh }: Sys
             updateState.logs.map((log: string, idx: number) => {
               let textStyles = "text-zinc-400";
               if (log.startsWith("[ERRO]")) textStyles = "text-red-500 font-bold";
-              else if (log.startsWith("[SUCCESS]")) textStyles = "text-emerald-400 font-bold";
-              else if (log.startsWith("[GIT]") || log.startsWith("[NPM]") || log.startsWith("[BUILD]")) textStyles = "text-cyan-400";
+              else if (log.startsWith("[SUCCESS]")) textStyles = "text-[var(--brand-light)] font-bold";
+              else if (log.startsWith("[GIT]") || log.startsWith("[NPM]") || log.startsWith("[BUILD]")) textStyles = "text-[var(--brand-light)]";
               else if (log.startsWith("[REBOOT]")) textStyles = "text-yellow-400 font-bold animate-pulse";
               return (
                 <div key={idx} className={`${textStyles} leading-relaxed`}>

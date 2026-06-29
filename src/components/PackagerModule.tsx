@@ -79,10 +79,10 @@ Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" 
   return (
     <div className="bg-zinc-950/50 border border-zinc-800 p-6 rounded-2xl relative overflow-hidden">
       {/* Decorative background aura */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-primary)]/5 blur-[100px] rounded-full pointer-events-none" />
       
       <div className="flex items-center gap-3 mb-6 border-b border-zinc-800 pb-4">
-        <Package className="text-cyan-400 w-6 h-6 transition-opacity duration-300" />
+        <Package className="text-[var(--brand-light)] w-6 h-6 transition-opacity duration-300" />
         <div>
           <h2 className="text-lg font-bold text-[var(--brand-light)] font-mono tracking-wide">COMPILADOR & DEPLOY NATIVO WINDOWS</h2>
           <p className="text-[11px] text-zinc-400 font-sans">Gere scripts powershell para empacotar o executável Node.js/CJS do JARVIS como um serviço startup no seu Servidor Windows.</p>
@@ -98,7 +98,7 @@ Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" 
               type="text" 
               value={appName}
               onChange={(e) => setAppName(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-sm text-[var(--brand-light)] font-mono focus:border-cyan-500/50 focus:outline-none transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-sm text-[var(--brand-light)] font-mono focus:border-[var(--brand-primary)]/50 focus:outline-none transition-colors"
             />
           </div>
           <div>
@@ -107,7 +107,7 @@ Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" 
               type="text" 
               value={version}
               onChange={(e) => setVersion(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-sm text-[var(--brand-light)] font-mono focus:border-cyan-500/50 focus:outline-none transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-sm text-[var(--brand-light)] font-mono focus:border-[var(--brand-primary)]/50 focus:outline-none transition-colors"
             />
           </div>
 
@@ -117,10 +117,10 @@ Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" 
                 type="checkbox" 
                 checked={enableStartup}
                 onChange={(e) => setEnableStartup(e.target.checked)}
-                className="w-4 h-4 rounded mt-0.5 border-zinc-800 bg-zinc-900 text-cyan-500 focus:ring-cyan-500/20"
+                className="w-4 h-4 rounded mt-0.5 border-zinc-800 bg-zinc-900 text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20"
               />
               <div>
-                <span className="text-xs font-bold text-zinc-300 block uppercase tracking-wide group-hover:text-cyan-400 transition-colors">Iniciar automaticamente com o Sistema (Startup)</span>
+                <span className="text-xs font-bold text-zinc-300 block uppercase tracking-wide group-hover:text-[var(--brand-light)] transition-colors">Iniciar automaticamente com o Sistema (Startup)</span>
                 <span className="text-[10px] text-zinc-500 font-mono block mt-0.5 leading-relaxed">
                   Registra um atalho no Inicializar do Windows que inicializa o JARVIS invisivelmente em segundo plano (porta 3000) no momento em que o servidor ligar.
                 </span>
@@ -129,24 +129,24 @@ Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" 
           </div>
 
           <div className="pt-2">
-            <h3 className="text-xs font-bold text-cyan-400 mb-2 uppercase tracking-wide flex items-center gap-1.5">
+            <h3 className="text-xs font-bold text-[var(--brand-light)] mb-2 uppercase tracking-wide flex items-center gap-1.5">
               <HelpCircle className="h-3.5 w-3.5" /> Deploy Contínuo (Servidor)
             </h3>
             <ul className="text-xs text-zinc-400 space-y-2.5 font-mono">
               <li className="flex items-start gap-2">
-                <span className="text-cyan-500 font-bold">1.</span>
+                <span className="text-[var(--brand-primary)] font-bold">1.</span>
                 <span>
                   Copie o script gerado <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">deploy_jarvis.ps1</code> para o diretório <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">dist/</code> do seu projeto compilado.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-cyan-500 font-bold">2.</span>
+                <span className="text-[var(--brand-primary)] font-bold">2.</span>
                 <span>
                   Execute o script powershell gerado como Administrador no Windows. Ele moverá os arquivos para a pasta <code className="text-zinc-200">C:\JARVIS</code>.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-cyan-500 font-bold">3.</span>
+                <span className="text-[var(--brand-primary)] font-bold">3.</span>
                 <span>
                   O script também ativará as dependências físicas Docker locais no background, levantando a suíte de dados RAG.
                 </span>
@@ -157,7 +157,7 @@ Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" 
           <div className="pt-2 flex gap-3">
             <button 
               onClick={handleBuild}
-              className="flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/40 hover:bg-cyan-500/20 text-cyan-400 px-4 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              className="flex items-center gap-2 bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/40 hover:bg-[var(--brand-primary)]/20 text-[var(--brand-light)] px-4 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               {buildState === 'idle' ? 'Validar Parâmetros' : buildState === 'building' ? 'Analisando Estrutura...' : 'Script Validado ✓'}
             </button>
@@ -175,7 +175,7 @@ Write-Host "Implantação finalizada com sucesso! Acesse http://localhost:3000" 
         <div className="bg-zinc-950 border border-zinc-800 rounded-xl flex flex-col relative z-10 w-full overflow-hidden">
           <div className="bg-zinc-900/40 rounded-t-xl px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
              <div className="flex items-center gap-2">
-               <TerminalSquare className="w-4 h-4 text-cyan-400" />
+               <TerminalSquare className="w-4 h-4 text-[var(--brand-light)]" />
                <span className="text-xs font-mono font-bold text-zinc-400">deploy_jarvis.ps1</span>
              </div>
              <div className="flex gap-1.5">

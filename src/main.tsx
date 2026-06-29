@@ -87,9 +87,9 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) {
       return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white font-mono gap-6 p-4">
-              <div className="holographic-card border border-emerald-500/20 p-8 flex flex-col items-center bg-zinc-950/80 rounded-2xl max-w-sm w-full shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-cyan-500" />
-                <ShieldAlert className="w-12 h-12 text-emerald-400 mb-4 animate-pulse" />
+              <div className="holographic-card border border-[var(--brand-primary)]/20 p-8 flex flex-col items-center bg-zinc-950/80 rounded-2xl max-w-sm w-full shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--brand-light)] to-[var(--brand-primary)]" />
+                <ShieldAlert className="w-12 h-12 text-[var(--brand-light)] mb-4 animate-pulse" />
                 <h1 className="text-xl font-bold tracking-widest text-[var(--brand-light)] mb-2">JARVIS CORE PORTAL</h1>
                 <p className="text-xs text-zinc-400 text-center mb-6 leading-relaxed">
                    Acesso estrito.<br/>Insira suas credenciais de acesso seguro.
@@ -104,7 +104,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
                       type="email" 
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="bg-zinc-900 border border-zinc-800 p-2.5 rounded text-sm text-zinc-200 outline-none focus:border-emerald-500 transition-colors"
+                      className="bg-zinc-900 border border-zinc-800 p-2.5 rounded text-sm text-zinc-200 outline-none focus:border-[var(--brand-primary)] transition-colors"
                       required
                     />
                   </div>
@@ -114,14 +114,14 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
                       type="password" 
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="bg-zinc-900 border border-zinc-800 p-2.5 rounded text-sm text-zinc-200 outline-none focus:border-emerald-500 transition-colors"
+                      className="bg-zinc-900 border border-zinc-800 p-2.5 rounded text-sm text-zinc-200 outline-none focus:border-[var(--brand-primary)] transition-colors"
                       required
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg flex items-center justify-center gap-2.5 transition active:scale-98 shadow-md border border-emerald-500/20 text-xs tracking-wider uppercase cursor-pointer disabled:opacity-50 mt-2"
+                    className="w-full py-2.5 px-4 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)] text-white font-semibold rounded-lg flex items-center justify-center gap-2.5 transition active:scale-98 shadow-md border border-[var(--brand-primary)]/20 text-xs tracking-wider uppercase cursor-pointer disabled:opacity-50 mt-2"
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
                     Acessar

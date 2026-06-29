@@ -223,11 +223,11 @@ export default React.memo(function LogsDocker() {
             onClick={() => setIsLive(!isLive)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition cursor-pointer font-medium ${
               isLive 
-                ? "bg-emerald-950/40 border border-emerald-500/40 text-emerald-400" 
+                ? "bg-[var(--brand-dark)]/40 border border-[var(--brand-primary)]/40 text-[var(--brand-light)]" 
                 : "bg-zinc-900 border border-zinc-800 text-zinc-500"
             }`}
           >
-            <span className={`h-2 w-2 rounded-full ${isLive ? "bg-emerald-500 " : "bg-zinc-700"}`}></span>
+            <span className={`h-2 w-2 rounded-full ${isLive ? "bg-[var(--brand-primary)] " : "bg-zinc-700"}`}></span>
             {isLive ? "[AUTO] Streaming Ativo" : "[PAUSADO] Logs Estáticos"}
           </button>
 
@@ -262,9 +262,9 @@ export default React.memo(function LogsDocker() {
                   </h4>
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold tracking-tight border ${
                     status === "running"
-                      ? "bg-emerald-950/30 border-emerald-500/20 text-emerald-400"
+                      ? "bg-[var(--brand-dark)]/30 border-[var(--brand-primary)]/20 text-[var(--brand-light)]"
                       : status === "paused"
-                      ? "bg-amber-950/30 border-amber-500/20 text-amber-500"
+                      ? "bg-[var(--brand-dark)]/30 border-[var(--brand-primary)]/20 text-[var(--brand-primary)]"
                       : "bg-red-950/30 border-red-500/20 text-red-500 "
                   }`}>
                     {status}
@@ -284,14 +284,14 @@ export default React.memo(function LogsDocker() {
                 {status !== "running" ? (
                   <button
                     onClick={() => handleContainerAction(c.id, status === "paused" ? "unpause" : "start")}
-                    className="flex-1 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 text-[10px] font-mono font-bold flex items-center justify-center gap-1 cursor-pointer transition"
+                    className="flex-1 py-1 rounded bg-[var(--brand-dark)]/40 hover:bg-[var(--brand-dark)]/60 border border-[var(--brand-primary)]/30 hover:border-[var(--brand-primary)]/50 text-[var(--brand-light)] text-[10px] font-mono font-bold flex items-center justify-center gap-1 cursor-pointer transition"
                   >
                     <Play className="h-3 w-3" /> Iniciar
                   </button>
                 ) : (
                   <button
                     onClick={() => handleContainerAction(c.id, "pause")}
-                    className="flex-1 py-1 rounded bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 text-[10px] font-mono font-bold flex items-center justify-center gap-1 cursor-pointer transition"
+                    className="flex-1 py-1 rounded bg-[var(--brand-dark)]/40 hover:bg-[var(--brand-dark)]/60 border border-[var(--brand-primary)]/30 hover:border-[var(--brand-primary)]/50 text-[var(--brand-light)] text-[10px] font-mono font-bold flex items-center justify-center gap-1 cursor-pointer transition"
                   >
                     <Pause className="h-3 w-3" /> Pausar
                   </button>
@@ -342,7 +342,7 @@ export default React.memo(function LogsDocker() {
                   </h4>
                   <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-bold tracking-tight border ${
                     status === "running"
-                      ? "bg-emerald-950/30 border-emerald-500/20 text-emerald-400 animate-pulse"
+                      ? "bg-[var(--brand-dark)]/30 border-[var(--brand-primary)]/20 text-[var(--brand-light)] animate-pulse"
                       : "bg-zinc-900 border-zinc-700 text-zinc-500"
                   }`}>
                     {status === "running" ? "Executando" : "Hibernado"}
@@ -420,7 +420,7 @@ export default React.memo(function LogsDocker() {
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-zinc-800"></span>
                 <span className="w-2 h-2 rounded-full bg-zinc-800"></span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></span>
               </div>
             </div>
 
@@ -454,7 +454,7 @@ export default React.memo(function LogsDocker() {
                   if (log.includes("SUCCESS") || log.includes("SUCCESSFULLY") || log.includes("Concluído") || log.includes("synced!")) {
                     return (
                       <div key={idx} className={`${colorClass} hover:bg-zinc-950/60 py-0.5 rounded px-1 transition-colors whitespace-pre-wrap`}>
-                        {log} <span className="text-emerald-400 font-bold">✓ DONE</span>
+                        {log} <span className="text-[var(--brand-light)] font-bold">✓ DONE</span>
                       </div>
                     );
                   }
@@ -473,7 +473,7 @@ export default React.memo(function LogsDocker() {
                     }
 
                     return (
-                      <div key={idx} className="text-rose-400 bg-rose-950/20 py-1.5 rounded px-2 animate-pulse border-l-2 border-rose-600 whitespace-pre-wrap my-1 font-mono">
+                      <div key={idx} className="text-[var(--brand-light)] bg-[var(--brand-dark)]/20 py-1.5 rounded px-2 animate-pulse border-l-2 border-[var(--brand-primary)] whitespace-pre-wrap my-1 font-mono">
                         <div className="font-bold flex items-center gap-1 text-[11px] mb-1">
                           <XCircle className="h-3.5 w-3.5" /> [ALERTA DE FALHA]
                         </div>
@@ -518,7 +518,7 @@ export default React.memo(function LogsDocker() {
       {/* Help metadata context */}
       <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div className="flex items-center gap-2.5 text-xs text-zinc-400">
-          <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+          <ShieldCheck className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
           <span>Monitorando subnet interna do docker do desktop.</span>
         </div>
         <span className="text-[10px] font-mono text-zinc-500">

@@ -11,6 +11,8 @@ interface DeviceConfigProps {
   configTab: "general" | "appearance";
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
+  bgImage?: string;
+  onChangeBgImage?: (url: string) => void;
 }
 
 const PERSONAS_LIST = [
@@ -86,7 +88,7 @@ const HOLO_THEMES = {
   }
 };
 
-export default React.memo(function DeviceConfig({ devices, onRefresh, currentTheme, onChangeTheme, configTab, isDarkMode = true, onToggleDarkMode }: DeviceConfigProps) {
+export default React.memo(function DeviceConfig({ devices, onRefresh, currentTheme, onChangeTheme, configTab, isDarkMode = true, onToggleDarkMode, bgImage = "", onChangeBgImage }: DeviceConfigProps) {
   // Local states for device additions
   const [activePersona, setActivePersona] = useState<string>("friday");
 
@@ -322,17 +324,55 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
     <>
       {configTab === "appearance" ? (
         <div className="bg-zinc-900/30 border border-zinc-800 p-5 md:p-6 rounded-2xl space-y-6">
-          <div>
-            <h3 className="text-sm font-sans font-semibold text-[var(--brand-light,rgba(6,182,212))] uppercase tracking-wider flex items-center gap-1.5">
-              <Palette className="h-4.5 w-4.5" />
+          {/* NOVO: CONFIGURAÇÃO DE BACKGROUND URL */}
+          <div className="mb-8">
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+              <Palette className="w-4 h-4 text-[var(--brand-light)]" />
+              Plano de Fundo (Wallpaper)
+            </h3>
+            <p className="text-xs text-zinc-400 mt-1 mb-3">
+              Faça o upload de uma imagem (gif, jpg, png) para substituir o fundo escuro por um wallpaper personalizado.
+            </p>
+            <div className="flex flex-col gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    const base64 = event.target?.result as string;
+                    try {
+                      onChangeBgImage?.(base64);
+                    } catch (err) {
+                      alert("Imagem muito grande! O limite de armazenamento local foi excedido. Tente uma imagem com resolução menor.");
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }}
+                className="w-full bg-zinc-950/60 border border-zinc-900 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[var(--brand-primary)] focus:shadow-[0_0_15px_var(--brand-glow)] transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[var(--brand-primary)]/20 file:text-[var(--brand-light)] hover:file:bg-[var(--brand-primary)]/30"
+              />
+              {bgImage && (
+                <button
+                  onClick={() => onChangeBgImage?.("")}
+                  className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-all font-bold text-xs uppercase self-start"
+                >
+                  Remover Plano de Fundo Atual
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+              <Palette className="w-4 h-4 text-[var(--brand-light)]" />
               Selecione seu Esquema de Cor Holográfica (Vibe Virtual)
             </h3>
             <p className="text-xs text-zinc-400 mt-1">
               Altere as cores principais das linhas de varredura laser, botões de comando, badges de telemetria e gráficos instantaneamente.
             </p>
           </div>
-
-
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {Object.entries(HOLO_THEMES).map(([key, t]) => (

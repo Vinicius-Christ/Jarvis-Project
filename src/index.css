@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -8,142 +8,146 @@
 
 @layer base {
   body {
-    @apply bg-black text-zinc-400 font-sans antialiased;
-    /* Deep space fluid background */
+    @apply bg-black text-zinc-300 font-sans antialiased overflow-hidden;
+    /* Deep void core */
+    background-color: #030305;
     background-image: 
-      radial-gradient(circle at 15% 50%, rgba(46, 16, 101, 0.4) 0%, transparent 50%),
-      radial-gradient(circle at 85% 30%, rgba(88, 28, 135, 0.25) 0%, transparent 50%),
-      radial-gradient(circle at 50% 100%, rgba(10, 10, 12, 1) 0%, #000000 100%);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-    background-size: cover;
+      radial-gradient(ellipse at top, rgba(16, 185, 129, 0.03), transparent 50%),
+      radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.05), transparent 50%);
   }
   
   ::selection {
-    @apply bg-purple-900/50 text-purple-100;
+    @apply bg-[var(--brand-primary)]/30 text-white;
   }
 }
 
-/* Custom Scrollbar - Liquid Violet */
+/* Cybernetic Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
-
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.1);
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.6);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  background: rgba(255, 255, 255, 0.3);
 }
 
-@keyframes elegant-fade {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+/* --- KEYFRAMES --- */
+@keyframes holographic-flicker {
+  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+    opacity: 0.6;
+    filter: brightness(1.5) contrast(1.2) hue-rotate(15deg);
+  }
 }
 
-@keyframes purple-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(168, 85, 247, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }
 
-@keyframes liquid-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+@keyframes magnetic-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
 }
 
-.animate-holo-breathe {
-  animation: elegant-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes glow-pulse {
+  0% { box-shadow: 0 0 15px rgba(255,255,255, 0.1); }
+  50% { box-shadow: 0 0 35px rgba(255,255,255, 0.3); }
+  100% { box-shadow: 0 0 15px rgba(255,255,255, 0.1); }
 }
 
-/* Liquid Glass Primitives - Black & Purple */
+.animate-flicker {
+  animation: holographic-flicker 5s infinite;
+}
+
+.animate-float {
+  animation: magnetic-float 4s ease-in-out infinite;
+}
+
+/* --- LIQUID GLASS PRIMITIVES (ULTRA PREMIUM) --- */
+
 .glass-panel {
-  @apply bg-zinc-950/40 border border-purple-500/10;
-  backdrop-filter: blur(32px) saturate(120%);
-  -webkit-backdrop-filter: blur(32px) saturate(120%);
+  @apply bg-zinc-950/20 border border-white/5 relative overflow-hidden;
+  backdrop-filter: blur(48px) saturate(180%);
+  -webkit-backdrop-filter: blur(48px) saturate(180%);
   box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.05), 
-    inset 0 0 20px rgba(168, 85, 247, 0.02),
-    0 20px 40px -15px rgba(0, 0, 0, 0.9),
-    0 0 30px rgba(88, 28, 135, 0.08);
-}
-
-.hover-glow {
-  @apply transition-all duration-500 ease-out;
-}
-
-.hover-glow:hover {
-  transform: translateY(-2px);
-  @apply border-purple-500/30 bg-zinc-900/60;
-  box-shadow: 
-    0 12px 35px -10px rgba(168, 85, 247, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 15px rgba(168, 85, 247, 0.1);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 40px rgba(0, 0, 0, 0.8),
+    0 30px 60px -12px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
-.holographic-card {
-  @apply bg-zinc-950/40 border border-purple-900/30 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)];
-  backdrop-filter: blur(40px) saturate(130%);
-  -webkit-backdrop-filter: blur(40px) saturate(130%);
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.04), 
-    inset 0 0 15px rgba(168, 85, 247, 0.03),
-    0 15px 35px -10px rgba(0,0,0,0.8);
-}
-
-.holographic-card::before {
+.glass-panel::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%; right: 0; bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.08), transparent);
-  width: 50%;
-  z-index: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05) 0%, transparent 70%);
   pointer-events: none;
-  transition: all 0.8s ease;
 }
 
-.holographic-card > * {
-  position: relative;
-  z-index: 1;
-}
-
-.holographic-card:hover {
-  @apply bg-zinc-900/50 border-purple-500/30;
-  transform: translateY(-4px) scale(1.01);
+/* Magetic UI Button (Design Spell) */
+.magnetic-btn {
+  @apply relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-105 active:scale-95;
+  background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
   box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.1), 
-    0 25px 50px -15px rgba(0,0,0,0.9),
-    0 0 25px rgba(168, 85, 247, 0.15);
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    0 8px 20px rgba(0,0,0,0.4);
 }
 
-.holographic-card:hover::before {
-  left: 200%;
-  transition: all 0.8s ease;
+.magnetic-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 20px var(--brand-primary, rgba(139, 92, 246, 0)) inset;
+  opacity: 0;
+  transition: opacity 0.4s;
 }
 
-/* Liquid Form Styles */
-input, textarea, select {
-  @apply bg-zinc-950/60 border border-purple-900/40 focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/50 transition-all duration-300 text-zinc-100 placeholder-zinc-600 rounded-xl outline-none;
-  backdrop-filter: blur(12px);
+.magnetic-btn:hover::after {
+  opacity: 0.4;
+}
+
+/* Holographic Inputs */
+.holo-input {
+  @apply bg-black/40 border border-white/10 text-white placeholder-white/30 outline-none transition-all duration-500 ease-out;
   box-shadow: 
-    inset 0 2px 6px rgba(0,0,0,0.6),
-    0 0 0 rgba(168, 85, 247, 0);
+    inset 0 2px 10px rgba(0,0,0,0.8),
+    0 0 0 rgba(255,255,255,0);
 }
 
-input:focus, textarea:focus, select:focus {
+.holo-input:focus {
+  @apply border-[var(--brand-primary,rgba(255,255,255,0.5))] bg-black/60;
   box-shadow: 
-    inset 0 2px 6px rgba(0,0,0,0.6),
-    0 0 12px rgba(168, 85, 247, 0.2);
+    inset 0 2px 10px rgba(0,0,0,1),
+    0 0 25px var(--brand-primary, rgba(255,255,255,0.2));
+  animation: glow-pulse 3s infinite;
 }
+
+/* CRT Scanline Overlay */
+.scanlines {
+  position: fixed;
+  top: 0; left: 0; w: 100vw; h: 100vh;
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0,0,0,0.1) 50%,
+    rgba(0,0,0,0.1)
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.3;
+}
+

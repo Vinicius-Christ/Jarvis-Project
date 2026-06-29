@@ -64,7 +64,7 @@ export default function TokensManager() {
       <div className="flex justify-between items-start border-b border-zinc-800 pb-5">
         <div>
           <h2 className="text-xl font-sans font-bold text-white tracking-tight flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-amber-500" />
+            <KeyRound className="h-5 w-5 text-[var(--brand-primary)]" />
             Central de Tokens & Auth
           </h2>
           <p className="text-zinc-400 mt-1.5 text-xs font-mono leading-relaxed max-w-2xl">
@@ -74,9 +74,9 @@ export default function TokensManager() {
       </div>
 
       {successMsg && (
-        <div className="bg-emerald-950/40 border border-emerald-900/50 p-4 rounded-xl flex items-center gap-3">
-          <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
-          <p className="text-emerald-400 text-xs font-mono font-bold tracking-wide">{successMsg}</p>
+        <div className="bg-[var(--brand-dark)]/40 border border-[var(--brand-dark)]/50 p-4 rounded-xl flex items-center gap-3">
+          <CheckCircle className="h-5 w-5 text-[var(--brand-light)] shrink-0" />
+          <p className="text-[var(--brand-light)] text-xs font-mono font-bold tracking-wide">{successMsg}</p>
         </div>
       )}
 
@@ -89,9 +89,9 @@ export default function TokensManager() {
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-l-4 border-l-rose-500">
+            <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-l-4 border-l-[var(--brand-primary)]">
               <div className="md:col-span-2">
-                <label className="block text-[11px] uppercase font-bold text-rose-400 font-mono mb-1.5 flex items-center gap-1.5">
+                <label className="block text-[11px] uppercase font-bold text-[var(--brand-light)] font-mono mb-1.5 flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4" /> Google OAuth Client ID
                 </label>
                 <p className="text-[10px] text-zinc-500 mb-1 leading-relaxed">Protege a interface web remotamente exigindo login com a sua própria conta Google. Preencha este campo com seu Web App Client ID do GCP.</p>
@@ -104,7 +104,7 @@ export default function TokensManager() {
                   value={tokens?.googleClientId || ""}
                   onChange={handleChange}
                   placeholder="xxxxxx-xxxxxxxxx.apps.googleusercontent.com"
-                  className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-rose-500 transition-colors"
+                  className="w-full bg-black/60 border border-zinc-800 text-[var(--brand-light)] font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-[var(--brand-primary)] transition-colors"
                 />
               </div>
             </div>
@@ -120,7 +120,7 @@ export default function TokensManager() {
                 value={tokens.githubToken}
                 onChange={handleChange}
                 placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-500 transition-colors transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_4px_12px_var(--brand-glow)]"
+                className="w-full bg-black/60 border border-zinc-800 text-[var(--brand-light)] font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-[var(--brand-primary)] transition-colors transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_4px_12px_var(--brand-glow)]"
               />
             </div>
 
@@ -133,7 +133,7 @@ export default function TokensManager() {
                 value={tokens.haToken}
                 onChange={handleChange}
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-500 transition-colors transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_var(--brand-glow)]"
+                className="w-full bg-black/60 border border-zinc-800 text-[var(--brand-light)] font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-[var(--brand-primary)] transition-colors transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_var(--brand-glow)]"
               />
             </div>
 
@@ -149,7 +149,7 @@ export default function TokensManager() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
             <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl lg:col-span-2">
-              <label className="block text-[11px] uppercase font-bold text-cyan-400 font-mono mb-1.5">Telegram Bot Token</label>
+              <label className="block text-[11px] uppercase font-bold text-[var(--brand-light)] font-mono mb-1.5">Telegram Bot Token</label>
               <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">Ativa a interface via Telegram com as workflows do N8N incluídas no JARVIS. Criado e fornecido pelo @BotFather.</p>
               <input
                 type="password"
@@ -157,7 +157,7 @@ export default function TokensManager() {
                 value={tokens.telegramToken}
                 onChange={handleChange}
                 placeholder="123456789:ABCDefGHI_jkl12..."
-                className="w-full bg-black/60 border border-zinc-800 text-emerald-400 font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-cyan-500 transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_var(--brand-glow)]"
+                className="w-full bg-black/60 border border-zinc-800 text-[var(--brand-light)] font-mono text-xs px-3 py-2 rounded focus:outline-none focus:border-[var(--brand-primary)] transition-all duration-300 hover:border-zinc-600 focus:shadow-[0_0_15px_var(--brand-glow)]"
               />
             </div>
 
@@ -168,7 +168,7 @@ export default function TokensManager() {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2  border-2 border-amber-600/30 text-amber-400 font-bold font-mono text-xs uppercase tracking-widest rounded hover:bg-amber-600 hover:text-black transition-all shadow-[0_0_15px_rgba(217,119,6,0.15)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-6 py-2  border-2 border-[var(--brand-primary)]/30 text-[var(--brand-light)] font-bold font-mono text-xs uppercase tracking-widest rounded hover:bg-[var(--brand-primary)] hover:text-black transition-all shadow-[0_0_15px_rgba(217,119,6,0.15)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? "Registrando Senhas..." : "Salvar Configurações Globais"}

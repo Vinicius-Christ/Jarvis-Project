@@ -77,9 +77,9 @@ export default function MCPSettings() {
              <p className="text-xs font-sans text-zinc-500 leading-relaxed mb-4">{server.desc}</p>
              
              {server.active && (
-               <div className="text-[10px] font-mono text-emerald-400 bg-emerald-950/20 px-2 py-1.5 rounded flex items-center justify-between border border-emerald-900/30">
+               <div className="text-[10px] font-mono text-[var(--brand-light)] bg-[var(--brand-dark)]/20 px-2 py-1.5 rounded flex items-center justify-between border border-[var(--brand-dark)]/30">
                  <span className="flex items-center gap-1.5">
-                   <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full transition-opacity duration-300 blur-sm"></span>
+                   <span className="h-1.5 w-1.5 bg-[var(--brand-primary)] rounded-full transition-opacity duration-300 blur-sm"></span>
                    Socket Ativo (Stdio)
                  </span>
                  <CheckCircle className="h-3 w-3" />
@@ -116,8 +116,8 @@ export default function MCPSettings() {
             <div className="space-y-1.5">
               {activeFS ? (
                 <div className="bg-zinc-950 p-2 rounded border border-zinc-900/50 flex items-center justify-between text-[11px]">
-                  <span className="text-emerald-400 font-bold">fs::search_notes, read_note, write_note</span>
-                  <span className="text-[9px] px-1 bg-emerald-950 text-emerald-400 rounded">PRONTO</span>
+                  <span className="text-[var(--brand-light)] font-bold">fs::search_notes, read_note, write_note</span>
+                  <span className="text-[9px] px-1 bg-[var(--brand-dark)] text-[var(--brand-light)] rounded">PRONTO</span>
                 </div>
               ) : (
                 <div className="bg-zinc-950 p-2 rounded border border-zinc-900/50 flex items-center justify-between text-[11px] text-zinc-600 opacity-45">
@@ -128,8 +128,8 @@ export default function MCPSettings() {
 
               {activeDB ? (
                 <div className="bg-zinc-950 p-2 rounded border border-zinc-900/50 flex items-center justify-between text-[11px]">
-                  <span className="text-emerald-400 font-bold">db::get_finances</span>
-                  <span className="text-[9px] px-1 bg-emerald-950 text-emerald-400 rounded">PRONTO</span>
+                  <span className="text-[var(--brand-light)] font-bold">db::get_finances</span>
+                  <span className="text-[9px] px-1 bg-[var(--brand-dark)] text-[var(--brand-light)] rounded">PRONTO</span>
                 </div>
               ) : (
                 <div className="bg-zinc-950 p-2 rounded border border-zinc-900/50 flex items-center justify-between text-[11px] text-zinc-600 opacity-45">

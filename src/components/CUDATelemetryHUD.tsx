@@ -121,7 +121,7 @@ export default React.memo(function CUDATelemetryHUD() {
   if (loading && !stats) {
     return (
       <div className="py-12 text-center text-xs text-zinc-500 space-y-2 font-mono">
-        <RefreshCw className="h-5 w-5 animate-spin mx-auto text-cyan-400" />
+        <RefreshCw className="h-5 w-5 animate-spin mx-auto text-[var(--brand-light)]" />
         <p className="transition-opacity duration-300">Handshaking host hardware sensors...</p>
       </div>
     );
@@ -162,15 +162,15 @@ export default React.memo(function CUDATelemetryHUD() {
           </div>
 
           <div className="flex items-center gap-1.5 text-[10px] bg-indigo-950/40 border border-indigo-900 text-indigo-300 px-3 py-1.5 rounded-xl font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 "></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-light)] "></span>
             <span>HYBRID TELEMETRY ACTIVE</span>
           </div>
         </div>
 
         {/* Warning panel if GPU approaches memory limit or high temperatures */}
         {gpuTemp > 78 || vramPercentage > 88 ? (
-          <div className="p-4 border border-rose-900 bg-rose-950/15 rounded-xl text-rose-400 text-xs font-bold flex items-start gap-2.5 mb-6">
-            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-500" />
+          <div className="p-4 border border-[var(--brand-dark)] bg-[var(--brand-dark)]/15 rounded-xl text-[var(--brand-light)] text-xs font-bold flex items-start gap-2.5 mb-6">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[var(--brand-primary)]" />
             <div className="space-y-1">
               <h4>⚠️ LIMITE TÉRMICO E DE VRAM EM RISCO NO SERVIDOR!</h4>
               <p className="text-[11px] text-zinc-400 leading-normal font-sans">
@@ -183,7 +183,7 @@ export default React.memo(function CUDATelemetryHUD() {
         {/* HOST SERVER AND LOCAL PC SECTION (Mixed grid) */}
         <div className="space-y-3 mb-6">
           <h3 className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2 tracking-widest pl-1">
-            <Layers className="h-3.5 w-3.5 text-violet-400" /> NÓ REMOTO (SERVIDOR IA / DOCKER WSL)
+            <Layers className="h-3.5 w-3.5 text-[var(--brand-light)]" /> NÓ REMOTO (SERVIDOR IA / DOCKER WSL)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             
@@ -218,14 +218,14 @@ export default React.memo(function CUDATelemetryHUD() {
             <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-xl space-y-4 relative overflow-hidden">
               <div className="flex justify-between items-center text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
                 <span>VRAM DETECTADA</span>
-                <Zap className="h-3.5 w-3.5 text-emerald-400" />
+                <Zap className="h-3.5 w-3.5 text-[var(--brand-light)]" />
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 font-sans block">
                   Dedicado (Llama 3.3 / IA)
                 </span>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold text-emerald-400">{(vramUsed / 1024).toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[var(--brand-light)]">{(vramUsed / 1024).toFixed(2)}</span>
                   <span className="text-xs text-zinc-500 font-bold">/ {(vramTotal / 1024).toFixed(0)} GB</span>
                 </div>
               </div>
@@ -233,10 +233,10 @@ export default React.memo(function CUDATelemetryHUD() {
               <div className="space-y-1">
                 <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase">
                   <span>Saturação</span>
-                  <span className="text-emerald-400">{vramPercentage}%</span>
+                  <span className="text-[var(--brand-light)]">{vramPercentage}%</span>
                 </div>
                 <div className="w-full bg-zinc-900 h-1.5 rounded overflow-hidden">
-                  <div className="bg-emerald-400 h-full transition-all duration-500" style={{ width: `${vramPercentage}%` }}></div>
+                  <div className="bg-[var(--brand-light)] h-full transition-all duration-500" style={{ width: `${vramPercentage}%` }}></div>
                 </div>
               </div>
             </div>
@@ -245,15 +245,15 @@ export default React.memo(function CUDATelemetryHUD() {
             <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-xl space-y-4 relative overflow-hidden">
               <div className="flex justify-between items-center text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
                 <span>TEMPERATURA REMOTA</span>
-                <Thermometer className="h-3.5 w-3.5 text-rose-400" />
+                <Thermometer className="h-3.5 w-3.5 text-[var(--brand-light)]" />
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 font-sans block">
                   Temp / Ventoinha (GPU)
                 </span>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold text-rose-400">{gpuTemp}</span>
-                  <span className="text-xs text-rose-500 font-bold">°C</span>
+                  <span className="text-2xl font-bold text-[var(--brand-light)]">{gpuTemp}</span>
+                  <span className="text-xs text-[var(--brand-primary)] font-bold">°C</span>
                   <span className="text-[11px] text-zinc-500 ml-1">({fanSpeed}% fan)</span>
                 </div>
               </div>
@@ -273,14 +273,14 @@ export default React.memo(function CUDATelemetryHUD() {
             <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-xl space-y-4 relative overflow-hidden">
               <div className="flex justify-between items-center text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
                 <span>CARGA DO SERVIDOR</span>
-                <Cpu className="h-3.5 w-3.5 text-cyan-400" />
+                <Cpu className="h-3.5 w-3.5 text-[var(--brand-light)]" />
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 font-sans block">
                   Uso de CPU Host
                 </span>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold text-cyan-400">{cpuVal}</span>
+                  <span className="text-2xl font-bold text-[var(--brand-light)]">{cpuVal}</span>
                   <span className="text-xs text-zinc-500 font-bold">% load</span>
                 </div>
               </div>
@@ -288,10 +288,10 @@ export default React.memo(function CUDATelemetryHUD() {
               <div className="space-y-1">
                 <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase">
                   <span>Docker/WSL RAM</span>
-                  <span className="text-cyan-400">{Math.round((wslMemAlloc / 1024) * 10) / 10}GB</span>
+                  <span className="text-[var(--brand-light)]">{Math.round((wslMemAlloc / 1024) * 10) / 10}GB</span>
                 </div>
                 <div className="w-full bg-zinc-900 h-1.5 rounded overflow-hidden">
-                  <div className="bg-cyan-400 h-full transition-all duration-500" style={{ width: `${wslPercentage}%` }}></div>
+                  <div className="bg-[var(--brand-light)] h-full transition-all duration-500" style={{ width: `${wslPercentage}%` }}></div>
                 </div>
               </div>
             </div>
@@ -302,7 +302,7 @@ export default React.memo(function CUDATelemetryHUD() {
         {localStats ? (
         <div className="space-y-3 mb-6 pt-4 border-t border-zinc-800">
           <h3 className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2 tracking-widest pl-1">
-            <Monitor className="h-3.5 w-3.5 text-cyan-400" /> SEU PC LOCAL (CLIENTE STANDALONE APP)
+            <Monitor className="h-3.5 w-3.5 text-[var(--brand-light)]" /> SEU PC LOCAL (CLIENTE STANDALONE APP)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
@@ -336,24 +336,24 @@ export default React.memo(function CUDATelemetryHUD() {
             <div className="bg-[#0a0a0a] border border-zinc-900/60 p-4 rounded-xl space-y-4 relative overflow-hidden shadow-md">
               <div className="flex justify-between items-center text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
                 <span>RAM DO PC</span>
-                <Zap className="h-3.5 w-3.5 text-emerald-400" />
+                <Zap className="h-3.5 w-3.5 text-[var(--brand-light)]" />
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 font-sans block">
                   Consumo Memória Nativa
                 </span>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold text-emerald-400">{Math.round(localStats.memUsage || 0)}</span>
+                  <span className="text-2xl font-bold text-[var(--brand-light)]">{Math.round(localStats.memUsage || 0)}</span>
                   <span className="text-xs text-zinc-500 font-bold">% ocupada</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase">
                   <span>Saúde da RAM</span>
-                  <span className="text-emerald-400">{(localStats.memUsage || 0) > 85 ? "Alta" : "Estável"}</span>
+                  <span className="text-[var(--brand-light)]">{(localStats.memUsage || 0) > 85 ? "Alta" : "Estável"}</span>
                 </div>
                 <div className="w-full bg-zinc-900 h-1.5 rounded overflow-hidden">
-                  <div className="bg-emerald-400 h-full transition-all duration-500" style={{ width: `${localStats.memUsage || 0}%` }}></div>
+                  <div className="bg-[var(--brand-light)] h-full transition-all duration-500" style={{ width: `${localStats.memUsage || 0}%` }}></div>
                 </div>
               </div>
             </div>
@@ -362,24 +362,24 @@ export default React.memo(function CUDATelemetryHUD() {
             <div className="bg-[#0a0a0a] border border-zinc-900/60 p-4 rounded-xl space-y-4 relative overflow-hidden shadow-md">
               <div className="flex justify-between items-center text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
                 <span>GPU LOCAL</span>
-                <Tv className="h-3.5 w-3.5 text-rose-400" />
+                <Tv className="h-3.5 w-3.5 text-[var(--brand-light)]" />
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 font-sans block truncate" title={localStats.gpuModel}>
                   {localStats.gpuModel || "Gráficos Locais"}
                 </span>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold text-rose-400">{Math.round(localStats.vramPercentage || 0)}</span>
+                  <span className="text-2xl font-bold text-[var(--brand-light)]">{Math.round(localStats.vramPercentage || 0)}</span>
                   <span className="text-xs text-zinc-500 font-bold">% VRAM</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase">
                   <span>Temp GPU</span>
-                  <span className="text-rose-400">{Math.round(localStats.gpuTemp || 50)}°C</span>
+                  <span className="text-[var(--brand-light)]">{Math.round(localStats.gpuTemp || 50)}°C</span>
                 </div>
                 <div className="w-full bg-zinc-900 h-1 rounded overflow-hidden">
-                  <div className="bg-rose-500 h-full transition-all duration-500" style={{ width: `${Math.min(100, localStats.gpuTemp || 50)}%` }}></div>
+                  <div className="bg-[var(--brand-primary)] h-full transition-all duration-500" style={{ width: `${Math.min(100, localStats.gpuTemp || 50)}%` }}></div>
                 </div>
               </div>
             </div>

@@ -442,7 +442,7 @@ function isOnlyConsultationQuery(userMessage: string): boolean {
 
   // Palavras-chave de exclusão ativa
   const deleteWords = [
-    "apagar", "apague", "excluir", "exclua", "deletar", "delete", "remover", "remova", "eliminar", "elimine", "limpar", "limpa"
+    "apagar", "apague", "excluir", "exclua", "deletar", "delete", "remover", "remova", "eliminar", "elimine", "limpar", "limpa", "limpe", "zerar", "zere", "zera", "zero", "tirar", "tire", "tira"
   ];
 
   const hasDelete = deleteWords.some(w => msg.includes(w));
@@ -935,7 +935,11 @@ date: "${new Date().toISOString()}"
 A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
       } else if (lower.includes("empacota") || lower.includes("inno") || lower.includes("nsis") || lower.includes("setup") || lower.includes("deploy") || lower.includes("linux")) {
         replyText = `Excelente escolha, senhor. Preparei um empacotador de Deploy contínuo baseado em ferramentas nativas do Linux (Systemd e Bash), permitindo que você suba a stack completa em seu servidor Debian/Ubuntu de maneira offline e daemonizada.\n\nHabilitei a interface "Deploy / Setup" (disponível na aba de CONFIGURAÇÕES, IOT & FERRAMENTAS). Nela, construí o Assistente de Empacotamento que gerará o script \`.sh\` para implantação automática. <command type="Navigate" to="settings" tab="packager" />`;
-      } else if (lower.includes("deslig") || lower.includes("apaga")) {
+      } else if ((lower.includes("apaga") || lower.includes("exclui") || lower.includes("delet") || lower.includes("remov") || lower.includes("limpa")) && (lower.includes("agenda") || lower.includes("compromisso") || lower.includes("reunião"))) {
+        replyText = `Sim, senhor. Como estou operando em fallback offline, emitirei o comando para apagar toda a sua agenda. <command type="AgendaDelete" all="true" />`;
+      } else if ((lower.includes("apaga") || lower.includes("exclui") || lower.includes("delet") || lower.includes("remov") || lower.includes("limpa")) && (lower.includes("gasto") || lower.includes("finan") || lower.includes("despesa") || lower.includes("transação"))) {
+        replyText = `Certamente, senhor. Executando o protocolo de limpeza financeira via fallback offline. <command type="FinanceDelete" all="true" />`;
+      } else if (lower.includes("deslig") || lower.includes("apaga") || lower.includes("apague as luzes")) {
         replyText = "Com certeza, senhor. Desligando os dispositivos conforme solicitado. <command type=\"IoT\" action=\"Desligar Luzes\" />";
       } else if (lower.includes("luz") || lower.includes("ilumina") || lower.includes("cinema")) {
         replyText = "Com certeza, senhor. Ajustando a iluminação local periférica para as tarefas solicitadas. <command type=\"IoT\" action=\"Modo Cinema\" />";
@@ -2714,7 +2718,22 @@ views:
   }
 
   const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`\n======================================================`);
     console.log(`JARVIS API Server running on port ${PORT}`);
+    console.log(`======================================================`);
+    console.log(`Acesse o sistema no seu navegador através dos links:`);
+    console.log(`-> Local: http://localhost:${PORT}`);
+    
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name] || []) {
+        // Apenas IPv4 e que não seja loopback interno
+        if (net.family === 'IPv4' && !net.internal) {
+          console.log(`-> Rede (${name}): http://${net.address}:${PORT}`);
+        }
+      }
+    }
+    console.log(`======================================================\n`);
   });
 
   const wssRelay = new WebSocketServer({ server });

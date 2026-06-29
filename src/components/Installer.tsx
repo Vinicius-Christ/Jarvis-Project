@@ -53,7 +53,7 @@ function InstallerLoadingHUD({ progress, modules }: { progress: number; modules:
               <span className="text-[9px] text-[var(--brand-light)]">DAEMON CONTAINER SERVICE</span>
               <h4 className="text-xs font-semibold text-zinc-300 mt-0.5">Docker Engine v26.1</h4>
             </div>
-            <span className={`text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 px-1.5 py-0.5 rounded ${modules.docker.status === "running" ? "animate-pulse" : ""}`}>
+            <span className={`text-[9px] text-[var(--brand-light)] bg-[var(--brand-dark)]/40 border border-[var(--brand-dark)]/30 px-1.5 py-0.5 rounded ${modules.docker.status === "running" ? "animate-pulse" : ""}`}>
               {modules.docker.status === "completed" ? "✓ CONCLUÍDO" : modules.docker.status === "running" ? "● PORTAL ATIVO" : "⏱️ AGUARDANDO"}
             </span>
           </div>
@@ -378,7 +378,7 @@ Write-Host "[2/2] Estrutura configurada com sucesso!" -ForegroundColor Green
           )}
           {installerState?.status === "completed" && (
             <div className="flex gap-2">
-              <span className="flex items-center gap-1.5 px-3 py-2 bg-emerald-950/30 border border-emerald-800/60 rounded-lg text-xs text-emerald-400">
+              <span className="flex items-center gap-1.5 px-3 py-2 bg-[var(--brand-dark)]/30 border border-emerald-800/60 rounded-lg text-xs text-[var(--brand-light)]">
                 <CheckCircle className="h-4 w-4" />
                 Instalado e Configurado
               </span>
@@ -429,7 +429,7 @@ Write-Host "[2/2] Estrutura configurada com sucesso!" -ForegroundColor Green
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-zinc-200 font-medium">{mod.label}</span>
                     <span className={`font-mono text-[10px] uppercase font-semibold px-2 py-0.5 rounded ${
-                      mod.status === "completed" ? "bg-emerald-950/80 text-emerald-400" :
+                      mod.status === "completed" ? "bg-[var(--brand-dark)]/80 text-[var(--brand-light)]" :
                       mod.status === "running" ? "bg-[var(--brand-dark)] text-[var(--brand-light)] animate-pulse" :
                       "bg-zinc-800 text-zinc-500"
                     }`}>
@@ -439,7 +439,7 @@ Write-Host "[2/2] Estrutura configurada com sucesso!" -ForegroundColor Green
                   <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${
-                        mod.status === "completed" ? "bg-emerald-500" :
+                        mod.status === "completed" ? "bg-[var(--brand-primary)]" :
                         mod.status === "running" ? "bg-[var(--brand-primary)]" : "bg-zinc-700"
                       }`}
                       style={{ width: `${mod.progress}%` }}
@@ -460,7 +460,7 @@ Write-Host "[2/2] Estrutura configurada com sucesso!" -ForegroundColor Green
               <div className="flex gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50"></span>
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--brand-primary)]/50"></span>
               </div>
             </div>
             <div
@@ -479,7 +479,7 @@ Write-Host "[2/2] Estrutura configurada com sucesso!" -ForegroundColor Green
                   if (log.includes("[OBSIDIAN]")) colorClass = "text-[var(--brand-light)]";
                   if (log.includes("[GROQ]")) colorClass = "text-lime-400";
                   if (log.includes("[N8N]")) colorClass = "text-pink-400";
-                  if (log.includes("CONCLUÍDA") || log.includes("sucesso")) colorClass = "text-emerald-400 font-semibold";
+                  if (log.includes("CONCLUÍDA") || log.includes("sucesso")) colorClass = "text-[var(--brand-light)] font-semibold";
 
                   return (
                     <div key={idx} className={`${colorClass} whitespace-pre-wrap`}>

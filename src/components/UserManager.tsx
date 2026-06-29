@@ -75,7 +75,7 @@ export default function UserManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-4 text-emerald-400">
+      <div className="flex items-center gap-2 mb-4 text-[var(--brand-light)]">
         <Shield className="w-5 h-5" />
         <h2 className="font-bold text-lg">Controle de Usuários</h2>
       </div>
@@ -88,26 +88,26 @@ export default function UserManager() {
             placeholder="E-mail" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
-            className="bg-black/50 border border-zinc-800 p-2 rounded text-sm text-zinc-200 outline-none focus:border-emerald-500" 
+            className="bg-black/50 border border-zinc-800 p-2 rounded text-sm text-zinc-200 outline-none focus:border-[var(--brand-primary)]" 
           />
           <input 
             type={editingId ? "text" : "password"} 
             placeholder={editingId ? "Nova Senha (Opcional)" : "Senha"} 
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
-            className="bg-black/50 border border-zinc-800 p-2 rounded text-sm text-zinc-200 outline-none focus:border-emerald-500" 
+            className="bg-black/50 border border-zinc-800 p-2 rounded text-sm text-zinc-200 outline-none focus:border-[var(--brand-primary)]" 
           />
           <select 
             value={role} 
             onChange={(e) => setRole(e.target.value)}
-            className="bg-black/50 border border-zinc-800 p-2 rounded text-sm text-zinc-200 outline-none focus:border-emerald-500"
+            className="bg-black/50 border border-zinc-800 p-2 rounded text-sm text-zinc-200 outline-none focus:border-[var(--brand-primary)]"
           >
             <option value="user">Usuário Comum</option>
             <option value="admin">Administrador</option>
           </select>
           {editingId ? (
             <div className="flex gap-2">
-              <button onClick={() => handleUpdate(editingId)} className="flex-1 bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-600/40 p-2 rounded flex justify-center items-center gap-2 transition-all">
+              <button onClick={() => handleUpdate(editingId)} className="flex-1 bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/50 hover:bg-[var(--brand-primary)]/40 p-2 rounded flex justify-center items-center gap-2 transition-all">
                 <Check className="w-4 h-4" /> Salvar Edição
               </button>
               <button 
@@ -118,7 +118,7 @@ export default function UserManager() {
               </button>
             </div>
           ) : (
-            <button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2 rounded flex justify-center items-center gap-2 transition-all">
+            <button onClick={handleCreate} className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)] text-white font-bold p-2 rounded flex justify-center items-center gap-2 transition-all">
               <Plus className="w-4 h-4" /> Adicionar
             </button>
           )}

@@ -196,6 +196,21 @@ export default function App() {
     return "violet"; // User requested deep purple as default
   });
 
+  const [bgImage, setBgImage] = useState(() => {
+    try {
+      return localStorage.getItem("jarvis_bg_image") || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const changeBgImage = (url: string) => {
+    setBgImage(url);
+    try {
+      localStorage.setItem("jarvis_bg_image", url);
+    } catch { /* ignore */ }
+  };
+
   const changeTheme = (
     theme: "cyan" | "amber" | "violet" | "emerald" | "rose",
   ) => {
@@ -753,11 +768,25 @@ export default function App() {
   return (
     <div
       style={themeStyles}
-      className={`w-full min-h-[100dvh] flex font-sans overflow-hidden select-none transition-all duration-500 bg-[size:32px_32px] bg-[linear-gradient(to_right,rgba(168,85,247,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(168,85,247,0.03)_1px,transparent_1px)] text-zinc-300`}
+      className={`w-full min-h-[100dvh] flex font-sans overflow-hidden select-none transition-all duration-500 text-zinc-300 relative`}
     >
+      {/* KINETIC GRID (Deep tech feeling) */}
+      <div className="fixed inset-0 kinetic-grid z-0 opacity-40"></div>
+      
+      {/* DYNAMIC BACKGROUND IMAGE */}
+      {bgImage && (
+        <div 
+          className="fixed inset-0 z-0 opacity-30 transition-all duration-1000 mix-blend-screen"
+          style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        />
+      )}
+
+      {/* GLOBAL SCANLINES */}
+      <div className="fixed inset-0 scanlines z-50 pointer-events-none opacity-20"></div>
+
       {/* Sidebar Navigation */}
       <aside
-        className={`glass-panel border-r border-purple-500/10 ${isSidebarOpen ? "w-64" : "w-16"} transition-all duration-500 flex flex-col shrink-0 z-20 shadow-[4px_0_30px_-10px_rgba(0,0,0,0.8)]`}
+        className={`glass-panel border-r border-[var(--brand-primary)]/10 ${isSidebarOpen ? "w-64" : "w-16"} transition-all duration-500 flex flex-col shrink-0 z-20 shadow-[4px_0_30px_-10px_rgba(0,0,0,0.8)]`}
       >
         <div className="h-[73px] flex items-center justify-between p-4 border-b border-white/5 shrink-0 sticky top-0 bg-transparent z-30">
           {isSidebarOpen && (
@@ -809,7 +838,7 @@ export default function App() {
                 {activeTab === item.id && (
                   <motion.div
                     layoutId="activeSidebarTabIndicator"
-                    className="absolute inset-0 bg-purple-500/10 border border-purple-500/40 rounded-lg shadow-[inset_0_0_12px_rgba(168,85,247,0.1),0_0_15px_rgba(168,85,247,0.2)]"
+                    className="absolute inset-0 bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/40 rounded-lg shadow-[inset_0_0_12px_rgba(168,85,247,0.1),0_0_15px_rgba(168,85,247,0.2)]"
                     initial={false}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
@@ -901,7 +930,7 @@ export default function App() {
                 href={systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/"}
                 target="_blank"
                 rel="noreferrer"
-                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all group ${"border-zinc-800/40 bg-zinc-900"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] hover:border-[var(--brand-primary)]/50 hover:bg-[var(--brand-primary)]/10 transition-all group ${"border-zinc-800/40 bg-zinc-900"
                   }`}
                 title="Abrir Memória Central (Google Sheets)"
                 onClick={(e) => {
@@ -912,7 +941,7 @@ export default function App() {
                   }
                 }}
               >
-                <Table className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400" />
+                <Table className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[var(--brand-light)]" />
               </a>
               <a
                 href="/api-docs"
@@ -935,7 +964,7 @@ export default function App() {
                   }`}
               >
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${systemState?.systemActive ? "bg-emerald-500 " : "bg-zinc-500"}`}
+                  className={`h-1.5 w-1.5 rounded-full ${systemState?.systemActive ? "bg-[var(--brand-primary)] " : "bg-zinc-500"}`}
                 ></span>
                 "GPU Local" CUDA:{" "}
                 {systemState?.systemActive ? "ATIVO" : "INATIVO"}
@@ -979,9 +1008,9 @@ export default function App() {
 
         {/* Holographic Notification Update Strip */}
         {updateState && updateState.status === "available" && (
-          <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4 p-4 border border-cyan-500/30 bg-cyan-950/10 hover:bg-cyan-950/20 text-cyan-200 rounded-2xl font-mono text-xs shadow-[0_0_15px_rgba(6,182,212,0.08)] transition-all">
+          <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4 p-4 border border-[var(--brand-primary)]/30 bg-[var(--brand-dark)]/10 hover:bg-[var(--brand-dark)]/20 text-cyan-200 rounded-2xl font-mono text-xs shadow-[0_0_15px_rgba(6,182,212,0.08)] transition-all">
             <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-cyan-400  shrink-0"></span>
+              <span className="w-2 h-2 rounded-full bg-[var(--brand-light)]  shrink-0"></span>
               <div>
                 <span className="font-bold text-white uppercase tracking-wider block sm:inline">
                   [🔄 ATUALIZAÇÃO REPOSITÓRIO]{" "}
@@ -989,7 +1018,7 @@ export default function App() {
                 <span>
                   Uma nova alteração de código-fonte foi sincronizada no Git
                   remoto. Commit:{" "}
-                  <span className="text-cyan-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/40 font-bold">
+                  <span className="text-[var(--brand-light)] bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/40 font-bold">
                     {updateState.remoteCommit}
                   </span>{" "}
                   - "{updateState.remoteMessage}"
@@ -1001,7 +1030,7 @@ export default function App() {
                 setActiveTab("settings");
                 setSettingsTab("updates");
               }}
-              className="px-4 py-1.5 hover-glow bg-cyan-500/15 hover:bg-cyan-500 hover:text-black hover:shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-500/50 text-cyan-300 font-bold tracking-wider rounded transition-all cursor-pointer whitespace-nowrap active:scale-95"
+              className="px-4 py-1.5 hover-glow bg-[var(--brand-primary)]/15 hover:bg-[var(--brand-primary)] hover:text-black hover:shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-[var(--brand-primary)]/50 text-cyan-300 font-bold tracking-wider rounded transition-all cursor-pointer whitespace-nowrap active:scale-95"
             >
               Sincronizar Código Agora
             </button>
@@ -1061,10 +1090,10 @@ export default function App() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
+                initial={{ opacity: 0, y: 30, scale: 0.98, filter: "blur(10px)" }}
+                animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -20, scale: 0.95, filter: "blur(10px)" }}
+                transition={{ type: "spring", stiffness: 200, damping: 20, mass: 0.8 }}
                 className="w-full"
               >
                 {/* TAB 1: JARVIS CORE */}
@@ -1202,7 +1231,7 @@ export default function App() {
                         <div className="space-y-4 font-mono">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-zinc-400">1. Ambiente WSL2 / Docker</span>
-                            <span className={systemState?.installer?.modules?.docker?.status === "completed" ? "text-emerald-400" : "text-zinc-500"}>
+                            <span className={systemState?.installer?.modules?.docker?.status === "completed" ? "text-[var(--brand-light)]" : "text-zinc-500"}>
                               {systemState?.installer?.modules?.docker?.status === "completed" ? "Pronto" : "Ok"}
                             </span>
                           </div>
@@ -1212,7 +1241,7 @@ export default function App() {
 
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-zinc-400">2. Obsidian Vault Base</span>
-                            <span className={systemState?.installer?.modules?.obsidian?.status === "completed" ? "text-emerald-400" : "text-zinc-500"}>
+                            <span className={systemState?.installer?.modules?.obsidian?.status === "completed" ? "text-[var(--brand-light)]" : "text-zinc-500"}>
                               {systemState?.installer?.modules?.obsidian?.status === "completed" ? "Estruturado" : "Ok"}
                             </span>
                           </div>
@@ -1222,7 +1251,7 @@ export default function App() {
 
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-zinc-400">3. Workflows n8n</span>
-                            <span className={systemState?.installer?.modules?.n8n?.status === "completed" ? "text-emerald-400" : "text-zinc-500"}>
+                            <span className={systemState?.installer?.modules?.n8n?.status === "completed" ? "text-[var(--brand-light)]" : "text-zinc-500"}>
                               {systemState?.installer?.modules?.n8n?.status === "completed" ? "Online" : "Ok"}
                             </span>
                           </div>
@@ -1417,7 +1446,7 @@ export default function App() {
                               <div className="text-xs text-zinc-500 pt-2 pb-2 mb-auto mt-2 border-y border-zinc-900 leading-relaxed overflow-hidden text-clip whitespace-pre-wrap">
                                 {item.notes || "Sem anotações complementares."}
                               </div>
-                              <div className="text-xs font-medium mt-3 text-emerald-400 bg-emerald-950/20 px-2 py-1.5 rounded flex items-center justify-between">
+                              <div className="text-xs font-medium mt-3 text-[var(--brand-light)] bg-[var(--brand-dark)]/20 px-2 py-1.5 rounded flex items-center justify-between">
                                 <span>
                                   {new Date(item.datetime).toLocaleDateString(
                                     "pt-BR",
@@ -1484,19 +1513,19 @@ export default function App() {
                         <button
                           onClick={() => setSettingsTab("updates")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap relative ${settingsTab === "updates"
-                            ? "bg-cyan-500/20 text-cyan-400 font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)] border border-cyan-500/30"
+                            ? "bg-[var(--brand-primary)]/20 text-[var(--brand-light)] font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)] border border-[var(--brand-primary)]/30"
                             : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
                             }`}
                         >
                           🔄 Atualizações
                           {updateState?.status === "available" && (
-                            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[var(--brand-light)] animate-ping"></span>
                           )}
                         </button>
                         <button
                           onClick={() => setSettingsTab("tokens")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "tokens"
-                            ? "bg-amber-500/20 text-amber-400 font-bold shadow-[0_0_10px_rgba(245,158,11,0.2)] border border-amber-500/30"
+                            ? "bg-[var(--brand-primary)]/20 text-[var(--brand-light)] font-bold shadow-[0_0_10px_rgba(245,158,11,0.2)] border border-[var(--brand-primary)]/30"
                             : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
                             }`}
                         >
@@ -1505,7 +1534,7 @@ export default function App() {
                         <button
                           onClick={() => setSettingsTab("users")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "users"
-                            ? "bg-emerald-500/20 text-emerald-400 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] border border-emerald-500/30"
+                            ? "bg-[var(--brand-primary)]/20 text-[var(--brand-light)] font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] border border-[var(--brand-primary)]/30"
                             : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
                             }`}
                         >
@@ -1584,7 +1613,11 @@ export default function App() {
                             onRefresh={onRefreshStable}
                             currentTheme={currentTheme}
                             onChangeTheme={changeTheme}
+                            bgImage={bgImage}
+                            onChangeBgImage={changeBgImage}
                             configTab={settingsTab}
+                            isDarkMode={true}
+                            onToggleDarkMode={() => { }}
                           />
                         )}
 
@@ -1626,7 +1659,7 @@ export default function App() {
                                   key={sheet.sheet + sheet.spreadsheet}
                                   className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-zinc-950 hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-sm cursor-pointer"
                                 >
-                                  <span className="block font-bold text-white text-xs text-emerald-400">
+                                  <span className="block font-bold text-white text-xs text-[var(--brand-light)]">
                                     📊 {sheet.spreadsheet} - {sheet.sheet}
                                   </span>
                                   <span className="block text-xs text-zinc-500 truncate mt-0.5">
@@ -1657,9 +1690,9 @@ export default function App() {
                                       key={index}
                                       className="bg-black/40 border border-zinc-800/40 rounded-xl p-4 group"
                                     >
-                                      <div className="text-xs font-bold text-emerald-400 mb-2 font-mono flex items-center justify-between">
+                                      <div className="text-xs font-bold text-[var(--brand-light)] mb-2 font-mono flex items-center justify-between">
                                         <div className="flex items-center gap-1">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-light)]"></span>
                                           {sheet.spreadsheet} &gt; {sheet.sheet}
                                         </div>
                                       </div>
@@ -1720,7 +1753,7 @@ export default function App() {
                           </p>
                         </div>
                         <div>
-                          <strong className="text-emerald-400 block mb-1 text-xs">
+                          <strong className="text-[var(--brand-light)] block mb-1 text-xs">
                             2. Banco de Dados e Containers
                           </strong>
                           <p className="text-zinc-500 mb-2 leading-relaxed">
@@ -1744,11 +1777,11 @@ export default function App() {
                           </p>
                         </div>
                         <div>
-                          <strong className="text-rose-400 block mb-1 text-xs">
+                          <strong className="text-[var(--brand-light)] block mb-1 text-xs">
                             5. Conectando a Segunda Memória (Obsidian)
                           </strong>
                           <p className="text-zinc-500 leading-relaxed">
-                            Agora instale o <a href="https://obsidian.md" target="_blank" className="text-rose-400 underline">Obsidian</a> no seu PC usando a pasta que configuramos (ex <code className="text-xs text-zinc-400">C:\jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
+                            Agora instale o <a href="https://obsidian.md" target="_blank" className="text-[var(--brand-light)] underline">Obsidian</a> no seu PC usando a pasta que configuramos (ex <code className="text-xs text-zinc-400">C:\jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
                           </p>
                         </div>
                       </div>
@@ -1897,7 +1930,7 @@ export default function App() {
                           <div className="text-zinc-300 text-xs">
                             Para economizar recursos computacionais, clique em
                             "Hibernar JARVIS" na bandeja. O app executará:
-                            <pre className="bg-black p-2 rounded text-rose-400 font-mono text-xs mt-1.5">
+                            <pre className="bg-black p-2 rounded text-[var(--brand-light)] font-mono text-xs mt-1.5">
                               docker compose pause
                             </pre>
                             Isso congela a RAM e CPU liberando o desktop
@@ -1923,8 +1956,8 @@ export default function App() {
             <span>LOCAL DEPLOYS: {import.meta.env.VITE_OBSIDIAN_VAULT_PATH || "VAULT LOCAL"}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-emerald-500 uppercase tracking-tighter">
+            <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></span>
+            <span className="text-[var(--brand-primary)] uppercase tracking-tighter">
               Conexão Master Host: Ativa
             </span>
           </div>

@@ -134,7 +134,7 @@ export default function DatabaseViewer({ systemState, fetchSystemState }: Databa
                       <tr key={item.id} className="text-zinc-300">
                         <td className="p-2 text-zinc-500">{item.id}</td>
                         <td className="p-2">{item.description}</td>
-                        <td className="p-2 text-emerald-400">R$ {parseFloat(item.value).toFixed(2)}</td>
+                        <td className="p-2 text-[var(--brand-light)]">R$ {parseFloat(item.value).toFixed(2)}</td>
                         <td className="p-2">{item.type}</td>
                         <td className="p-2">{item.category}</td>
                         <td className="p-2">{new Date(item.date).toLocaleDateString()}</td>

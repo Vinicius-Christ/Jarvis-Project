@@ -18,7 +18,8 @@ services:
       - n8n_data:/home/node/.n8n
       - ${OBSIDIAN_VAULT_PATH:-./vault}:/data/vault:ro # Mount Obsidian vault (Apenas Leitura para Segurança)
     networks:
-      - jarvis_network
+      jarvis_network:
+        ipv4_address: 172.25.0.2
     restart: unless-stopped
 
   # Home Assistant - Hub unificado para internet das coisas (IoT) e automação de lâmpadas/ar
@@ -34,7 +35,8 @@ services:
     volumes:
       - ha_config:/config
     networks:
-      - jarvis_network
+      jarvis_network:
+        ipv4_address: 172.25.0.3
     restart: unless-stopped
 
   # Redis - Cache em memória ultra-rápido para fila de comandos de Voz do Microfone
@@ -44,7 +46,8 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
     networks:
-      - jarvis_network
+      jarvis_network:
+        ipv4_address: 172.25.0.4
     restart: unless-stopped
 
   # Cloudflare Tunnels - Exposição Externa Segura e Gratuita (TryCloudflare)
@@ -55,12 +58,16 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - jarvis_network
+      jarvis_network:
+        ipv4_address: 172.25.0.5
     restart: unless-stopped
 
 networks:
   jarvis_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
 
 volumes:
   n8n_data:

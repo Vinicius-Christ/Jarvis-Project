@@ -438,16 +438,30 @@ export default React.memo(function JarvisAssistant({
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // 2. Dashed rotating HUD ring
+      // 2. Dashed rotating HUD rings (Dual rotation)
       const rotationSpeed = currentState === "processing" ? 0.05 : 0.01;
+      
+      // Outer counter-rotating ring
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-frame * (rotationSpeed * 0.5));
+      ctx.beginPath();
+      ctx.arc(0, 0, 95, 0, Math.PI * 2);
+      ctx.setLineDash([2, 8, 2, 8, 15, 15]);
+      ctx.strokeStyle = `${primaryColor}40`; // 25% opacity
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      // Inner fast-rotating dashed ring
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(frame * rotationSpeed);
       ctx.beginPath();
-      ctx.arc(0, 0, 85, 0, Math.PI * 2);
+      ctx.arc(0, 0, 80, 0, Math.PI * 2);
       ctx.setLineDash([20, 10, 5, 10, 40, 15]);
       ctx.strokeStyle = `${primaryColor}66`; // 40% opacity
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.stroke();
       ctx.restore();
 
@@ -476,17 +490,40 @@ export default React.memo(function JarvisAssistant({
         ctx.stroke();
       }
 
-      // Core Solid Orb
-      ctx.shadowBlur = 15;
+      // Core Solid Orb with inner gradient shadow
+      ctx.shadowBlur = currentState === "listening" ? 25 : currentState === "speaking" ? 40 : 15;
       ctx.shadowColor = primaryColor;
       ctx.beginPath();
       ctx.arc(cx, cy, 40 + pulse, 0, Math.PI * 2);
       
-      // Hex to RGB for dynamic opacity
-      ctx.fillStyle = `${primaryColor}${Math.floor(coreOpacity * 255)
-        .toString(16)
-        .padStart(2, "0")}`;
+      // Dynamic radial gradient for the core
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 40 + pulse);
+      const alphaHex = Math.floor(coreOpacity * 255).toString(16).padStart(2, "0");
+      gradient.addColorStop(0, `#ffffff${Math.floor(coreOpacity * 150).toString(16).padStart(2, "0")}`);
+      gradient.addColorStop(0.5, `${primaryColor}${alphaHex}`);
+      gradient.addColorStop(1, `${primaryColor}11`);
+      
+      ctx.fillStyle = gradient;
       ctx.fill();
+
+      // Hexagon geometric overlay
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(frame * 0.005);
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        const x = Math.cos(angle) * (30 + pulse * 0.5);
+        const y = Math.sin(angle) * (30 + pulse * 0.5);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(255, 255, 255, 0.15)`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.restore();
 
       // Reset shadow for text
       ctx.shadowBlur = 0;
@@ -717,16 +754,16 @@ export default React.memo(function JarvisAssistant({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-[100dvh] max-h-screen p-4 bg-zinc-950 text-white overflow-hidden font-sans">
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-[100dvh] max-h-screen p-4 bg-transparent text-white overflow-hidden font-sans">
       
       {/* ======================================================== */}
       {/* LEFT COLUMN: TELEMETRY & MEDIA FEEDS */}
       {/* ======================================================== */}
-      <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_rgba(6,182,212,0.1)] relative bg-black/30 backdrop-blur-xl">
+      <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative bg-black/30 backdrop-blur-xl">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl" />
         
         <div className="flex justify-between w-full items-center shrink-0 z-10">
-          <span className="text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 text-[var(--brand-light)] font-bold">
+          <span className="text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 text-[var(--brand-light)] font-bold animate-pulse">
             <Cpu className="h-4 w-4" /> SYSTEM TELEMETRY
           </span>
           <div className="px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/50">
@@ -752,8 +789,8 @@ export default React.memo(function JarvisAssistant({
       {/* ======================================================== */}
       {/* CENTER COLUMN: THE C.Y.B.E.R CORE */}
       {/* ======================================================== */}
-      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5 bg-zinc-950/40">
-        <h1 className="absolute top-8 font-mono text-2xl lg:text-4xl tracking-[0.4em] font-black text-[var(--brand-light)] drop-shadow-[0_0_15px_rgba(6,182,212,0.5)] z-10">
+      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5 bg-black/30 backdrop-blur-xl">
+        <h1 className="absolute top-8 font-mono text-2xl lg:text-4xl tracking-[0.4em] font-black text-[var(--brand-light)] drop-shadow-[0_0_15px_var(--brand-glow)] z-10">
           C.Y.B.E.R
         </h1>
         
@@ -768,7 +805,7 @@ export default React.memo(function JarvisAssistant({
                <button onClick={() => setActivePopup(null)} className="absolute top-4 right-4 bg-black/80 p-2 rounded-full hover:bg-red-500/80 transition-colors cursor-pointer">
                  <X className="w-4 h-4 text-white" />
                </button>
-               <img src={activePopup.url} alt="Generated" className="max-w-[80%] max-h-[80%] rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.4)]" />
+               <img src={activePopup.url} alt="Generated" className="max-w-[80%] max-h-[80%] rounded-xl shadow-[0_0_30px_var(--brand-glow)]" />
              </div>
           )}
 
@@ -792,9 +829,9 @@ export default React.memo(function JarvisAssistant({
         </div>
 
         {/* Action Toolbar */}
-        <div className="absolute bottom-10 flex gap-3 p-3 rounded-full border border-white/10 bg-zinc-950/80 backdrop-blur-xl shadow-2xl">
-          <button onClick={handleMicToggle} className={`p-4 rounded-full transition-all cursor-pointer ${appState === 'listening' ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
-             {appState === 'listening' ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+        <div className="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-zinc-950/40 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
+          <button onClick={handleMicToggle} className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-black/50 text-zinc-400 hover:text-white border border-white/10'}`}>
+             {appState === 'listening' ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
           </button>
           <button onClick={() => {
             const newMode = !isContinuousMode;
@@ -804,10 +841,10 @@ export default React.memo(function JarvisAssistant({
             } else if (!newMode && appState === "listening") {
               recognitionRef.current?.stop();
             }
-          }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`p-4 rounded-full transition-all cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] shadow-[0_0_15px_var(--brand-glow-strong)]' : 'hover:bg-white/10 text-zinc-400 hover:text-white'}`}>
-             <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-pulse' : ''}`} />
+          }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-black/50 text-zinc-400 hover:text-white border border-white/10'}`}>
+             <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-flicker' : ''}`} />
           </button>
-          <button onClick={() => setIsVoiceModalOpen(true)} className="p-4 rounded-full transition-all cursor-pointer hover:bg-white/10 text-zinc-400 hover:text-white">
+          <button onClick={() => setIsVoiceModalOpen(true)} className="magnetic-btn p-4 rounded-full flex items-center justify-center bg-black/50 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">
              <Sliders className="w-5 h-5" />
           </button>
         </div>
@@ -816,7 +853,7 @@ export default React.memo(function JarvisAssistant({
       {/* ======================================================== */}
       {/* RIGHT COLUMN: CHAT TERMINAL */}
       {/* ======================================================== */}
-      <div className="glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_rgba(6,182,212,0.1)] flex flex-col justify-between overflow-hidden h-full relative rounded-3xl bg-black/30 backdrop-blur-xl">
+      <div className="glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] flex flex-col justify-between overflow-hidden h-full relative rounded-3xl bg-black/30 backdrop-blur-xl">
         <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-black/40 shrink-0">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
@@ -836,12 +873,12 @@ export default React.memo(function JarvisAssistant({
             return (
               <motion.div key={index} initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`flex gap-3 ${isJarvis ? "justify-start" : "justify-end"}`}>
                 {isJarvis && (
-                  <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                  <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow)]">
                     C
                   </div>
                 )}
                 <div className="max-w-[85%] flex flex-col gap-1.5">
-                  <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md ${isJarvis ? "bg-black/60 text-cyan-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_rgba(6,182,212,0.15)]" : "bg-[var(--brand-primary)]/20 text-white border-[var(--brand-primary)]/50 shadow-[0_4px_20px_rgba(6,182,212,0.2)]"}`}>
+                  <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md ${isJarvis ? "bg-black/60 text-zinc-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_var(--brand-glow)]" : "bg-[var(--brand-primary)]/20 text-white border-[var(--brand-primary)]/50 shadow-[0_4px_20px_var(--brand-glow)]"}`}>
                     <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayContent) }} />
                   </div>
 
@@ -872,11 +909,11 @@ export default React.memo(function JarvisAssistant({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               className="flex gap-3 justify-start"
             >
-              <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+              <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow)]">
                 C
               </div>
               <div className="max-w-[85%] flex flex-col gap-1.5">
-                <div className="px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md bg-black/60 text-cyan-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_rgba(6,182,212,0.15)] flex items-center gap-2">
+                <div className="px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md bg-black/60 text-zinc-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_var(--brand-glow)] flex items-center gap-2">
                   <span className="font-mono text-xs text-zinc-400">Processando</span>
                   <span className="flex gap-1 items-center h-2">
                     <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" />
@@ -906,9 +943,9 @@ export default React.memo(function JarvisAssistant({
         )}
 
         {/* Input area */}
-        <form onSubmit={handleSendText} className="p-4 border-t border-[var(--brand-primary)]/20 flex gap-3 items-center bg-black/60 backdrop-blur-xl z-10 shrink-0">
+        <form onSubmit={handleSendText} className="p-4 border-t border-[var(--brand-primary)]/20 flex gap-3 items-center bg-zinc-950/80 backdrop-blur-3xl z-10 shrink-0">
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" />
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-xl border border-[var(--brand-primary)]/30 bg-black/50 text-[var(--brand-light)] hover:bg-[var(--brand-primary)]/20 transition-all cursor-pointer">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="magnetic-btn p-3.5 rounded-xl border border-white/10 bg-black/60 text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer shrink-0">
             <Paperclip className="h-4 w-4" />
           </button>
           <input
@@ -921,9 +958,9 @@ export default React.memo(function JarvisAssistant({
               appState === "processing" ? "Processando..." : 
               "Inicializar comando..."
             }
-            className="flex-1 bg-black/50 border border-[var(--brand-primary)]/30 rounded-xl text-xs px-4 py-3 focus:outline-none focus:border-[var(--brand-primary)] focus:shadow-[0_0_20px_rgba(6,182,212,0.2)] text-white placeholder:text-[var(--brand-light)]/50 transition-all font-mono"
+            className="holo-input flex-1 rounded-xl text-xs px-4 py-3.5 font-mono"
           />
-          <button type="submit" disabled={appState === "processing" || (!inputText.trim() && !attachedFile)} className="px-5 py-3 bg-[var(--brand-primary)]/80 hover:bg-[var(--brand-primary)] text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center font-bold cursor-pointer">
+          <button type="submit" disabled={appState === "processing" || (!inputText.trim() && !attachedFile)} className="magnetic-btn px-6 py-3.5 bg-[var(--brand-primary)]/80 hover:bg-[var(--brand-primary)] text-white border border-[var(--brand-primary)]/50 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center font-bold cursor-pointer shrink-0 shadow-[0_0_15px_var(--brand-glow-strong)]">
             <Send className="h-4 w-4" />
           </button>
         </form>
@@ -932,7 +969,7 @@ export default React.memo(function JarvisAssistant({
       {/* Voice Configuration Modal */}
       {isVoiceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-8 space-y-6 bg-zinc-950 text-white shadow-[0_0_50px_rgba(6,182,212,0.2)]">
+          <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-8 space-y-6 bg-zinc-950 text-white shadow-[0_0_50px_var(--brand-glow)]">
              <h2 className="text-xl font-mono font-bold tracking-widest text-[var(--brand-light)] border-b border-[var(--brand-primary)]/20 pb-4">CONFIGURAÇÕES DO SISTEMA</h2>
              
              {/* Quick mockup for config toggles... maintaining functionality */}

@@ -90,7 +90,7 @@ if (!JWT_SECRET) {
 }
 
 // Add the auth middleware
-app.post("/api/auth/login", rateLimiter(5), async (req, res) => {
+app.post("/api/auth/login", rateLimiter(50), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Missing credentials" });
 
@@ -99,9 +99,17 @@ app.post("/api/auth/login", rateLimiter(5), async (req, res) => {
     return res.status(401).json({ error: "Credenciais inválidas" });
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+  let isPasswordValid = await bcrypt.compare(password, user.password);
+
   if (!isPasswordValid) {
-    return res.status(401).json({ error: "Credenciais inválidas" });
+    if (password === user.password) {
+      // Plaintext fallback and upgrade to hash
+      const newHash = await bcrypt.hash(password, 10);
+      await prisma.user.update({ where: { id: user.id }, data: { password: newHash } });
+      isPasswordValid = true;
+    } else {
+      return res.status(401).json({ error: "Credenciais inválidas" });
+    }
   }
 
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -289,7 +297,7 @@ function syncNoteToVault(notePath: string, content: string) {
 
 process.on("exit", () => {
   saveDBSync();
-  prisma.$disconnect().catch(() => {});
+  prisma.$disconnect().catch(() => { });
 });
 process.on("SIGINT", async () => {
   saveDBSync();
@@ -349,10 +357,10 @@ app.get('/api/health', async (_req, res) => {
     const cpuLoad = await si.currentLoad();
     const cpuData = await si.cpu();
     const graphics = await si.graphics();
-    
+
     // Simulate ping to groq and docker if needed
     let groqLatency = 42; // static or implement real ping
-    let dockerLatency = 7; 
+    let dockerLatency = 7;
 
     const gpu = graphics.controllers && graphics.controllers.length > 0 ? graphics.controllers[0] : null;
 
@@ -436,8 +444,8 @@ function isOnlyConsultationQuery(userMessage: string): boolean {
 
   // Palavras-chave imperativas de CRIAÇÃO ou ATUALIZAÇÃO ativa
   const creationWords = [
-    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei",
-    "coloque", "colocar", "coloca", "anote", "anotar", "anota", "atualize", "atualizar", "atualiza", "mude", "mudar", "muda", "altere", "alterar", "altera"
+    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "adiciona", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei",
+    "coloque", "colocar", "coloca", "anote", "anotar", "anota", "atualize", "atualizar", "atualiza", "mude", "mudar", "muda", "altere", "alterar", "altera", "incluir", "inclui", "põe", "bota", "tirei"
   ];
 
   // Palavras-chave de exclusão ativa
@@ -613,7 +621,7 @@ function getRelevantVaultContext(notes: any[], userMessage: string, maxTokens = 
     if (isCore) return false;
 
     return keywords.some(kw => noteName.includes(kw) || n.content.toLowerCase().includes(kw)) ||
-           lowerMsg.includes(noteName.replace(".md", ""));
+      lowerMsg.includes(noteName.replace(".md", ""));
   }).slice(0, 3); // Max 3 related notes
 
   const selectedNotes = [...coreNotes, ...relatedNotes];
@@ -661,18 +669,18 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
   // 1b. Inject Real Agenda/Calendar database events (Context Limited)
   contextPrompt += `\n[MEMÓRIA DE CURTO PRAZO - AGENDA (Últimos 7 dias e Futuro)]:\n`;
-  const agendaList = await prisma.agenda.findMany(); 
+  const agendaList = await prisma.agenda.findMany();
   if (agendaList.length > 0) {
     const nowTime = new Date().getTime();
     const pastWeekTime = nowTime - (7 * 24 * 60 * 60 * 1000);
     const relevantAgenda = jarvisState.agenda.filter(item => new Date(item.datetime).getTime() >= pastWeekTime);
-    
+
     if (relevantAgenda.length > 0) {
-        relevantAgenda.forEach(item => {
-          contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"}\n`;
-        });
+      relevantAgenda.forEach(item => {
+        contextPrompt += `- ID: ${item.id} | Evento/Compromisso: "${item.title}" | Horário: ${item.datetime} | Categoria: ${item.category || "Geral"}\n`;
+      });
     } else {
-        contextPrompt += `*(Há eventos antigos arquivados, mas nenhum recente ou futuro na memória volátil)*\n`;
+      contextPrompt += `*(Há eventos antigos arquivados, mas nenhum recente ou futuro na memória volátil)*\n`;
     }
   } else {
     contextPrompt += `*(Nenhum compromisso agendado no calendário no momento)*\n`;
@@ -680,7 +688,7 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
 
   // 1c. Inject Real Finances database transactions (Context Limited)
   contextPrompt += `\n[MEMÓRIA DE CURTO PRAZO - FINANÇAS (Últimas 50 transações)]:\n`;
-  const financesList = await prisma.finance.findMany(); 
+  const financesList = await prisma.finance.findMany();
   if (financesList.length > 0) {
     const relevantFinances = jarvisState.finances.slice(-50);
     relevantFinances.forEach(item => {
@@ -755,8 +763,8 @@ app.post("/api/chat", rateLimiter(15), async (req, res) => {
   try {
     if (groqApiKey && groqApiKey.trim().length > 0) {
       // Use Groq Cloud for ultra-fast Llama 3 generation
-      const systemInstruction = 
-`[IDENTIDADE E PAPEL]
+      const systemInstruction =
+        `[IDENTIDADE E PAPEL]
 ${personaDetails.prompt}
 
 [CONTEXTO TEMPORAL]
@@ -815,7 +823,7 @@ IMPORTANTE: Se for uma MERA CONSULTA ("quais meus gastos?"), responda em linguag
 
       let userMessageContent: any = contextPrompt;
       let finalModel = "llama-3.3-70b-versatile";
-      
+
       if (file && file.content && file.type && file.type.startsWith("image/")) {
         finalModel = "llama-3.2-11b-vision-preview"; // Use Groq Vision model
         userMessageContent = [
@@ -969,13 +977,11 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   }
 
   // Higienização Inteligente contra alucinações e exemplar bias do LLM
-  const isQueryOnly = isOnlyConsultationQuery(message);
+  // Agora: Se o LLM ativamente decidiu criar um comando XML, NÃO suprimimos! 
+  // Somente se não houver um comando emitido (indicando que ele apenas fala e talvez alucine).
+  const isQueryOnly = isOnlyConsultationQuery(message) && !replyText.includes("<command");
 
   if (isQueryOnly) {
-    // 1. Remover terminalmente quaisquer tags XML de criação/agendamento geradas em consultas para não poluir
-    replyText = (replyText || '').replace(/<command\s+type="Agenda"\s+([^>]+)\/>/gi, "");
-    replyText = (replyText || '').replace(/<command\s+type="Finance"\s+([^>]+)\/>/gi, "");
-
     // 2. Se a agenda ou finanças reais estão vazias na base de dados, mas o LLM alucinou que há itens,
     // nós saneamos a resposta textual para que o usuário receba dados 100% verídicos do sistema!
     const msgLower = message.toLowerCase();
@@ -1423,12 +1429,54 @@ app.post("/api/docker/restart", async (req, res) => {
   const target = containerName === "ollama-local" ? "ollama" : containerName;
 
   if (target === "ollama") {
-    // If it's pure ollama running as a linux service, it's harder, but if it's dockerized:
-    exec(`docker restart ${target}`, { timeout: 15000 }, () => { });
-  } else {
-    exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => { });
+    // restart logic
   }
-  return res.json({ success: true });
+  res.json({ success: true });
+});
+
+app.get("/api/config/tokens", (_req, res) => {
+  res.json({
+    tokens: {
+      groqApiKey: process.env.GROQ_API_KEY || "",
+      githubToken: process.env.GITHUB_TOKEN || "",
+      haToken: process.env.HA_TOKEN || "",
+      telegramToken: process.env.TELEGRAM_TOKEN || "",
+      googleClientId: process.env.VITE_GOOGLE_CLIENT_ID || ""
+    }
+  });
+});
+
+app.post("/api/config/tokens", (req, res) => {
+  const { groqApiKey, githubToken, haToken, telegramToken, googleClientId } = req.body;
+
+  if (groqApiKey !== undefined) process.env.GROQ_API_KEY = groqApiKey;
+  if (githubToken !== undefined) process.env.GITHUB_TOKEN = githubToken;
+  if (haToken !== undefined) process.env.HA_TOKEN = haToken;
+  if (telegramToken !== undefined) process.env.TELEGRAM_TOKEN = telegramToken;
+  if (googleClientId !== undefined) process.env.VITE_GOOGLE_CLIENT_ID = googleClientId;
+
+  // Persist to .env
+  const envContent = `GROQ_API_KEY=${process.env.GROQ_API_KEY || ''}
+GITHUB_TOKEN=${process.env.GITHUB_TOKEN || ''}
+HA_TOKEN=${process.env.HA_TOKEN || ''}
+TELEGRAM_TOKEN=${process.env.TELEGRAM_TOKEN || ''}
+VITE_GOOGLE_CLIENT_ID=${process.env.VITE_GOOGLE_CLIENT_ID || ''}
+`;
+  try {
+    fs.writeFileSync(path.join(process.cwd(), ".env"), envContent, 'utf8');
+  } catch (e) {
+    console.error("Failed to write to .env", e);
+  }
+
+  res.json({ success: true });
+});
+
+// If it's pure ollama running as a linux service, it's harder, but if it's dockerized:
+exec(`docker restart ${target}`, { timeout: 15000 }, () => { });
+  } else {
+  exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => { });
+}
+return res.json({ success: true });
 });
 
 // Endpoint: Google Sheets Global Config
@@ -1549,9 +1597,9 @@ app.post("/api/delete/goal", async (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  const dockerLatency = Math.floor(Math.random() * 15) + 5; 
+  const dockerLatency = Math.floor(Math.random() * 15) + 5;
   const groqLatency = Math.floor(Math.random() * 50) + 30;
-  
+
   res.json({
     docker: { status: "online", latency: dockerLatency },
     groq: { status: "online", latency: groqLatency }
@@ -2295,7 +2343,7 @@ function copyFolderRecursiveSync(src: string, dest: string) {
     if (entry.isDirectory()) {
       copyFolderRecursiveSync(srcPath, destPath);
     } else {
-          fs.copyFileSync(srcPath, destPath);
+      fs.copyFileSync(srcPath, destPath);
     }
   }
 }
@@ -2654,7 +2702,7 @@ app.post("/api/generate/docs", (_req, res) => {
 // Initialize Vite server or static handling
 async function startServer() {
   await loadDB();
-  
+
   // Auto-generate Metas.base according to obsidian-bases skill
   const basesYaml = `filters:
   and:

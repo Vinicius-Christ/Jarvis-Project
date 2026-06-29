@@ -776,6 +776,7 @@ Data e Hora atual de referência: ${currentSaoPauloTime} (Fuso horário de Bras�
 3. FLUIDEZ: Responda de forma extremamente natural, humana e espontânea. Evite repetir saudações robotizadas. Ao emitir comandos XML, faça-o de forma invisível e retorne apenas uma breve e amigável resposta social.
 4. OBJETIVIDADE TOTAL: Elimine justificativas longas. Responda DIRETAMENTE ao ponto.
 5. NÃO SEJA PROLIXO: NUNCA resuma ou liste o saldo financeiro, gastos ou agenda do usuário a menos que ele explicitamente pergunte sobre isso. Se o usuário mandar um "tudo bem?", NÃO cite a agenda nem finanças. Apenas ignore esses dados se não forem o foco da conversa.
+6. EXCLUSÃO E DELEÇÃO: Quando o usuário pedir para apagar, limpar ou excluir itens da agenda, finanças ou metas, VOCÊ DEVE OBRIGATORIAMENTE emitir o comando de exclusão XML correspondente. Não hesite, não peça confirmação extra e não diga que não pode fazer.
 
 [CAPACIDADES E COMANDOS XML (AÇÃO)]
 VOCÊ NÃO PRECISA PEDIR PERMISSÃO PARA AGIR. Tem autonomia total para emitir tags XML que o sistema processará automaticamente no background.
@@ -1429,9 +1430,11 @@ app.post("/api/docker/restart", async (req, res) => {
   const target = containerName === "ollama-local" ? "ollama" : containerName;
 
   if (target === "ollama") {
-    // restart logic
+    exec(`docker restart ${target}`, { timeout: 15000 }, () => { });
+  } else {
+    exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => { });
   }
-  res.json({ success: true });
+  return res.json({ success: true });
 });
 
 app.get("/api/config/tokens", (_req, res) => {
@@ -1469,14 +1472,6 @@ VITE_GOOGLE_CLIENT_ID=${process.env.VITE_GOOGLE_CLIENT_ID || ''}
   }
 
   res.json({ success: true });
-});
-
-// If it's pure ollama running as a linux service, it's harder, but if it's dockerized:
-exec(`docker restart ${target}`, { timeout: 15000 }, () => { });
-  } else {
-  exec(`docker compose restart ${target}`, { cwd: process.cwd(), timeout: 15000 }, () => { });
-}
-return res.json({ success: true });
 });
 
 // Endpoint: Google Sheets Global Config
@@ -1753,6 +1748,7 @@ app.post("/api/delete/agenda", async (req, res) => {
   const { title, all } = req.body;
   if (all === true || (title && (title.toLowerCase() === "all" || title.toLowerCase() === "todos" || title.toLowerCase() === "tudo"))) {
     await prisma.agenda.deleteMany();
+    jarvisState.agenda = [];
     try { await prisma.agenda.deleteMany(); } catch { }
   } else if (title) {
     jarvisState.agenda = jarvisState.agenda.filter(a => !a.title.toLowerCase().includes(title.toLowerCase()));

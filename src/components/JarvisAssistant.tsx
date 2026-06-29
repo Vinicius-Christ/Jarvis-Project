@@ -754,12 +754,12 @@ export default React.memo(function JarvisAssistant({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-[100dvh] max-h-screen p-4 bg-transparent text-white overflow-hidden font-sans">
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-full p-4 bg-transparent text-white overflow-hidden font-sans">
       
       {/* ======================================================== */}
       {/* LEFT COLUMN: TELEMETRY & MEDIA FEEDS */}
       {/* ======================================================== */}
-      <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative bg-black/30 backdrop-blur-xl">
+      <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative glass-panel">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl" />
         
         <div className="flex justify-between w-full items-center shrink-0 z-10">
@@ -772,7 +772,7 @@ export default React.memo(function JarvisAssistant({
         </div>
 
         {/* System Uptime / Weather Placeholder */}
-        <div className="border border-white/10 bg-black/40 rounded-xl p-3 flex flex-col gap-2 shrink-0 z-10 font-mono text-xs text-zinc-400">
+        <div className="border border-white/10 bg-white/5 rounded-xl p-3 flex flex-col gap-2 shrink-0 z-10 font-mono text-xs text-zinc-400">
            <div className="flex justify-between items-center">
              <span className="flex items-center gap-1.5"><History className="w-3 h-3 text-[var(--brand-light)]"/> Uptime</span>
              <span className="text-white font-bold">03:45:12</span>
@@ -789,7 +789,7 @@ export default React.memo(function JarvisAssistant({
       {/* ======================================================== */}
       {/* CENTER COLUMN: THE C.Y.B.E.R CORE */}
       {/* ======================================================== */}
-      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5 bg-black/30 backdrop-blur-xl">
+      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5 glass-panel">
         <h1 className="absolute top-8 font-mono text-2xl lg:text-4xl tracking-[0.4em] font-black text-[var(--brand-light)] drop-shadow-[0_0_15px_var(--brand-glow)] z-10">
           C.Y.B.E.R
         </h1>
@@ -801,7 +801,7 @@ export default React.memo(function JarvisAssistant({
           
           {/* Popups Overlay */}
           {activePopup && activePopup.type === 'image' && (
-             <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-3xl m-4 border border-[var(--brand-primary)]/50">
+             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/10 backdrop-blur-sm rounded-3xl m-4 border border-[var(--brand-primary)]/50">
                <button onClick={() => setActivePopup(null)} className="absolute top-4 right-4 bg-black/80 p-2 rounded-full hover:bg-red-500/80 transition-colors cursor-pointer">
                  <X className="w-4 h-4 text-white" />
                </button>
@@ -829,8 +829,8 @@ export default React.memo(function JarvisAssistant({
         </div>
 
         {/* Action Toolbar */}
-        <div className="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-zinc-950/40 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
-          <button onClick={handleMicToggle} className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-black/50 text-zinc-400 hover:text-white border border-white/10'}`}>
+        <div className="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
+          <button onClick={handleMicToggle} className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
              {appState === 'listening' ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
           </button>
           <button onClick={() => {
@@ -841,10 +841,10 @@ export default React.memo(function JarvisAssistant({
             } else if (!newMode && appState === "listening") {
               recognitionRef.current?.stop();
             }
-          }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-black/50 text-zinc-400 hover:text-white border border-white/10'}`}>
+          }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
              <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-flicker' : ''}`} />
           </button>
-          <button onClick={() => setIsVoiceModalOpen(true)} className="magnetic-btn p-4 rounded-full flex items-center justify-center bg-black/50 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">
+          <button onClick={() => setIsVoiceModalOpen(true)} className="magnetic-btn p-4 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">
              <Sliders className="w-5 h-5" />
           </button>
         </div>
@@ -853,8 +853,8 @@ export default React.memo(function JarvisAssistant({
       {/* ======================================================== */}
       {/* RIGHT COLUMN: CHAT TERMINAL */}
       {/* ======================================================== */}
-      <div className="glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] flex flex-col justify-between overflow-hidden h-full relative rounded-3xl bg-black/30 backdrop-blur-xl">
-        <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-black/40 shrink-0">
+      <div className="glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] flex flex-col justify-between overflow-hidden h-full relative rounded-3xl glass-panel">
+        <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-white/5 shrink-0">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
             <span className="text-xs font-mono font-bold text-[var(--brand-light)] tracking-wider">
@@ -873,12 +873,12 @@ export default React.memo(function JarvisAssistant({
             return (
               <motion.div key={index} initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`flex gap-3 ${isJarvis ? "justify-start" : "justify-end"}`}>
                 {isJarvis && (
-                  <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow)]">
+                  <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-white/10 text-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow)]">
                     C
                   </div>
                 )}
                 <div className="max-w-[85%] flex flex-col gap-1.5">
-                  <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md ${isJarvis ? "bg-black/60 text-zinc-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_var(--brand-glow)]" : "bg-[var(--brand-primary)]/20 text-white border-[var(--brand-primary)]/50 shadow-[0_4px_20px_var(--brand-glow)]"}`}>
+                  <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md ${isJarvis ? "bg-white/10 text-zinc-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_var(--brand-glow)]" : "bg-[var(--brand-primary)]/20 text-white border-[var(--brand-primary)]/50 shadow-[0_4px_20px_var(--brand-glow)]"}`}>
                     <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayContent) }} />
                   </div>
 
@@ -888,7 +888,7 @@ export default React.memo(function JarvisAssistant({
                         const typeMatch = cmd.match(/type="([^"]+)"/);
                         const type = typeMatch ? typeMatch[1] : "System";
                         return (
-                          <div key={idx} className="text-[9px] uppercase font-bold border border-[var(--brand-primary)]/40 px-2 py-1 rounded flex items-center gap-1 bg-black/50 text-[var(--brand-light)]">
+                          <div key={idx} className="text-[9px] uppercase font-bold border border-[var(--brand-primary)]/40 px-2 py-1 rounded flex items-center gap-1 bg-white/5 text-[var(--brand-light)]">
                             <Sparkles className="h-3 w-3" /> [AÇÃO EXECUTADA]: {type}
                           </div>
                         );
@@ -909,11 +909,11 @@ export default React.memo(function JarvisAssistant({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               className="flex gap-3 justify-start"
             >
-              <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-black/80 text-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow)]">
+              <div className="h-8 w-8 rounded-xl border border-[var(--brand-primary)]/50 flex items-center justify-center flex-shrink-0 font-black text-sm bg-white/10 text-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow)]">
                 C
               </div>
               <div className="max-w-[85%] flex flex-col gap-1.5">
-                <div className="px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md bg-black/60 text-zinc-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_var(--brand-glow)] flex items-center gap-2">
+                <div className="px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md bg-white/10 text-zinc-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_var(--brand-glow)] flex items-center gap-2">
                   <span className="font-mono text-xs text-zinc-400">Processando</span>
                   <span className="flex gap-1 items-center h-2">
                     <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" />
@@ -929,7 +929,7 @@ export default React.memo(function JarvisAssistant({
 
         {/* Attachment preview if any file is attached */}
         {attachedFile && (
-          <div className="px-4 py-2 border-t border-white/10 bg-black/60 flex items-center justify-between text-xs shrink-0">
+          <div className="px-4 py-2 border-t border-white/10 bg-white/10 flex items-center justify-between text-xs shrink-0">
             <div className="flex items-center gap-2 text-[var(--brand-light)]">
               <Paperclip className="h-3.5 w-3.5" />
               <span className="font-mono text-[11px] truncate max-w-[280px] text-zinc-300">
@@ -943,9 +943,9 @@ export default React.memo(function JarvisAssistant({
         )}
 
         {/* Input area */}
-        <form onSubmit={handleSendText} className="p-4 border-t border-[var(--brand-primary)]/20 flex gap-3 items-center bg-zinc-950/80 backdrop-blur-3xl z-10 shrink-0">
+        <form onSubmit={handleSendText} className="p-4 border-t border-[var(--brand-primary)]/20 flex gap-3 items-center bg-white/5 backdrop-blur-3xl z-10 shrink-0">
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" />
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="magnetic-btn p-3.5 rounded-xl border border-white/10 bg-black/60 text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer shrink-0">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="magnetic-btn p-3.5 rounded-xl border border-white/10 bg-white/10 text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer shrink-0">
             <Paperclip className="h-4 w-4" />
           </button>
           <input
@@ -968,8 +968,8 @@ export default React.memo(function JarvisAssistant({
 
       {/* Voice Configuration Modal */}
       {isVoiceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-8 space-y-6 bg-zinc-950 text-white shadow-[0_0_50px_var(--brand-glow)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
+          <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-8 space-y-6 glass-panel text-white shadow-[0_0_50px_var(--brand-glow)]">
              <h2 className="text-xl font-mono font-bold tracking-widest text-[var(--brand-light)] border-b border-[var(--brand-primary)]/20 pb-4">CONFIGURAÇÕES DO SISTEMA</h2>
              
              {/* Quick mockup for config toggles... maintaining functionality */}
@@ -979,7 +979,7 @@ export default React.memo(function JarvisAssistant({
                    <select 
                      value={activePersona} 
                      onChange={(e) => setActivePersona(e.target.value)} 
-                     className="w-full bg-black/50 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                     className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
                    >
                      <option value="jarvis">J.A.R.V.I.S (Cortês & Profissional)</option>
                      <option value="friday">F.R.I.D.A.Y (Dinâmica & Direta)</option>
@@ -993,7 +993,7 @@ export default React.memo(function JarvisAssistant({
                    <select 
                      value={selectedVoiceURI || ""} 
                      onChange={(e) => setSelectedVoiceURI(e.target.value)} 
-                     className="w-full bg-black/50 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                     className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
                    >
                      {systemVoices.map(v => (
                        <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>

@@ -1,4 +1,4 @@
-import { getServerUrl, fetchAutenticado } from "./lib/api";
+﻿import { getServerUrl, fetchAutenticado } from "./lib/api";
 import PackagerModule from "./components/PackagerModule";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -156,7 +156,7 @@ export default function App() {
   const [timeStr, setTimeStr] = useState("");
   const [selectedPreset, setSelectedPreset] = useState("Modo Trabalho");
 
-  // Motor de Auto-Atualização sem perda de dados
+  // Motor de Auto-AtualizaÃ§Ã£o sem perda de dados
   const [updateState, setUpdateState] = useState<any>({
     status: "idle",
     progress: 0,
@@ -170,7 +170,7 @@ export default function App() {
   const [financeForm, setFinanceForm] = useState({
     value: "",
     type: "Despesa",
-    category: "Educação",
+    category: "EducaÃ§Ã£o",
     description: "",
   });
   const [goalForm, setGoalForm] = useState({ limit: "", reason: "" });
@@ -642,7 +642,7 @@ export default function App() {
       setFinanceForm({
         value: "",
         type: "Despesa",
-        category: "Educação",
+        category: "EducaÃ§Ã£o",
         description: "",
       });
       fetchSystemState();
@@ -750,7 +750,7 @@ export default function App() {
   ) => {
     if (e.target.files && e.target.files.length > 0) {
       handleSendMessage(
-        `Analisar arquivo anexo e lançar em ${type}. [Arquivo recebido]`,
+        `Analisar arquivo anexo e lanÃ§ar em ${type}. [Arquivo recebido]`,
       );
     }
   };
@@ -768,7 +768,7 @@ export default function App() {
   return (
     <div
       style={themeStyles}
-      className={`w-full min-h-[100dvh] flex font-sans overflow-hidden select-none transition-all duration-500 text-zinc-300 relative`}
+      className={`w-full h-[100dvh] flex font-sans overflow-hidden select-none transition-all duration-500 text-zinc-300 relative`}
     >
       {/* KINETIC GRID (Deep tech feeling) */}
       <div className="fixed inset-0 kinetic-grid z-0 opacity-40"></div>
@@ -800,7 +800,7 @@ export default function App() {
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={`p-1.5 rounded-lg transition border shrink-0 ${isSidebarOpen ? "" : "mx-auto"
-              } ${"bg-zinc-900/50 hover:bg-zinc-800 text-zinc-400 hover:text-white border-transparent hover:border-zinc-700"
+              } ${"bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border-transparent hover:border-white/10"
               }`}
           >
             {isSidebarOpen ? (
@@ -819,9 +819,9 @@ export default function App() {
             { id: "finance", label: "Financeiro", icon: Database },
             { id: "agenda", label: "Agenda", icon: BookOpen },
             { id: "database", label: "Banco de Dados", icon: Database },
-            { id: "settings", label: "Configs & Integrações", icon: Settings },
-            { id: "diagnostics", label: "Diagnósticos & SSH", icon: Terminal },
-            { id: "readme", label: "Documentação", icon: Info },
+            { id: "settings", label: "Configs & IntegraÃ§Ãµes", icon: Settings },
+            { id: "diagnostics", label: "DiagnÃ³sticos & SSH", icon: Terminal },
+            { id: "readme", label: "DocumentaÃ§Ã£o", icon: Info },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -831,7 +831,7 @@ export default function App() {
                 className={`relative flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs transition-all duration-300 cursor-pointer whitespace-nowrap w-full group ${
                   activeTab === item.id
                     ? "text-[var(--brand-light)] font-bold"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
                 }`}
                 title={item.label}
               >
@@ -872,7 +872,7 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden p-4 md:p-6 w-full">
+      <div className={`flex-1 flex flex-col h-full overflow-x-hidden p-4 md:p-6 w-full ${(activeTab === "jarvis" || activeTab === "settings") ? "overflow-hidden" : "overflow-y-auto"}`}>
         {/* Immersive HUD Header Section */}
         <header className={`flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 border-b pb-4 mb-6 shrink-0 relative ${"border-zinc-900"
           }`}>
@@ -920,7 +920,7 @@ export default function App() {
                 href="http://localhost:8123"
                 target="_blank"
                 rel="noreferrer"
-                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${"border-zinc-800/40 bg-zinc-900"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${"border-white/10 bg-white/5 backdrop-blur-md"
                   }`}
                 title="Abrir Home Assistant (Porta 8123)"
               >
@@ -930,9 +930,9 @@ export default function App() {
                 href={systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/"}
                 target="_blank"
                 rel="noreferrer"
-                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] hover:border-[var(--brand-primary)]/50 hover:bg-[var(--brand-primary)]/10 transition-all group ${"border-zinc-800/40 bg-zinc-900"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] hover:border-[var(--brand-primary)]/50 hover:bg-[var(--brand-primary)]/10 transition-all group ${"border-white/10 bg-white/5 backdrop-blur-md"
                   }`}
-                title="Abrir Memória Central (Google Sheets)"
+                title="Abrir MemÃ³ria Central (Google Sheets)"
                 onClick={(e) => {
                   if (!systemState?.googleSheetUrl) {
                     e.preventDefault();
@@ -947,7 +947,7 @@ export default function App() {
                 href="/api-docs"
                 target="_blank"
                 rel="noreferrer"
-                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${"border-zinc-800/40 bg-zinc-900"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${"border-white/10 bg-white/5 backdrop-blur-md"
                   }`}
                 title="Abrir JARVIS Web/Dev (Porta 3000)"
               >
@@ -972,7 +972,7 @@ export default function App() {
             </div>
             <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800/40"}`}>
               <span className="text-xs text-zinc-500 uppercase block tracking-wider">
-                Estação Horária
+                EstaÃ§Ã£o HorÃ¡ria
               </span>
               <span
                 id="digital_clock"
@@ -1013,12 +1013,12 @@ export default function App() {
               <span className="w-2 h-2 rounded-full bg-[var(--brand-light)]  shrink-0"></span>
               <div>
                 <span className="font-bold text-white uppercase tracking-wider block sm:inline">
-                  [🔄 ATUALIZAÇÃO REPOSITÓRIO]{" "}
+                  [ðŸ”„ ATUALIZAÃ‡ÃƒO REPOSITÃ“RIO]{" "}
                 </span>
                 <span>
-                  Uma nova alteração de código-fonte foi sincronizada no Git
+                  Uma nova alteraÃ§Ã£o de cÃ³digo-fonte foi sincronizada no Git
                   remoto. Commit:{" "}
-                  <span className="text-[var(--brand-light)] bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/40 font-bold">
+                  <span className="text-[var(--brand-light)] bg-black/20 backdrop-blur-md px-1.5 py-0.5 rounded border border-zinc-800/40 font-bold">
                     {updateState.remoteCommit}
                   </span>{" "}
                   - "{updateState.remoteMessage}"
@@ -1032,13 +1032,13 @@ export default function App() {
               }}
               className="px-4 py-1.5 hover-glow bg-[var(--brand-primary)]/15 hover:bg-[var(--brand-primary)] hover:text-black hover:shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-[var(--brand-primary)]/50 text-cyan-300 font-bold tracking-wider rounded transition-all cursor-pointer whitespace-nowrap active:scale-95"
             >
-              Sincronizar Código Agora
+              Sincronizar CÃ³digo Agora
             </button>
           </div>
         )}
 
         {/* Main Container Dashboard */}
-        <main className="flex-1 overflow-visible mb-6 flex flex-col w-full relative">
+        <main className={`flex-1 flex flex-col w-full relative min-h-0 ${(activeTab === "jarvis" || activeTab === "settings") ? "mb-0" : "mb-6"}`}>
           {!systemState?.systemActive ? (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#030712] border border-zinc-900 rounded-2xl">
               <div className="w-16 h-16 mb-4 rounded-full border-4 border-zinc-800/40 flex items-center justify-center">
@@ -1049,7 +1049,7 @@ export default function App() {
               </h2>
               <p className="text-zinc-600 font-mono text-xs mt-2 max-w-sm text-center">
                 Todos os containers, modelos Groq e processos de IA foram
-                pausados com sucesso para economizar processamento e memória RAM
+                pausados com sucesso para economizar processamento e memÃ³ria RAM
                 no host.
               </p>
               <button
@@ -1063,20 +1063,20 @@ export default function App() {
                 }}
                 className="mt-8 px-6 py-2 hover-glow bg-[var(--brand-primary)] border border-[var(--brand-light)] text-white hover:bg-[var(--brand-light)] hover:text-black font-bold uppercase tracking-wider rounded font-mono shadow-[0_0_15px_var(--brand-glow-strong)] transition-all cursor-pointer"
               >
-                🚀 Ligar JARVIS
+                ðŸš€ Ligar JARVIS
               </button>
               <div className="mt-8 pt-6 border-t border-zinc-900/50 flex flex-col items-center">
                 <span className="text-xs text-zinc-700 font-mono uppercase tracking-widest">
                   Recursos em Repouso
                 </span>
                 <div className="flex gap-4 mt-2">
-                  <span className="text-sm bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
+                  <span className="text-sm bg-black/20 backdrop-blur-md text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     4GB VRAM (CUDA)
                   </span>
-                  <span className="text-sm bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
+                  <span className="text-sm bg-black/20 backdrop-blur-md text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     Docker Subnet
                   </span>
-                  <span className="text-sm bg-zinc-900/50 text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
+                  <span className="text-sm bg-black/20 backdrop-blur-md text-zinc-600 px-2.5 py-1 rounded border border-zinc-800/40">
                     Websockets IoT
                   </span>
                 </div>
@@ -1085,7 +1085,7 @@ export default function App() {
           ) : null}
 
           <div
-            className={`flex-1 transition-opacity duration-500 relative ${!systemState?.systemActive ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+            className={`flex-1 flex flex-col min-h-0 transition-opacity duration-500 relative ${!systemState?.systemActive ? "opacity-0 pointer-events-none" : "opacity-100"}`}
           >
             <AnimatePresence mode="wait">
               <motion.div
@@ -1094,11 +1094,11 @@ export default function App() {
                 animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, y: -20, scale: 0.95, filter: "blur(10px)" }}
                 transition={{ type: "spring", stiffness: 200, damping: 20, mass: 0.8 }}
-                className="w-full"
+                className="w-full flex-1 flex flex-col min-h-0"
               >
                 {/* TAB 1: JARVIS CORE */}
                 {activeTab === "jarvis" && (
-                  <div className="h-[calc(100vh-140px)] w-full flex flex-col animate-fade-in relative z-10 shadow-2xl rounded-xl overflow-hidden glass-panel">
+                  <div className="h-full flex-1 w-full flex flex-col animate-fade-in relative z-10 shadow-2xl rounded-xl overflow-hidden glass-panel">
                     <JarvisAssistant
                       conversations={systemState?.conversations || []}
                       onSendMessage={onSendMessageStable}
@@ -1114,10 +1114,10 @@ export default function App() {
                         <div>
                           <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase flex items-center gap-1.5">
                             <Home className="h-4 w-4" />
-                            Domótica Residencial (Home Assistant Cores)
+                            DomÃ³tica Residencial (Home Assistant Cores)
                           </h3>
                           <p className="text-xs text-zinc-500">
-                            Sincronizado via IP Local da Máquina com Zigbee e Matter
+                            Sincronizado via IP Local da MÃ¡quina com Zigbee e Matter
                           </p>
                         </div>
                         <div className="flex gap-1.5 font-mono text-xs">
@@ -1128,7 +1128,7 @@ export default function App() {
                                 onClick={() => triggerPresetChange(p)}
                                 className={`px-2.5 py-1 rounded border transition-all cursor-pointer ${selectedPreset === p
                                     ? "bg-[var(--brand-dark)] border-[var(--brand-primary)] text-[var(--brand-light)] font-bold"
-                                    : "bg-zinc-950/40 border-zinc-800/40 text-zinc-500 hover:text-zinc-300"
+                                    : "bg-black/20 backdrop-blur-md/40 border-zinc-800/40 text-zinc-500 hover:text-zinc-300"
                                   }`}
                               >
                                 {p}
@@ -1145,7 +1145,7 @@ export default function App() {
                               key={device.id}
                               className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${device.state === "on"
                                   ? "bg-[var(--brand-dark)] border-[var(--brand-border)]"
-                                  : "bg-zinc-950/40 border-zinc-900/60 text-zinc-500"
+                                  : "bg-black/20 backdrop-blur-md/40 border-zinc-900/60 text-zinc-500"
                                 }`}
                             >
                               <div>
@@ -1163,7 +1163,7 @@ export default function App() {
                                       }`}
                                   >
                                     <div
-                                      className={`bg-zinc-950 w-4.5 h-4.5 rounded-full shadow-inner transition-transform duration-300 ease-in-out flex items-center justify-center ${device.state === "on"
+                                      className={`bg-black/20 backdrop-blur-md w-4.5 h-4.5 rounded-full shadow-inner transition-transform duration-300 ease-in-out flex items-center justify-center ${device.state === "on"
                                           ? "transform translate-x-5"
                                           : "transform translate-x-0"
                                         }`}
@@ -1235,7 +1235,7 @@ export default function App() {
                               {systemState?.installer?.modules?.docker?.status === "completed" ? "Pronto" : "Ok"}
                             </span>
                           </div>
-                          <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden">
+                          <div className="w-full bg-black/20 backdrop-blur-md h-1.5 rounded overflow-hidden">
                             <div className="bg-[var(--brand-primary)] h-full transition-all" style={{ width: `${systemState?.installer?.modules?.docker?.progress || 100}%` }}></div>
                           </div>
 
@@ -1245,7 +1245,7 @@ export default function App() {
                               {systemState?.installer?.modules?.obsidian?.status === "completed" ? "Estruturado" : "Ok"}
                             </span>
                           </div>
-                          <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden">
+                          <div className="w-full bg-black/20 backdrop-blur-md h-1.5 rounded overflow-hidden">
                             <div className="bg-[var(--brand-primary)] h-full transition-all" style={{ width: `${systemState?.installer?.modules?.obsidian?.progress || 100}%` }}></div>
                           </div>
 
@@ -1255,7 +1255,7 @@ export default function App() {
                               {systemState?.installer?.modules?.n8n?.status === "completed" ? "Online" : "Ok"}
                             </span>
                           </div>
-                          <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden">
+                          <div className="w-full bg-black/20 backdrop-blur-md h-1.5 rounded overflow-hidden">
                             <div className="bg-[var(--brand-primary)] h-full transition-all" style={{ width: `${systemState?.installer?.modules?.n8n?.progress || 100}%` }}></div>
                           </div>
                         </div>
@@ -1264,7 +1264,7 @@ export default function App() {
                       <div className="bg-gradient-to-br from-[var(--brand-dark)] to-black border border-[var(--brand-border)] p-6 rounded-2xl space-y-4">
                         <h4 className="text-xs font-mono font-bold text-white uppercase flex items-center gap-2">
                           <Zap className="h-4 w-4 text-yellow-500" />
-                          Atalhos de Simulação
+                          Atalhos de SimulaÃ§Ã£o
                         </h4>
                         <p className="text-xs text-zinc-400 leading-relaxed max-w-md">
                           Envie gatilhos simulando comandos do PC e voz ao JARVIS para ver o console operar comandos complexos.
@@ -1274,14 +1274,14 @@ export default function App() {
                             onClick={() => handleSendMessage("Preparar meu ambiente de estudos no PC principal")}
                             className="bg-black hover:bg-[var(--brand-dark)] p-3 rounded-lg border border-zinc-800/60 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center transition-all shadow-sm"
                           >
-                            <span>📚 Modo Estudos (Macro PC)</span>
+                            <span>ðŸ“š Modo Estudos (Macro PC)</span>
                             <ChevronRight className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleSendMessage("Quanto gastei na minha categoria de Alimentação este mês?")}
+                            onClick={() => handleSendMessage("Quanto gastei na minha categoria de AlimentaÃ§Ã£o este mÃªs?")}
                             className="bg-black hover:bg-[var(--brand-dark)] p-3 rounded-lg border border-zinc-800/60 hover:border-[var(--brand-border)] text-[var(--brand-light)] cursor-pointer flex justify-between items-center transition-all shadow-sm"
                           >
-                            <span>💳 Consulta Otimizada RAG Financeira</span>
+                            <span>ðŸ’³ Consulta Otimizada RAG Financeira</span>
                             <ChevronRight className="h-4 w-4" />
                           </button>
                         </div>
@@ -1309,20 +1309,20 @@ export default function App() {
                         <div className="flex justify-between items-center mb-1">
                           <h3 className="text-xs font-mono font-medium text-[var(--brand-light)] uppercase flex items-center gap-1.5 border-b border-[var(--brand-dark)] pb-2 mb-2 w-full">
                             <Calendar className="h-4 w-4" />
-                            Lançamento de Agenda
+                            LanÃ§amento de Agenda
                           </h3>
                         </div>
 
                         <form
                           onSubmit={handleAgendaSubmit}
-                          className="space-y-3 bg-zinc-950 border border-zinc-800/40 p-4 rounded-xl flex-1"
+                          className="space-y-3 bg-black/20 backdrop-blur-md border border-zinc-800/40 p-4 rounded-xl flex-1"
                         >
                           <h4 className="text-sm text-zinc-400 font-mono mb-2">
                             Agendar novo compromisso
                           </h4>
                           <div>
                             <label className="text-xs text-zinc-500 block mb-1">
-                              Título do Evento
+                              TÃ­tulo do Evento
                             </label>
                             <input
                               type="text"
@@ -1334,7 +1334,7 @@ export default function App() {
                                   title: e.target.value,
                                 })
                               }
-                              placeholder="Reunião com os Investidores"
+                              placeholder="ReuniÃ£o com os Investidores"
                               className="w-full bg-black border border-zinc-800/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
                             />
                           </div>
@@ -1376,7 +1376,7 @@ export default function App() {
                           </div>
                           <div>
                             <label className="text-xs text-zinc-500 block mb-1">
-                              Anotações (Extraídas ou Manual)
+                              AnotaÃ§Ãµes (ExtraÃ­das ou Manual)
                             </label>
                             <textarea
                               rows={2}
@@ -1388,7 +1388,7 @@ export default function App() {
                                 })
                               }
                               className="w-full bg-black border border-zinc-800/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] placeholder-zinc-700"
-                              placeholder="Levar documentação atualizada..."
+                              placeholder="Levar documentaÃ§Ã£o atualizada..."
                             ></textarea>
                           </div>
                           <button
@@ -1399,16 +1399,16 @@ export default function App() {
                           </button>
                         </form>
 
-                        <div className="bg-zinc-950 border border-zinc-800/40 p-4 rounded-xl text-center">
+                        <div className="bg-black/20 backdrop-blur-md border border-zinc-800/40 p-4 rounded-xl text-center">
                           <h4 className="text-sm text-zinc-300 font-mono mb-2">
-                            Adição por Arquivos via IA
+                            AdiÃ§Ã£o por Arquivos via IA
                           </h4>
                           <p className="text-xs text-zinc-500 mb-3">
-                            Suba um PDF de calendário acadêmico, voo, ou roteiro
+                            Suba um PDF de calendÃ¡rio acadÃªmico, voo, ou roteiro
                             para IA agendar automaticamente.
                           </p>
                           <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-white text-sm font-mono py-1.5 px-3 rounded transition-all block">
-                            📤 Upload de Arquivo (PDF/CSV)
+                            ðŸ“¤ Upload de Arquivo (PDF/CSV)
                             <input
                               type="file"
                               className="hidden transition-all duration-300 hover:border-zinc-600 focus:shadow-sm group-hover:shadow-md border border-[var(--brand-glow)] shadow-[var(--brand-glow)]/20 transition-all"
@@ -1427,7 +1427,7 @@ export default function App() {
                           {systemState?.agenda?.map((item: any) => (
                             <div
                               key={item.id}
-                              className="bg-zinc-950 p-4 rounded-xl border border-zinc-800/40 flex flex-col h-full hover:border-zinc-700 transition duration-300"
+                              className="bg-black/20 backdrop-blur-md p-4 rounded-xl border border-zinc-800/40 flex flex-col h-full hover:border-zinc-700 transition duration-300"
                             >
                               <div className="flex justify-between items-start mb-2">
                                 <span className="px-2 py-0.5 bg-[var(--brand-dark)] border border-[var(--brand-border)] text-xs text-[var(--brand-light)] rounded">
@@ -1444,7 +1444,7 @@ export default function App() {
                                 {item.title}
                               </h4>
                               <div className="text-xs text-zinc-500 pt-2 pb-2 mb-auto mt-2 border-y border-zinc-900 leading-relaxed overflow-hidden text-clip whitespace-pre-wrap">
-                                {item.notes || "Sem anotações complementares."}
+                                {item.notes || "Sem anotaÃ§Ãµes complementares."}
                               </div>
                               <div className="text-xs font-medium mt-3 text-[var(--brand-light)] bg-[var(--brand-dark)]/20 px-2 py-1.5 rounded flex items-center justify-between">
                                 <span>
@@ -1464,7 +1464,7 @@ export default function App() {
                           {(!systemState?.agenda ||
                             systemState?.agenda.length === 0) && (
                               <div className="col-span-2 text-center text-zinc-600 text-xs py-10 border border-dashed border-zinc-800/40 rounded-xl">
-                                Nenhum compromisso cadastrado para o período.
+                                Nenhum compromisso cadastrado para o perÃ­odo.
                               </div>
                             )}
                         </div>
@@ -1481,14 +1481,14 @@ export default function App() {
                   />
                 )}
 
-                {/* TAB 6: CONFIGURAÇÕES & IOT */}
+                {/* TAB 6: CONFIGURAÃ‡Ã•ES & IOT */}
                 {activeTab === "settings" && (
-                  <div className="flex h-[calc(100vh-140px)] w-full overflow-hidden border border-zinc-800/40 rounded-xl bg-black/20 animate-fade-in relative z-10 shadow-2xl">
+                  <div className="flex h-full flex-1 min-h-0 w-full overflow-hidden border border-zinc-800/40 rounded-xl bg-black/20 backdrop-blur-md animate-fade-in relative z-10 shadow-2xl">
                     {/* Left Sidebar for Tabs */}
-                    <div className="w-56 shrink-0 border-r border-zinc-800/40 bg-zinc-950/50 flex flex-col overflow-y-auto custom-scrollbar">
+                    <div className="w-56 shrink-0 border-r border-zinc-800/40 bg-black/20 backdrop-blur-md/50 flex flex-col overflow-y-auto custom-scrollbar">
 
                       {/* Category: SISTEMA */}
-                      <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800/40 bg-black/40">
+                      <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800/40 bg-black/20 backdrop-blur-md">
                         Sistema
                       </div>
                       <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1496,28 +1496,28 @@ export default function App() {
                           onClick={() => setSettingsTab("general")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "general"
                             ? "bg-[var(--brand-glow)] text-[var(--brand-light)] font-bold shadow-[0_0_10px_var(--brand-glow-strong)]"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          ⚙️ Configurações & IoT
+                          âš™ï¸ ConfiguraÃ§Ãµes & IoT
                         </button>
                         <button
                           onClick={() => setSettingsTab("appearance")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "appearance"
                             ? "bg-[var(--brand-glow)] text-[var(--brand-light)] font-bold shadow-[0_0_10px_var(--brand-glow-strong)]"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          🎨 Aparência
+                          ðŸŽ¨ AparÃªncia
                         </button>
                         <button
                           onClick={() => setSettingsTab("updates")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap relative ${settingsTab === "updates"
                             ? "bg-[var(--brand-primary)]/20 text-[var(--brand-light)] font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)] border border-[var(--brand-primary)]/30"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          🔄 Atualizações
+                          ðŸ”„ AtualizaÃ§Ãµes
                           {updateState?.status === "available" && (
                             <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[var(--brand-light)] animate-ping"></span>
                           )}
@@ -1526,24 +1526,24 @@ export default function App() {
                           onClick={() => setSettingsTab("tokens")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "tokens"
                             ? "bg-[var(--brand-primary)]/20 text-[var(--brand-light)] font-bold shadow-[0_0_10px_rgba(245,158,11,0.2)] border border-[var(--brand-primary)]/30"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          🔐 Senhas & Tokens
+                          ðŸ” Senhas & Tokens
                         </button>
                         <button
                           onClick={() => setSettingsTab("users")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "users"
                             ? "bg-[var(--brand-primary)]/20 text-[var(--brand-light)] font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)] border border-[var(--brand-primary)]/30"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          👥 Usuários Pessoas
+                          ðŸ‘¥ UsuÃ¡rios Pessoas
                         </button>
                       </div>
 
                       {/* Category: WORKSPACE & IA */}
-                      <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
+                      <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/20 backdrop-blur-md">
                         Workspace & IA
                       </div>
                       <div className="flex flex-col p-2 gap-1 font-mono text-xs">
@@ -1551,59 +1551,59 @@ export default function App() {
                           onClick={() => setSettingsTab("obsidian")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "obsidian"
                             ? "bg-[var(--brand-glow)] text-[var(--brand-light)] font-bold shadow-[0_0_10px_var(--brand-glow-strong)]"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          📊 Google Sheets DB
+                          ðŸ“Š Google Sheets DB
                         </button>
                         <button
                           onClick={() => setSettingsTab("mcp")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "mcp"
                             ? "bg-[var(--brand-glow)] text-[var(--brand-light)] font-bold shadow-[0_0_10px_var(--brand-glow-strong)]"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          🔌 Integração MCP
+                          ðŸ”Œ IntegraÃ§Ã£o MCP
                         </button>
                         <button
                           onClick={() => setSettingsTab("cudautil")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "cudautil"
                             ? "bg-indigo-500/20 text-indigo-400 font-bold shadow-[0_0_10px_rgba(99,102,241,0.2)] border border-indigo-500/30"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          📊 Telemetria CUDA
+                          ðŸ“Š Telemetria CUDA
                         </button>
                       </div>
 
-                      {/* Category: MANUTENÇÃO */}
-                      <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/40">
-                        Manutenção
+                      {/* Category: MANUTENÃ‡ÃƒO */}
+                      <div className="p-3 text-sm font-mono text-zinc-500 uppercase tracking-widest border-b border-t border-zinc-800/40 mt-2 bg-black/20 backdrop-blur-md">
+                        ManutenÃ§Ã£o
                       </div>
                       <div className="flex flex-col p-2 gap-1 font-mono text-xs">
                         <button
                           onClick={() => setSettingsTab("installer")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "installer"
                             ? "bg-[var(--brand-glow)] text-[var(--brand-light)] font-bold shadow-[0_0_10px_var(--brand-glow-strong)]"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          📦 Core Engine & Logs
+                          ðŸ“¦ Core Engine & Logs
                         </button>
                         <button
                           onClick={() => setSettingsTab("packager")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "packager"
                             ? "bg-[var(--brand-glow)] text-[var(--brand-light)] font-bold shadow-[0_0_10px_var(--brand-glow-strong)]"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          📦 Gerar Instalador
+                          ðŸ“¦ Gerar Instalador
                         </button>
                       </div>
                     </div>
 
                     {/* Right Content */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-black/[0.15] custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-black/20 backdrop-blur-md custom-scrollbar relative">
                       {settingsTab === "packager" && <PackagerModule />}
 
                       {(settingsTab === "general" ||
@@ -1624,7 +1624,7 @@ export default function App() {
                       {settingsTab === "installer" && (
                         <div className="space-y-6">
                           <LogsDocker />
-                          <div className="bg-zinc-950/10 border border-zinc-900 p-1 rounded-xl">
+                          <div className="bg-black/20 backdrop-blur-md/10 border border-zinc-900 p-1 rounded-xl">
                             <Installer
                               installerState={systemState?.installer}
                               onRefresh={onRefreshStable}
@@ -1644,11 +1644,11 @@ export default function App() {
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 font-mono">
                           <div className="holographic-card p-4 space-y-3">
                             <h3 className="text-xs font-bold text-[var(--brand-light)] uppercase tracking-widest pl-2 border-l border-[var(--brand-primary)] mb-4 animate-pulse">
-                              Google Sheets Memória
+                              Google Sheets MemÃ³ria
                             </h3>
                             <p className="text-sm text-zinc-400 leading-normal mb-3">
-                              A IA estrutura e armazena os dados através de planilhas.{" "}
-                              <code className="text-xs text-lime-400 font-bold bg-zinc-950 border border-zinc-900 px-1 rounded">
+                              A IA estrutura e armazena os dados atravÃ©s de planilhas.{" "}
+                              <code className="text-xs text-lime-400 font-bold bg-black/20 backdrop-blur-md border border-zinc-900 px-1 rounded">
                                 Sync Auto
                               </code>{" "}
                             </p>
@@ -1657,10 +1657,10 @@ export default function App() {
                               {systemState?.googleSheetsData?.map((sheet: any) => (
                                 <div
                                   key={sheet.sheet + sheet.spreadsheet}
-                                  className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-zinc-950 hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-sm cursor-pointer"
+                                  className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-black/20 backdrop-blur-md hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-sm cursor-pointer"
                                 >
                                   <span className="block font-bold text-white text-xs text-[var(--brand-light)]">
-                                    📊 {sheet.spreadsheet} - {sheet.sheet}
+                                    ðŸ“Š {sheet.spreadsheet} - {sheet.sheet}
                                   </span>
                                   <span className="block text-xs text-zinc-500 truncate mt-0.5">
                                     {sheet.rows?.length || 0} Registros
@@ -1670,7 +1670,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="lg:col-span-3 bg-zinc-900/50 border border-zinc-800/40 p-5 rounded-2xl flex flex-col justify-between">
+                          <div className="lg:col-span-3 bg-black/20 backdrop-blur-md border border-zinc-800/40 p-5 rounded-2xl flex flex-col justify-between">
                             <div>
                               <div className="flex justify-between items-center border-b border-zinc-800/40 pb-3 mb-4">
                                 <div>
@@ -1678,7 +1678,7 @@ export default function App() {
                                     Visualizando Tabelas Relacionais do Cerebro
                                   </h3>
                                   <p className="text-xs text-zinc-500">
-                                    Google Sheets OAuth (Próximo Módulo)
+                                    Google Sheets OAuth (PrÃ³ximo MÃ³dulo)
                                   </p>
                                 </div>
                               </div>
@@ -1688,7 +1688,7 @@ export default function App() {
                                   (sheet: any, index: number) => (
                                     <div
                                       key={index}
-                                      className="bg-black/40 border border-zinc-800/40 rounded-xl p-4 group"
+                                      className="bg-black/20 backdrop-blur-md border border-zinc-800/40 rounded-xl p-4 group"
                                     >
                                       <div className="text-xs font-bold text-[var(--brand-light)] mb-2 font-mono flex items-center justify-between">
                                         <div className="flex items-center gap-1">
@@ -1696,7 +1696,7 @@ export default function App() {
                                           {sheet.spreadsheet} &gt; {sheet.sheet}
                                         </div>
                                       </div>
-                                      <div className="bg-zinc-950 text-xs font-mono text-zinc-350 p-3 rounded-lg border border-zinc-900 leading-loose overflow-x-auto">
+                                      <div className="bg-black/20 backdrop-blur-md text-xs font-mono text-zinc-350 p-3 rounded-lg border border-zinc-900 leading-loose overflow-x-auto">
                                         {sheet.rows?.map((r: string, i: number) => (
                                           <div key={i} className="border-b border-zinc-800/40 pb-1 mb-1 last:border-0">{r}</div>
                                         ))}
@@ -1708,7 +1708,7 @@ export default function App() {
                             </div>
 
                             <div className="border-t border-zinc-800/40 pt-3 mt-4 text-xs text-zinc-500 leading-normal">
-                              💡 <strong>Dica do JARVIS:</strong> Todas as informações estruturadas (metas, preferências, agendamentos longos) agora são guardadas na API do Sheets. Caso o OAuth não conclua, as informações ficarão apenas na memória do MOCK e sincronizadas com a UI do sistema local.
+                              ðŸ’¡ <strong>Dica do JARVIS:</strong> Todas as informaÃ§Ãµes estruturadas (metas, preferÃªncias, agendamentos longos) agora sÃ£o guardadas na API do Sheets. Caso o OAuth nÃ£o conclua, as informaÃ§Ãµes ficarÃ£o apenas na memÃ³ria do MOCK e sincronizadas com a UI do sistema local.
                             </div>
                           </div>
                         </div>
@@ -1747,9 +1747,9 @@ export default function App() {
                             1. Deploy Inicial no Servidor (Windows)
                           </strong>
                           <p className="text-zinc-500 mb-2 leading-relaxed">
-                            Abra o PowerShell do seu servidor. Atualize o repositório com <code className="bg-zinc-950 px-1 py-0.5 rounded text-white font-mono">git pull</code>. Em seguida, na aba lateral "Instalador", baixe o AutoInstaller.ps1 e execute como Administrador. <br />
-                            <code className="bg-zinc-950 px-1 py-0.5 rounded text-[var(--brand-light)] font-mono">./AutoInstaller.ps1</code><br />
-                            Isso configurará a pasta do Obsidian. Depois suba os serviços no Docker e inicie o backend usando Node. Acesse a porta <strong>3000</strong> no navegador.
+                            Abra o PowerShell do seu servidor. Atualize o repositÃ³rio com <code className="bg-black/20 backdrop-blur-md px-1 py-0.5 rounded text-white font-mono">git pull</code>. Em seguida, na aba lateral "Instalador", baixe o AutoInstaller.ps1 e execute como Administrador. <br />
+                            <code className="bg-black/20 backdrop-blur-md px-1 py-0.5 rounded text-[var(--brand-light)] font-mono">./AutoInstaller.ps1</code><br />
+                            Isso configurarÃ¡ a pasta do Obsidian. Depois suba os serviÃ§os no Docker e inicie o backend usando Node. Acesse a porta <strong>3000</strong> no navegador.
                           </p>
                         </div>
                         <div>
@@ -1757,15 +1757,15 @@ export default function App() {
                             2. Banco de Dados e Containers
                           </strong>
                           <p className="text-zinc-500 mb-2 leading-relaxed">
-                            O script <code className="text-zinc-400 font-mono">.ps1</code> gerencia a ativação que "levanta" as bases de dados nos bastidores. O banco de dados PostgreSQL guardará suas tabelas relacionais de longo prazo nativamente e o repositório Obsidian atuará injetando contexto no RAG do modelo principal - tudo já orquestrado internamente para não haver necessidade de configuração manual extra.
+                            O script <code className="text-zinc-400 font-mono">.ps1</code> gerencia a ativaÃ§Ã£o que "levanta" as bases de dados nos bastidores. O banco de dados PostgreSQL guardarÃ¡ suas tabelas relacionais de longo prazo nativamente e o repositÃ³rio Obsidian atuarÃ¡ injetando contexto no RAG do modelo principal - tudo jÃ¡ orquestrado internamente para nÃ£o haver necessidade de configuraÃ§Ã£o manual extra.
                           </p>
                         </div>
                         <div>
                           <strong className="text-[var(--brand-light)] block mb-1 text-xs">
-                            3. Inteligência em 100% Cloud (Groq LPU)
+                            3. InteligÃªncia em 100% Cloud (Groq LPU)
                           </strong>
                           <p className="text-zinc-500 mb-2 leading-relaxed">
-                            Esqueça Ollama! Economize energia usando LLMs ultrarrápidos através do Groq Cloud. Vá em <strong>Chaves de APIs</strong> no menu superior e preencha a Groq API Key obtida gratuitamente em <a href="https://console.groq.com" target="_blank" className="text-[var(--brand-light)] underline">console.groq.com</a>. O JARVIS automaticamente mudará o roteamento cognitivo usando <code>llama-3.3-70b-versatile</code> para lhe responder na hora.
+                            EsqueÃ§a Ollama! Economize energia usando LLMs ultrarrÃ¡pidos atravÃ©s do Groq Cloud. VÃ¡ em <strong>Chaves de APIs</strong> no menu superior e preencha a Groq API Key obtida gratuitamente em <a href="https://console.groq.com" target="_blank" className="text-[var(--brand-light)] underline">console.groq.com</a>. O JARVIS automaticamente mudarÃ¡ o roteamento cognitivo usando <code>llama-3.3-70b-versatile</code> para lhe responder na hora.
                           </p>
                         </div>
                         <div>
@@ -1773,22 +1773,22 @@ export default function App() {
                             4. Voz (Edge TTS Gratuito)
                           </strong>
                           <p className="text-zinc-500 mb-2 leading-relaxed">
-                            Para a comunicação verbal responsiva, a infraestrutura <strong>Microsoft Edge TTS</strong> é habilitada por padrão sem custo (via Node). Ao mandar comandos de voz no microfone central, o Assistente responderá em Português-BR com uma voz realista ("Antônio" ou "Francisca") sempre que o modo "Retorno de Voz" estiver ativo. Nenhum setup a mais é exigido.
+                            Para a comunicaÃ§Ã£o verbal responsiva, a infraestrutura <strong>Microsoft Edge TTS</strong> Ã© habilitada por padrÃ£o sem custo (via Node). Ao mandar comandos de voz no microfone central, o Assistente responderÃ¡ em PortuguÃªs-BR com uma voz realista ("AntÃ´nio" ou "Francisca") sempre que o modo "Retorno de Voz" estiver ativo. Nenhum setup a mais Ã© exigido.
                           </p>
                         </div>
                         <div>
                           <strong className="text-[var(--brand-light)] block mb-1 text-xs">
-                            5. Conectando a Segunda Memória (Obsidian)
+                            5. Conectando a Segunda MemÃ³ria (Obsidian)
                           </strong>
                           <p className="text-zinc-500 leading-relaxed">
-                            Agora instale o <a href="https://obsidian.md" target="_blank" className="text-[var(--brand-light)] underline">Obsidian</a> no seu PC usando a pasta que configuramos (ex <code className="text-xs text-zinc-400">C:\jarvis-vault</code>). O JARVIS irá ler, vetorizar e escrever em <code>.md</code> de forma invisível. Suas anotações no celular agora conversarão com as anotações geradas via IA em tempo pseudo-real. E pronto, seu ecossistema está vivo 🚀.
+                            Agora instale o <a href="https://obsidian.md" target="_blank" className="text-[var(--brand-light)] underline">Obsidian</a> no seu PC usando a pasta que configuramos (ex <code className="text-xs text-zinc-400">C:\jarvis-vault</code>). O JARVIS irÃ¡ ler, vetorizar e escrever em <code>.md</code> de forma invisÃ­vel. Suas anotaÃ§Ãµes no celular agora conversarÃ£o com as anotaÃ§Ãµes geradas via IA em tempo pseudo-real. E pronto, seu ecossistema estÃ¡ vivo ðŸš€.
                           </p>
                         </div>
                       </div>
 
                       <div className="bg-[var(--brand-dark)] border border-[var(--brand-border)] p-4.5 rounded-xl text-xs space-y-2">
                         <span className="text-[var(--brand-light)] font-mono font-bold block uppercase tracking-wider text-sm">
-                          ⚡ CUDA RENDERING PERFORMANCE
+                          âš¡ CUDA RENDERING PERFORMANCE
                         </span>
                         <p className="text-sm text-zinc-400">
                           O "Servidor Jarvis" utiliza a
@@ -1800,20 +1800,20 @@ export default function App() {
                           de resposta inferior a <strong>800ms por token</strong>{" "}
                           localmente.
                         </p>
-                        <div className="w-full bg-zinc-950 h-2 rounded overflow-hidden">
+                        <div className="w-full bg-black/20 backdrop-blur-md h-2 rounded overflow-hidden">
                           <div className="bg-[var(--brand-primary)] h-full w-[85%]"></div>
                         </div>
                       </div>
                     </div>
 
                     {/* Readme details */}
-                    <div className="lg:col-span-2 bg-zinc-900/50 border border-zinc-800/40 p-6 rounded-2xl overflow-y-auto leading-relaxed text-xs space-y-5 shadow-inner">
+                    <div className="lg:col-span-2 bg-black/20 backdrop-blur-md border border-zinc-800/40 p-6 rounded-2xl overflow-y-auto leading-relaxed text-xs space-y-5 shadow-inner">
                       <div className="border-b border-zinc-800/40 pb-4">
                         <h2 className="text-xl font-bold text-white tracking-wide">
-                          JARVIS v5.0 — Manual de Arquitetura
+                          JARVIS v5.0 â€” Manual de Arquitetura
                         </h2>
                         <p className="text-xs uppercase tracking-wider text-[var(--brand-light)] font-mono mt-1">
-                          Sistemas de Assistência Pessoal Local-First e Privado
+                          Sistemas de AssistÃªncia Pessoal Local-First e Privado
                         </p>
                       </div>
 
@@ -1821,14 +1821,14 @@ export default function App() {
                         <div>
                           <h3 className="text-sm font-semibold text-white mb-1.5 flex items-center gap-1.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-light)]"></span>
-                            1. Como Funciona a Instalação Automatizada?
+                            1. Como Funciona a InstalaÃ§Ã£o Automatizada?
                           </h3>
                           <p className="text-zinc-300">
                             O aplicativo unificado do JARVIS atua como um{" "}
                             <strong>
                               provisionador de containers e downloads nativos
                             </strong>
-                            . Ao clicar em instalar na aba "Pipeline de Instalação":
+                            . Ao clicar em instalar na aba "Pipeline de InstalaÃ§Ã£o":
                           </p>
                           <ul className="list-disc pl-5 mt-1.5 space-y-1 text-zinc-400 text-sm">
                             <li>
@@ -1840,7 +1840,7 @@ export default function App() {
                             </li>
                             <li>
                               Cria a estrutura de pastas do seu Obsidian Vault no
-                              caminho físico{" "}
+                              caminho fÃ­sico{" "}
                               <code className="text-yellow-400 text-xs">
                                 C:\jarvis-vault
                               </code>
@@ -1859,29 +1859,29 @@ export default function App() {
                         <div>
                           <h3 className="text-sm font-semibold text-white mb-1.5 flex items-center gap-1.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-light)]"></span>
-                            2. Detalhes de Implementação Técnica
+                            2. Detalhes de ImplementaÃ§Ã£o TÃ©cnica
                           </h3>
                           <p className="text-zinc-300">
                             Todo o projeto baseia-se em{" "}
                             <strong>
-                              NodeJS, Docker, n8n de orquestração e Groq LPU Cloud
+                              NodeJS, Docker, n8n de orquestraÃ§Ã£o e Groq LPU Cloud
                             </strong>
                             :
                           </p>
                           <div className="grid grid-cols-2 gap-3 mt-2 font-mono text-xs">
-                            <div className="bg-zinc-950 p-2.5 rounded border border-zinc-900">
+                            <div className="bg-black/20 backdrop-blur-md p-2.5 rounded border border-zinc-900">
                               <strong className="text-[var(--brand-light)] block mb-0.5">
                                 Groq Cloud LPU
                               </strong>
-                              Processamento cognitivo de altíssima velocidade na nuvem,
+                              Processamento cognitivo de altÃ­ssima velocidade na nuvem,
                               poupando o consumo local de RAM/VRAM do host.
                             </div>
-                            <div className="bg-zinc-950 p-2.5 rounded border border-zinc-900">
+                            <div className="bg-black/20 backdrop-blur-md p-2.5 rounded border border-zinc-900">
                               <strong className="text-[var(--brand-light)] block mb-0.5">
                                 RAG & Google Sheets / Contexto
                               </strong>
-                              O n8n monitora o ecossistema. Qualquer transação ou anotação
-                              é processada e estruturada para sincronização e vetorização.
+                              O n8n monitora o ecossistema. Qualquer transaÃ§Ã£o ou anotaÃ§Ã£o
+                              Ã© processada e estruturada para sincronizaÃ§Ã£o e vetorizaÃ§Ã£o.
                             </div>
                           </div>
                         </div>
@@ -1892,13 +1892,13 @@ export default function App() {
                             3. Comandos de Voz Suportados
                           </h3>
                           <p className="text-zinc-350">
-                            O widget dinâmico de voz na tela aceita triggers em
-                            português direto. Experimente falar ou digitar no
+                            O widget dinÃ¢mico de voz na tela aceita triggers em
+                            portuguÃªs direto. Experimente falar ou digitar no
                             terminal da HUD:
                           </p>
-                          <div className="bg-zinc-950/80 p-3 rounded-lg border border-zinc-900 text-zinc-400 font-mono text-xs space-y-1">
+                          <div className="bg-black/20 backdrop-blur-md/80 p-3 rounded-lg border border-zinc-900 text-zinc-400 font-mono text-xs space-y-1">
                             <div>
-                              🎤{" "}
+                              ðŸŽ¤{" "}
                               <span className="text-white">
                                 "Ativar Modo Cinema"
                               </span>{" "}
@@ -1906,18 +1906,18 @@ export default function App() {
                               abas no PC.
                             </div>
                             <div>
-                              🎤{" "}
+                              ðŸŽ¤{" "}
                               <span className="text-white">
-                                "Quanto gastei com iFood esse mês?"
+                                "Quanto gastei com iFood esse mÃªs?"
                               </span>{" "}
-                              : Busca semântica soma seus extratos de alimentação.
+                              : Busca semÃ¢ntica soma seus extratos de alimentaÃ§Ã£o.
                             </div>
                             <div>
-                              🎤{" "}
+                              ðŸŽ¤{" "}
                               <span className="text-white">
                                 "Prepare meu ambiente de estudos"
                               </span>{" "}
-                              : Abre Notion, ajusta Lo-Fi e limpa as notificações.
+                              : Abre Notion, ajusta Lo-Fi e limpa as notificaÃ§Ãµes.
                             </div>
                           </div>
                         </div>
@@ -1925,16 +1925,16 @@ export default function App() {
                         <div>
                           <h3 className="text-sm font-semibold text-white mb-1.5 flex items-center gap-1.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-light)]"></span>
-                            4. Modo Hibernação (Modo Portátil)
+                            4. Modo HibernaÃ§Ã£o (Modo PortÃ¡til)
                           </h3>
                           <div className="text-zinc-300 text-xs">
                             Para economizar recursos computacionais, clique em
-                            "Hibernar JARVIS" na bandeja. O app executará:
+                            "Hibernar JARVIS" na bandeja. O app executarÃ¡:
                             <pre className="bg-black p-2 rounded text-[var(--brand-light)] font-mono text-xs mt-1.5">
                               docker compose pause
                             </pre>
                             Isso congela a RAM e CPU liberando o desktop
-                            instantaneamente para uso móvel na faculdade ou
+                            instantaneamente para uso mÃ³vel na faculdade ou
                             trabalho!
                           </div>
                         </div>
@@ -1958,7 +1958,7 @@ export default function App() {
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></span>
             <span className="text-[var(--brand-primary)] uppercase tracking-tighter">
-              Conexão Master Host: Ativa
+              ConexÃ£o Master Host: Ativa
             </span>
           </div>
         </footer>

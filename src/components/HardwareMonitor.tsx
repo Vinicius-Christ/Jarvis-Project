@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Activity } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -53,7 +53,7 @@ export function SystemHealthMonitor() {
       <div className="flex justify-between items-center border-b border-white/5 pb-2">
         <h3 className="text-xs font-mono font-bold tracking-widest text-[var(--brand-light)] uppercase flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 text-[var(--brand-light)] animate-pulse" />
-          Monitor de Saúde do Sistema
+          Monitor de SaÃºde do Sistema
         </h3>
         <span className="text-[10px] bg-[var(--brand-glow)] border border-[var(--brand-border)] px-1.5 py-0.5 font-bold rounded font-mono text-[var(--brand-light)]">
           LIVE
@@ -66,13 +66,13 @@ export function SystemHealthMonitor() {
           <div className="flex justify-between items-center text-[11px] mb-1">
             <span className="text-zinc-400 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary)]"></span>
-              Latência do Docker
+              LatÃªncia do Docker
             </span>
             <span className="font-bold text-[var(--brand-light)]">
               {healthStatus.docker.latency} ms
             </span>
           </div>
-          <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden flex items-center">
+          <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden flex items-center">
             <motion.div
               layout
               className="bg-[var(--brand-primary)] h-full"
@@ -88,13 +88,13 @@ export function SystemHealthMonitor() {
           <div className="flex justify-between items-center text-[11px] mb-1">
             <span className="text-zinc-400 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary)] animate-pulse"></span>
-              Latência do Groq API
+              LatÃªncia do Groq API
             </span>
             <span className="font-bold text-[var(--brand-light)]">
               {healthStatus.groq.latency} ms
             </span>
           </div>
-          <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden flex items-center">
+          <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden flex items-center">
             <motion.div
               layout
               className="bg-[var(--brand-primary)] h-full"
@@ -116,7 +116,7 @@ export function SystemHealthMonitor() {
               {healthStatus.network.latency} ms
             </span>
           </div>
-          <div className="w-full bg-zinc-950 h-1 rounded-full overflow-hidden flex items-center">
+          <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden flex items-center">
             <motion.div
               layout
               className="bg-[var(--brand-primary)] h-full"
@@ -128,9 +128,9 @@ export function SystemHealthMonitor() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center text-[10px] text-zinc-500 pt-1 font-mono border-t border-zinc-900">
+      <div className="flex justify-between items-center text-[10px] text-zinc-500 pt-1 font-mono border-t border-white/10">
         <span>WSL2 INTRAHOST</span>
-        <span>ÚLTIMA ATUALIZAÇÃO: {healthStatus.lastUpdated}</span>
+        <span>ÃšLTIMA ATUALIZAÃ‡ÃƒO: {healthStatus.lastUpdated}</span>
       </div>
     </div>
   );
@@ -161,7 +161,7 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
     <div className="holographic-card hover-glow space-y-4">
       <div className="flex justify-between items-center border-l border-[var(--brand-primary)] pl-2">
         <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase">
-          Métricas de VRAM & Processamento
+          MÃ©tricas de VRAM & Processamento
         </h3>
         <button
           onClick={() => {
@@ -193,7 +193,7 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
                 : "..."}
             </span>
           </div>
-          <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden flex items-center">
+          <div className="w-full bg-white/10 h-1.5 rounded overflow-hidden flex items-center">
             <motion.div
               layout
               className="bg-[var(--brand-primary)] h-full"
@@ -207,9 +207,9 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
         <div>
           <div className="flex justify-between text-[11px] mb-1">
             <span className="text-zinc-500 uppercase">Temperatura GPU</span>
-            <span className="text-red-400">{hardwareStats?.gpuTemp || 0} °C (Seguro)</span>
+            <span className="text-red-400">{hardwareStats?.gpuTemp || 0} Â°C (Seguro)</span>
           </div>
-          <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden flex items-center">
+          <div className="w-full bg-white/10 h-1.5 rounded overflow-hidden flex items-center">
             <motion.div
               layout
               className="h-full bg-red-500"
@@ -234,7 +234,7 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
             </span>
             <span className="text-[var(--brand-light)]">{hardwareStats?.cpuUsage || 0}%</span>
           </div>
-          <div className="w-full bg-zinc-950 h-1.5 rounded overflow-hidden flex items-center">
+          <div className="w-full bg-white/10 h-1.5 rounded overflow-hidden flex items-center">
             <motion.div
               layout
               className="bg-[var(--brand-primary)] h-full opacity-70"
@@ -246,7 +246,7 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
         </div>
       </div>
 
-      <div className="bg-zinc-950/80 p-3 rounded-lg border border-zinc-900 font-mono text-[10px] text-zinc-500 space-y-1">
+      <div className="bg-white/5 p-3 rounded-lg border border-white/10 font-mono text-[10px] text-zinc-500 space-y-1">
         <div className="flex justify-between">
           <span>IP do Servidor</span>
           <span className="text-zinc-300">{typeof window !== 'undefined' ? window.location.hostname : "localhost"}</span>

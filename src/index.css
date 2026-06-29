@@ -11,11 +11,11 @@
     @apply bg-black text-zinc-300 font-sans antialiased overflow-hidden;
     /* Deep void core */
     background-color: #030305;
-    background-image: 
+    background-image:
       radial-gradient(ellipse at top, rgba(16, 185, 129, 0.03), transparent 50%),
       radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.05), transparent 50%);
   }
-  
+
   ::selection {
     @apply bg-[var(--brand-primary)]/30 text-white;
   }
@@ -26,43 +26,80 @@
   width: 4px;
   height: 4px;
 }
+
 ::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.5);
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
 /* --- KEYFRAMES --- */
 @keyframes holographic-flicker {
-  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+
+  0%,
+  19.999%,
+  22%,
+  62.999%,
+  64%,
+  64.999%,
+  70%,
+  100% {
     opacity: 1;
     filter: brightness(1);
   }
-  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+
+  20%,
+  21.999%,
+  63%,
+  63.999%,
+  65%,
+  69.999% {
     opacity: 0.6;
     filter: brightness(1.5) contrast(1.2) hue-rotate(15deg);
   }
 }
 
 @keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100vh);
+  }
 }
 
 @keyframes magnetic-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-3px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 @keyframes glow-pulse {
-  0% { box-shadow: 0 0 15px rgba(255,255,255, 0.1); }
-  50% { box-shadow: 0 0 35px rgba(255,255,255, 0.3); }
-  100% { box-shadow: 0 0 15px rgba(255,255,255, 0.1); }
+  0% {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 35px rgba(255, 255, 255, 0.3);
+  }
+
+  100% {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  }
 }
 
 .animate-flicker {
@@ -77,15 +114,17 @@
 
 .glass-panel {
   @apply relative overflow-hidden border;
-  background: rgba(255, 255, 255, 0.03); /* Ultra Clear Glass */
+  background: rgba(255, 255, 255, 0.03);
+  /* Ultra Clear Glass */
   border-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  box-shadow: 
+  box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 4px 30px rgba(0, 0, 0, 0.3);
   transform: translateZ(0);
-  will-change: transform; /* Performance */
+  will-change: transform;
+  /* Performance */
 }
 
 .glass-card {
@@ -101,7 +140,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -112,17 +151,17 @@
 .glass-hover:hover {
   background: rgba(255, 255, 255, 0.10);
   border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37), 0 0 20px var(--brand-primary, rgba(255,255,255,0.1));
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37), 0 0 20px var(--brand-primary, rgba(255, 255, 255, 0.1));
   transform: translateY(-4px);
 }
 
 /* Magetic UI Button (Design Spell) */
 .magnetic-btn {
-  @apply relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-105 active:scale-95;
-  background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-  box-shadow: 
+  @apply relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16, 1, 0.3, 1)] hover:scale-105 active:scale-95;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.15),
-    0 8px 20px rgba(0,0,0,0.4);
+    0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .magnetic-btn::after {
@@ -145,34 +184,34 @@
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 
-    inset 0 2px 10px rgba(0,0,0,0.5),
-    0 0 0 rgba(255,255,255,0);
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.5),
+    0 0 0 rgba(255, 255, 255, 0);
 }
 
 .holo-input:focus {
-  @apply border-[var(--brand-primary,rgba(255,255,255,0.5))];
+  @apply border-[var(--brand-primary, rgba(255, 255, 255, 0.5))];
   background: rgba(0, 0, 0, 0.4);
-  box-shadow: 
-    inset 0 2px 10px rgba(0,0,0,0.8),
-    0 0 20px var(--brand-primary, rgba(255,255,255,0.15));
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.8),
+    0 0 20px var(--brand-primary, rgba(255, 255, 255, 0.15));
   animation: glow-pulse 3s infinite;
 }
 
 /* CRT Scanline Overlay */
 .scanlines {
   position: fixed;
-  top: 0; left: 0; w: 100vw; h: 100vh;
-  background: linear-gradient(
-    to bottom,
-    rgba(255,255,255,0),
-    rgba(255,255,255,0) 50%,
-    rgba(0,0,0,0.1) 50%,
-    rgba(0,0,0,0.1)
-  );
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0) 50%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.1));
   background-size: 100% 4px;
   pointer-events: none;
   z-index: 9999;
   opacity: 0.3;
 }
-

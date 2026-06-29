@@ -208,11 +208,7 @@ function rateLimiter(requestsPerMinute: number = 15) {
 
 const PORT = 3000;
 
-app.get("/api/public/config", (req, res) => {
-  res.json({
-    // Only used conceptually, no longer for Google Auth
-  });
-});
+
 
 const DB_FILE = path.join(process.cwd(), "data", "jarvisState.json");
 
@@ -406,9 +402,9 @@ app.post("/api/tts", rateLimiter(15), async (req, res) => {
     }
 
     const formatModifier = (val: number | undefined, isHz: boolean = false) => {
-       if (typeof val !== 'number') return 'default';
-       const percent = Math.round((val - 1.0) * 100);
-       return percent >= 0 ? `+${percent}${isHz ? 'Hz' : '%'}` : `${percent}${isHz ? 'Hz' : '%'}`;
+      if (typeof val !== 'number') return 'default';
+      const percent = Math.round((val - 1.0) * 100);
+      return percent >= 0 ? `+${percent}${isHz ? 'Hz' : '%'}` : `${percent}${isHz ? 'Hz' : '%'}`;
     };
 
     const tts = new EdgeTTS({
@@ -2767,7 +2763,7 @@ views:
     console.log(`======================================================`);
     console.log(`Acesse o sistema no seu navegador através dos links:`);
     console.log(`-> Local: http://localhost:${PORT}`);
-    
+
     const nets = os.networkInterfaces();
     for (const name of Object.keys(nets)) {
       for (const net of nets[name] || []) {

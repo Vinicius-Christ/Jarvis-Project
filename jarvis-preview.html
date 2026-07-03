@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JARVIS Os - Static Preview (Perfect 1:1)</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* 1:1 REPLICATION OF index.css */
+        :root {
+            --brand-primary: #8b5cf6;
+            --brand-primary-rgb: 139, 92, 246;
+            --brand-light: #c084fc;
+            --brand-dark: #6d28d9;
+            --brand-border: #a855f7;
+            --brand-glow: rgba(139, 92, 246, 0.4);
+            --brand-glow-strong: rgba(139, 92, 246, 0.6);
+
+            --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+            --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        }
+
+        body {
+            background-color: #08080f;
+            color: #f4f4f5;
+            font-family: var(--font-sans);
+            margin: 0;
+            overflow: hidden;
+            background-image:
+                radial-gradient(ellipse 80% 60% at 15% 20%, hsla(272, 91%, 40%, 0.28) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 85% 75%, hsla(196, 95%, 35%, 0.20) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 50% 50%, hsla(220, 100%, 20%, 0.15) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 75% 10%, hsla(300, 80%, 30%, 0.12) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                radial-gradient(ellipse 70% 50% at 20% 80%, hsla(260, 85%, 45%, 0.2) 0%, transparent 55%),
+                radial-gradient(ellipse 55% 40% at 80% 20%, hsla(195, 100%, 40%, 0.15) 0%, transparent 55%);
+            animation: aurora-drift 20s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+
+        @keyframes aurora-drift {
+            0% {
+                transform: translateX(0px) translateY(0px) scale(1);
+            }
+
+            33% {
+                transform: translateX(30px) translateY(-20px) scale(1.03);
+            }
+
+            66% {
+                transform: translateX(-20px) translateY(15px) scale(0.98);
+            }
+
+            100% {
+                transform: translateX(10px) translateY(-10px) scale(1.01);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 3px;
+            height: 3px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.25);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.5);
+        }
+
+        .glass-panel {
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
+            -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
+            background: rgba(12, 10, 22, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-top-color: rgba(255, 255, 255, 0.18);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.3), 0 8px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+            transform: translateZ(0);
+            contain: layout style;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 40%, transparent 60%);
+        }
+
+        .glass-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top-color: rgba(255, 255, 255, 0.14);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 24px rgba(0, 0, 0, 0.35);
+            transform: translateZ(0);
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+
+        .liquid-btn {
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            border-top-color: rgba(255, 255, 255, 0.25);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 20px rgba(168, 85, 247, 0.25);
+            transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .liquid-btn:hover {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 30px rgba(168, 85, 247, 0.4), 0 0 0 1px rgba(168, 85, 247, 0.3);
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .liquid-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 30%;
+            height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: rotate(-15deg) translateX(-100%);
+            transition: transform 0.6s ease;
+            pointer-events: none;
+        }
+
+        .liquid-btn:hover::after {
+            transform: rotate(-15deg) translateX(500%);
+        }
+
+        .magnetic-btn {
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-top-color: rgba(255, 255, 255, 0.18);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 4px 16px rgba(0, 0, 0, 0.3);
+            transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .magnetic-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.20);
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .sidebar-active {
+            background: linear-gradient(90deg, rgba(var(--brand-primary-rgb), 0.15) 0%, rgba(var(--brand-primary-rgb), 0.05) 100%) !important;
+            border: 1px solid rgba(var(--brand-primary-rgb), 0.4) !important;
+            color: #fff !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 20px rgba(var(--brand-primary-rgb), 0.15) !important;
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            backdrop-filter: blur(24px) saturate(180%);
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-top-color: rgba(255, 255, 255, 0.16);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: all 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100%);
+        }
+
+        .liquid-refract {
+            filter: url(#liquid-glass-filter);
+        }
+
+        .glass-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            opacity: 0.6;
+            mix-blend-mode: overlay;
+            z-index: 1;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: flex;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .hover-glow:hover {
+            box-shadow: 0 0 15px var(--brand-glow-strong);
+        }
+
+        /* GALAXY NUCLEUS MOCK ANIMATION */
+        .nucleus-core {
+            width: 15px;
+            height: 15px;
+            background: radial-gradient(white, var(--brand-primary) 40%, transparent);
+            box-shadow: 0 0 40px var(--brand-primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite alternate;
+        }
+
+        .nucleus-cell {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--brand-primary);
+            animation: orbit 10s linear infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.3);
+            }
+        }
+
+        @keyframes orbit {
+            from {
+                transform: rotate(0deg) translateX(80px) rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg) translateX(80px) rotate(-360deg);
+            }
+        }
+    </style>
+
+    <!-- Lucide icons via CDN (exactly as used in React) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="flex h-screen w-full relative z-10 text-sm">
+
+    <!-- SVG Displacement Map -->
+    <svg style="visibility: hidden; position: absolute;" width="0" height="0" xmlns="http://www.w3.org/2000/svg"
+        version="1.1">
+        <defs>
+            <filter id="liquid-glass-filter" x="-20%" y="-20%" width="140%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise" />
+                <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 5 -2" in="noise"
+                    result="coloredNoise" />
+                <feDisplacementMap in="SourceGraphic" in2="coloredNoise" scale="15" xChannelSelector="R"
+                    yChannelSelector="G" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- SIDEBAR (Exact Replica) -->
+    <aside
+        class="w-20 md:w-64 flex flex-col shrink-0 z-20 border-r border-[var(--brand-primary)]/20 transition-all duration-300 relative justify-between">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-[60px] pointer-events-none -z-10"></div>
+        <div>
+            <!-- Sidebar Header -->
+            <div class="h-24 flex items-center justify-center md:hidden border-b border-white/5">
+                <i data-lucide="shield" class="w-6 h-6 text-[var(--brand-light)]"></i>
+            </div>
+
+            <nav class="flex-1 mt-6 px-3 flex flex-col gap-2 relative z-10">
+                <button onclick="switchTab('jarvis', this)"
+                    class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group sidebar-active active">
+                    <div class="p-1.5 rounded-lg bg-[var(--brand-primary)]/20">
+                        <i data-lucide="terminal"
+                            class="w-4 h-4 text-[var(--brand-light)] group-hover:text-white transition-colors"></i>
+                    </div>
+                    <span class="hidden md:block">JARVIS Core</span>
+                </button>
+                <button onclick="switchTab('home', this)"
+                    class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group text-zinc-400 hover:text-white">
+                    <div
+                        class="p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                    </div>
+                    <span class="hidden md:block">Casa Inteligente</span>
+                </button>
+                <button onclick="switchTab('system', this)"
+                    class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group text-zinc-400 hover:text-white">
+                    <div
+                        class="p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors">
+                        <i data-lucide="activity" class="w-4 h-4"></i>
+                    </div>
+                    <span class="hidden md:block">Sistema & DevOps</span>
+                </button>
+                <button onclick="switchTab('finance', this)"
+                    class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group text-zinc-400 hover:text-white">
+                    <div
+                        class="p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors">
+                        <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                    </div>
+                    <span class="hidden md:block">Financeiro</span>
+                </button>
+                <button onclick="switchTab('agenda', this)"
+                    class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group text-zinc-400 hover:text-white">
+                    <div
+                        class="p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                    </div>
+                    <span class="hidden md:block">Agenda</span>
+                </button>
+                <button onclick="switchTab('database', this)"
+                    class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group text-zinc-400 hover:text-white">
+                    <div
+                        class="p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors">
+                        <i data-lucide="database" class="w-4 h-4"></i>
+                    </div>
+                    <span class="hidden md:block">Banco de Dados</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="mt-auto mb-6 px-3 flex flex-col gap-2 relative z-10">
+            <button onclick="switchTab('settings', this)"
+                class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group text-zinc-400 hover:text-white">
+                <div class="p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </div>
+                <span class="hidden md:block">Configurações</span>
+            </button>
+            <button onclick="switchTab('diagnostics', this)"
+                class="magnetic-btn flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all group text-zinc-400 hover:text-white">
+                <div class="p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors">
+                    <i data-lucide="code" class="w-4 h-4"></i>
+                </div>
+                <span class="hidden md:block">Terminal SSH</span>
+            </button>
+            <div class="mt-4 text-center font-mono text-[9px] tracking-[0.25em] text-zinc-500 uppercase">
+                Version 5.0 Local
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN INTERFACE -->
+    <main class="flex-1 flex flex-col h-full relative overflow-clip z-10 transition-all duration-700">
+        <!-- Base blur behind the main UI (App.tsx liquid-refract container logic) -->
+        <div class="absolute inset-0 bg-black/10 backdrop-blur-2xl pointer-events-none -z-10"></div>
+
+        <!-- HEADER HUD LAYER - LIQUID GLASS (Exact App.tsx replication) -->
+        <header class="flex-none flex items-center justify-between gap-4 p-4 lg:p-6 lg:pb-8 relative z-20">
+            <div class="flex items-center gap-4 lg:gap-6 w-full lg:w-auto">
+                <!-- Logo Orb with refraction -->
+                <div class="w-10 h-10 lg:w-14 lg:h-14 rounded-full relative shrink-0">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-br from-[var(--brand-light)] to-[var(--brand-primary)] rounded-full blur-[8px] animate-[glow-pulse_3s_ease-in-out_infinite]">
+                    </div>
+                    <div
+                        class="absolute inset-0.5 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-[var(--brand-light)]/40 shadow-inner group">
+                        <i data-lucide="shield"
+                            class="w-5 h-5 lg:w-7 lg:h-7 text-[var(--brand-light)] group-hover:drop-shadow-[0_0_8px_var(--brand-light)] transition-all"></i>
+                    </div>
+                </div>
+                <div class="flex flex-col">
+                    <h1
+                        class="text-xl lg:text-3xl font-black tracking-[0.3em] font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--brand-light)] to-[var(--brand-primary)] drop-shadow-[0_0_12px_var(--brand-glow)]">
+                        JARVIS
+                    </h1>
+                    <h2
+                        class="text-[9px] lg:text-[10px] font-mono tracking-[0.3em] uppercase text-zinc-400 mt-1 flex items-center gap-2">
+                        System Suite <span class="w-1 h-1 rounded-full bg-[var(--brand-primary)]"></span> Local Host
+                    </h2>
+                </div>
+            </div>
+
+            <div
+                class="hidden lg:flex items-center gap-4 lg:gap-8 header-glass px-8 py-3 rounded-2xl border-white/10 shrink-0 shadow-lg relative overflow-hidden glass-card">
+                <div class="flex items-center gap-4">
+                    <a
+                        class="magnetic-btn w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all cursor-pointer"><i
+                            data-lucide="workflow" class="w-4 h-4"></i></a>
+                    <a
+                        class="magnetic-btn w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer"><i
+                            data-lucide="home" class="w-4 h-4"></i></a>
+                    <a
+                        class="magnetic-btn w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-emerald-400 transition-all cursor-pointer"><i
+                            data-lucide="table" class="w-4 h-4"></i></a>
+                </div>
+
+                <div class="w-px h-8 bg-zinc-800/60"></div>
+
+                <div class="text-right">
+                    <span class="text-[9px] text-zinc-500 uppercase tracking-widest font-bold block mb-0.5">Estação
+                        Horária</span>
+                    <span class="text-sm font-mono font-bold text-white flex items-center gap-1.5" id="realtime-clock">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-[var(--brand-light)]"></i>
+                        carregando...
+                    </span>
+                </div>
+
+                <div class="glass-card px-4 py-2 border-white/5 bg-white/5 rounded-xl flex items-center gap-2">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span
+                            class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></span>
+                    </span>
+                    <span class="text-[10px] font-mono tracking-widest font-bold text-emerald-400">ONLINE</span>
+                </div>
+
+                <button
+                    class="liquid-btn px-6 py-2.5 rounded-xl uppercase tracking-widest text-[10px] font-mono font-bold text-white flex items-center gap-2 transform active:scale-95 transition-all">
+                    PAUSAR <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENT VIEWS -->
+        <div
+            class="flex-1 flex flex-col min-h-0 transition-opacity duration-500 relative opacity-100 p-4 lg:p-6 lg:pt-0 pb-6 w-full">
+
+            <!-- JARVIS CORE TAB (JarvisAssistant replica) -->
+            <div id="jarvis" class="tab-content active h-full w-full">
+                <div
+                    class="h-full flex-1 w-full flex flex-col relative z-10 shadow-2xl rounded-xl overflow-hidden glass-panel">
+                    <div
+                        class="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-full p-4 bg-transparent text-white overflow-hidden font-sans">
+
+                        <!-- Left Column: Telemetry -->
+                        <div
+                            class="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl">
+                            </div>
+
+                            <div class="flex justify-between w-full items-center shrink-0 z-10">
+                                <span
+                                    class="text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 text-[var(--brand-light)] font-bold animate-pulse">
+                                    <i data-lucide="cpu" class="w-4 h-4"></i> SYSTEM TELEMETRY
+                                </span>
+                                <div
+                                    class="px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/50">
+                                    ONLINE
+                                </div>
+                            </div>
+
+                            <div
+                                class="border border-white/10 bg-white/5 rounded-xl p-3 flex flex-col gap-2 shrink-0 z-10 font-mono text-xs text-zinc-400">
+                                <div class="flex justify-between items-center">
+                                    <span class="flex items-center gap-1.5"><i data-lucide="clock"
+                                            class="w-3 h-3 text-[var(--brand-light)]"></i> Uptime</span>
+                                    <span class="text-white font-bold">03:45:12</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="flex items-center gap-1.5"><i data-lucide="cloud"
+                                            class="w-3 h-3 text-[var(--brand-light)]"></i> Weather</span>
+                                    <span class="text-white font-bold">24°C, Clear</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Center Column: Galaxy Nucleus -->
+                        <div
+                            class="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5">
+
+                            <div class="absolute top-6 z-10">
+                                <span id="ai-state-badge"
+                                    class="text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border transition-all duration-500 text-zinc-600 border-zinc-800 bg-transparent">
+                                    ○ STANDBY
+                                </span>
+                            </div>
+
+                            <div class="relative flex flex-col items-center justify-center w-full flex-1">
+                                <div class="relative w-[300px] h-[300px] flex items-center justify-center scale-110"
+                                    id="galaxy-canvas-sim">
+                                    <div class="nucleus-core transition-all duration-500" id="ai-core"></div>
+                                    <div class="nucleus-cell p-cell transition-all duration-500"
+                                        style="animation-delay:-1s"></div>
+                                    <div class="nucleus-cell p-cell transition-all duration-500"
+                                        style="animation-duration:7s; transform:rotate(45deg); animation-delay:-3s">
+                                    </div>
+                                    <div class="nucleus-cell p-cell transition-all duration-500"
+                                        style="animation-duration:12s; transform:rotate(120deg);"></div>
+                                    <div class="nucleus-cell p-cell transition-all duration-500"
+                                        style="animation-duration:8s; transform:rotate(-50deg); animation-direction:reverse;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
+                                <button onclick="simTalk()"
+                                    class="magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer bg-white/5 text-zinc-400 hover:text-white border border-white/10">
+                                    <i data-lucide="mic" class="w-5 h-5"></i>
+                                </button>
+                                <button
+                                    class="magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40">
+                                    <i data-lucide="radio" class="w-5 h-5 animate-pulse"></i>
+                                </button>
+                                <button
+                                    class="magnetic-btn p-4 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">
+                                    <i data-lucide="sliders" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Terminal Chat -->
+                        <div
+                            class="glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] flex flex-col justify-between overflow-hidden h-full relative rounded-3xl">
+                            <div
+                                class="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-white/5 shrink-0">
+                                <div class="flex items-center gap-2">
+                                    <div class="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
+                                    <span
+                                        class="text-xs font-mono font-bold text-[var(--brand-light)] tracking-wider">TERMINAL
+                                        I/O</span>
+                                </div>
+                                <button class="text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+
+                            <div class="flex-1 flex flex-col gap-4 p-5 overflow-y-auto">
+                                <!-- IA Message Bubble -->
+                                <div class="flex gap-3 max-w-[90%] self-start flex-col group">
+                                    <span
+                                        class="text-[9px] font-mono tracking-wider ml-1 mb-1 font-bold text-[var(--brand-light)]/70 uppercase">JARVIS
+                                        (SISTEMA)</span>
+                                    <div
+                                        class="chat-bubble-jarvis p-3.5 text-sm font-sans tracking-wide space-y-2 leading-relaxed text-zinc-200">
+                                        <p>Todos os sistemas online. Interface gráfica Liquid Glass estabilizada
+                                            perfeitamente.</p>
+                                        <span class="text-[9px] text-zinc-500 font-mono inline-block">10ms atrás</span>
+                                    </div>
+                                </div>
+                                <!-- User Bubble -->
+                                <div class="flex gap-3 max-w-[90%] self-end items-end flex-col group mt-4">
+                                    <span
+                                        class="text-[9px] font-mono tracking-wider mr-1 mb-1 font-bold text-zinc-500 uppercase">USUARIO
+                                        (LOCAL)</span>
+                                    <div
+                                        class="chat-bubble-user p-3.5 text-sm font-sans tracking-wide space-y-2 leading-relaxed text-white">
+                                        <p>Exatamente como no código original. Testando scroll e flexbox.</p>
+                                        <div class="flex justify-end gap-1">
+                                            <i data-lucide="check" class="w-3 h-3 text-[var(--brand-light)]"></i>
+                                            <i data-lucide="check" class="w-3 h-3 text-[var(--brand-light)] -ml-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 border-t border-[var(--brand-primary)]/20 bg-zinc-950/80 shrink-0 z-20">
+                                <div class="relative flex items-center">
+                                    <input type="text" placeholder="Entrada de Comando..."
+                                        class="w-full holo-input rounded-xl pl-4 pr-12 py-3.5 text-sm focus:outline-none transition-all placeholder:text-zinc-500 font-mono tracking-wide" />
+                                    <button
+                                        class="absolute right-2 px-3 py-1.5 liquid-btn rounded-lg text-[var(--brand-light)] hover:text-white cursor-pointer active:scale-95 transition-all">
+                                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HOME TAB (Smart home replica) -->
+            <div id="home" class="tab-content h-full w-full overflow-y-auto">
+                <div class="w-full max-w-6xl mx-auto space-y-6 pt-2">
+                    <div class="glass-card p-5">
+                        <div
+                            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-zinc-800/40 pb-3 mb-4">
+                            <div>
+                                <h3
+                                    class="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase flex items-center gap-1.5">
+                                    <i data-lucide="home" class="h-4 w-4"></i> Domótica Residencial (Home Assistant
+                                    Cores)
+                                </h3>
+                                <p class="text-xs text-zinc-500">Sincronizado via IP Local da Máquina com Zigbee e
+                                    Matter</p>
+                            </div>
+                            <div class="flex gap-1.5 font-mono text-xs">
+                                <button
+                                    class="px-2.5 py-1 rounded border transition-all cursor-pointer bg-black/20 backdrop-blur-md/40 border-zinc-800/40 text-zinc-500 hover:text-zinc-300">Modo
+                                    Trabalho</button>
+                                <button
+                                    class="px-2.5 py-1 rounded border transition-all cursor-pointer bg-[var(--brand-dark)] border-[var(--brand-primary)] text-[var(--brand-light)] font-bold">Modo
+                                    Cinema</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Device Active -->
+                            <div
+                                class="p-4 rounded-xl border transition-all flex flex-col justify-between bg-[var(--brand-dark)] border-[var(--brand-border)] hover:bg-[var(--brand-dark)]/90 cursor-pointer">
+                                <div>
+                                    <div class="flex justify-between items-start">
+                                        <span
+                                            class="text-xs font-mono tracking-wider block uppercase font-bold text-white">light</span>
+                                        <button
+                                            class="w-11 h-6 rounded-full p-0.5 relative flex items-center bg-[var(--brand-primary)] shadow-[0_0_10px_rgba(139,92,246,0.45)]">
+                                            <div
+                                                class="bg-black/20 backdrop-blur-md w-4.5 h-4.5 rounded-full flex items-center justify-center transform translate-x-5 transition-transform duration-300 bg-white">
+                                                <div
+                                                    class="w-1.5 h-1.5 rounded-full bg-[var(--brand-light)] animate-pulse">
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <div class="mt-3">
+                                        <span class="text-sm font-semibold text-zinc-200 block">Luz Mesa
+                                            (Escritório)</span>
+                                        <span
+                                            class="text-xs font-mono opacity-80 block mt-1 text-zinc-400">Ligado</span>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-4 flex items-center justify-between gap-3 pt-3 border-t border-zinc-500/20">
+                                    <div class="w-full text-center text-[10px] text-zinc-300">CyberGauge HTML (100%)
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Device Disabled -->
+                            <div
+                                class="p-4 rounded-xl border flex flex-col justify-between bg-black/20 backdrop-blur-md/40 border-zinc-900/60 text-zinc-500 cursor-pointer">
+                                <div>
+                                    <div class="flex justify-between items-start">
+                                        <span
+                                            class="text-xs font-mono tracking-wider block uppercase">media_player</span>
+                                        <button
+                                            class="w-11 h-6 rounded-full p-0.5 relative flex items-center bg-zinc-800 border border-zinc-700/35">
+                                            <div
+                                                class="bg-black/20 backdrop-blur-md w-4.5 h-4.5 rounded-full flex items-center justify-center transform translate-x-0 transition-transform duration-300">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-zinc-600"></div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <div class="mt-3">
+                                        <span class="text-sm font-semibold text-zinc-200 block">TV Quarto</span>
+                                        <span
+                                            class="text-xs font-mono opacity-80 block mt-1 text-zinc-400">Desligado</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINANCE TAB -->
+            <div id="finance" class="tab-content h-full w-full overflow-y-auto">
+                <div class="p-4 lg:p-6 pb-24 mx-auto w-full max-w-7xl animate-slide-left space-y-6">
+                    <div
+                        class="flex justify-between items-center glass-panel p-4 rounded-xl border border-white/5 bg-black/20">
+                        <div class="flex flex-col">
+                            <h3
+                                class="text-[var(--brand-light)] font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                <i data-lucide="wallet" class="h-4.5 w-4.5 text-[var(--brand-primary)]"></i>
+                                Inteligência Financeira
+                            </h3>
+                            <span class="text-zinc-500 font-mono text-[9px] mt-0.5">Análise de Fluxo de Caixa e
+                                Projeções</span>
+                        </div>
+                        <button
+                            class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-650 px-3.5 py-1.5 rounded-lg text-[9px] font-bold font-mono uppercase tracking-widest transition-all flex items-center gap-1.5 cursor-pointer">
+                            Exportar .PDF <i data-lucide="chevron-right" class="h-3 w-3"></i>
+                        </button>
+                    </div>
+
+                    <!-- Top KPIs -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div
+                            class="glass-panel p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group border border-white/5 bg-black/10">
+                            <span class="text-[10px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Total de
+                                Receitas</span>
+                            <span class="text-2xl font-bold text-[var(--brand-light)]">R$ 57.650,00</span>
+                        </div>
+                        <div
+                            class="glass-panel p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group border border-white/5 bg-black/10">
+                            <span class="text-[10px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Total de
+                                Despesas</span>
+                            <span class="text-2xl font-bold text-rose-450 text-rose-405 text-rose-400">R$
+                                12.450,00</span>
+                        </div>
+                        <div
+                            class="glass-panel p-5 rounded-2xl border-[var(--brand-primary)]/50 border flex flex-col justify-center relative overflow-hidden group shadow-[0_0_15px_var(--brand-glow)] bg-black/20">
+                            <span class="text-[10px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Saldo Atual
+                                (Líquido)</span>
+                            <span class="text-2xl font-black text-[var(--brand-light)]">R$ 45.200,00</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <!-- Left Side: Goal and Quick launch -->
+                        <div class="space-y-6">
+                            <!-- Saving Goal -->
+                            <div class="p-5 space-y-4 rounded-xl glass-panel border border-white/5 bg-black/10">
+                                <h3
+                                    class="text-xs font-mono font-medium text-[var(--brand-light)] uppercase flex items-center gap-2 mb-1 border-b border-white/5 pb-2">
+                                    <i data-lucide="target" class="h-4 w-4 text-[var(--brand-primary)]"></i> Meta de
+                                    Economia Mensal
+                                </h3>
+                                <div class="space-y-3">
+                                    <div
+                                        class="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div class="flex flex-col">
+                                            <span class="text-[9px] text-zinc-500 font-mono">Objetivo</span>
+                                            <span class="text-xs font-semibold text-zinc-200">Aposentadoria</span>
+                                        </div>
+                                        <div class="flex flex-col items-end">
+                                            <span class="text-[9px] text-zinc-500 font-mono">Valor Limite</span>
+                                            <span class="text-xs font-semibold text-[var(--brand-light)]">R$
+                                                1.500,00</span>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white/5 p-3.5 rounded-xl border border-white/5">
+                                        <div class="flex justify-between text-[9px] font-mono text-zinc-400 mb-1.5">
+                                            <span>Progresso da Meta</span>
+                                            <span>100%</span>
+                                        </div>
+                                        <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                                            <div class="bg-emerald-500 h-2 rounded-full" style="width: 100%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick entry form -->
+                            <div class="p-5 rounded-xl glass-panel border border-white/5 bg-black/10">
+                                <h3
+                                    class="text-xs font-mono font-bold text-[var(--brand-light)] uppercase tracking-widest flex items-center gap-2 mb-4 border-b border-white/5 pb-2">
+                                    <i data-lucide="edit-3" class="h-4 w-4 text-[var(--brand-primary)]"></i> Lançamento
+                                    Rápido
+                                </h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="text-[9px] text-zinc-500 font-mono block mb-1">Descrição</label>
+                                        <input type="text" value="Supermercado VIP"
+                                            class="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none" />
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-[9px] text-zinc-500 font-mono block mb-1">Valor</label>
+                                            <input type="text" value="350.00"
+                                                class="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <label class="text-[9px] text-zinc-500 font-mono block mb-1">Tipo</label>
+                                            <select
+                                                class="w-full bg-zinc-900 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none">
+                                                <option>Despesa</option>
+                                                <option>Receita</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button
+                                        class="w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-zinc-950 font-bold rounded-lg py-2.5 text-xs font-mono uppercase tracking-wider transition-all shadow-[0_0_15px_var(--brand-glow)] cursor-pointer">
+                                        Lançar Registro
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Side: SVG graphs and History table -->
+                        <div class="col-span-1 xl:col-span-2 flex flex-col space-y-6">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <!-- Cashflow Graph Area (Composed Chart Replica) -->
+                                <div
+                                    class="p-4 rounded-xl glass-panel border border-white/5 bg-black/10 flex flex-col h-[220px]">
+                                    <h4
+                                        class="text-[10px] uppercase tracking-widest text-[var(--brand-light)] font-mono mb-2 flex items-center gap-1.5 border-b border-white/5 pb-1.5">
+                                        <i data-lucide="trending-up" class="h-3.5 w-3.5"></i> Evolução de Fluxo de Caixa
+                                    </h4>
+                                    <!-- Render responsive mock visual SVG Graph -->
+                                    <div class="flex-1 w-full bg-black/10 rounded flex items-center justify-center p-2">
+                                        <svg viewBox="0 0 350 120"
+                                            class="w-full h-full text-zinc-500 font-mono text-[8px]">
+                                            <line x1="30" y1="20" x2="330" y2="20" stroke="#1f2937"
+                                                stroke-dasharray="2 2" />
+                                            <line x1="30" y1="55" x2="330" y2="55" stroke="#1f2937"
+                                                stroke-dasharray="2 2" />
+                                            <line x1="30" y1="90" x2="330" y2="90" stroke="#1f2937"
+                                                stroke-dasharray="2 2" />
+                                            <line x1="30" y1="10" x2="30" y2="100" stroke="#374151" />
+                                            <line x1="30" y1="100" x2="330" y2="100" stroke="#374151" />
+                                            <text x="50" y="112" text-anchor="middle" fill="#6b7280">Jan</text>
+                                            <text x="100" y="112" text-anchor="middle" fill="#6b7280">Fev</text>
+                                            <text x="150" y="112" text-anchor="middle" fill="#6b7280">Mar</text>
+                                            <text x="200" y="112" text-anchor="middle" fill="#6b7280">Abr</text>
+                                            <text x="250" y="112" text-anchor="middle" fill="#6b7280">Mai</text>
+                                            <text x="300" y="112" text-anchor="middle" fill="#6b7280">Jun</text>
+                                            <path
+                                                d="M 50 90 L 100 80 L 150 60 L 200 65 L 250 45 L 300 25 L 300 100 L 50 100 Z"
+                                                fill="url(#line-glow)" opacity="0.15" />
+                                            <path d="M 50 90 L 100 80 L 150 60 L 200 65 L 250 45 L 300 25" fill="none"
+                                                stroke="var(--brand-primary)" stroke-width="2.5" />
+                                            <rect x="42" y="70" width="6" height="30" fill="#10b981" rx="1.5" />
+                                            <rect x="92" y="60" width="6" height="40" fill="#10b981" rx="1.5" />
+                                            <rect x="142" y="45" width="6" height="55" fill="#10b981" rx="1.5" />
+                                            <rect x="192" y="50" width="6" height="50" fill="#10b981" rx="1.5" />
+                                            <rect x="242" y="35" width="6" height="65" fill="#10b981" rx="1.5" />
+                                            <rect x="292" y="20" width="6" height="80" fill="#10b981" rx="1.5" />
+                                            <rect x="52" y="85" width="6" height="15" fill="#ef4444" rx="1.5" />
+                                            <rect x="102" y="80" width="6" height="20" fill="#ef4444" rx="1.5" />
+                                            <rect x="152" y="82" width="6" height="18" fill="#ef4444" rx="1.5" />
+                                            <rect x="202" y="75" width="6" height="25" fill="#ef4444" rx="1.5" />
+                                            <rect x="252" y="85" width="6" height="15" fill="#ef4444" rx="1.5" />
+                                            <rect x="302" y="80" width="6" height="20" fill="#ef4444" rx="1.5" />
+                                            <defs>
+                                                <linearGradient id="line-glow" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stop-color="var(--brand-primary)" />
+                                                    <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <!-- Categories Donut Area -->
+                                <div
+                                    class="p-4 rounded-xl glass-panel border border-white/5 bg-black/10 flex flex-col h-[220px]">
+                                    <h4
+                                        class="text-[10px] uppercase tracking-widest text-[var(--brand-light)] font-mono mb-2 flex items-center gap-1.5 border-b border-white/5 pb-1.5">
+                                        <i data-lucide="pie-chart" class="h-3.5 w-3.5"></i> Despesas por Categoria
+                                    </h4>
+                                    <div class="flex-1 flex items-center justify-between p-2">
+                                        <div class="w-20 h-20 relative flex items-center justify-center">
+                                            <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+                                                <circle cx="18" cy="18" r="15.915" fill="none" stroke="#27272a"
+                                                    stroke-width="4.2" />
+                                                <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10b981"
+                                                    stroke-width="4.2" stroke-dasharray="45 55" stroke-dashoffset="0" />
+                                                <circle cx="18" cy="18" r="15.915" fill="none" stroke="#3b82f6"
+                                                    stroke-width="4.2" stroke-dasharray="25 75"
+                                                    stroke-dashoffset="-45" />
+                                                <circle cx="18" cy="18" r="15.915" fill="none" stroke="#8b5cf6"
+                                                    stroke-width="4.2" stroke-dasharray="20 80"
+                                                    stroke-dashoffset="-70" />
+                                                <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f59e0b"
+                                                    stroke-width="4.2" stroke-dasharray="10 90"
+                                                    stroke-dashoffset="-90" />
+                                            </svg>
+                                            <div
+                                                class="absolute inset-0 flex flex-col items-center justify-center font-mono">
+                                                <span class="text-[7px] text-zinc-550 text-zinc-500">Total</span>
+                                                <span class="text-[9px] font-bold text-white">R$ 12k</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 pl-4 space-y-1 font-mono text-[9px] text-zinc-400">
+                                            <div class="flex items-center gap-1.5"><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span> Alimentação:
+                                                45%</div>
+                                            <div class="flex items-center gap-1.5"><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"></span> Serviços: 25%
+                                            </div>
+                                            <div class="flex items-center gap-1.5"><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#8b5cf6]"></span> Transporte:
+                                                20%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transactions list -->
+                            <div
+                                class="glass-panel rounded-xl border border-white/5 bg-black/10 overflow-hidden flex flex-col">
+                                <div
+                                    class="p-3 bg-white/5 border-b border-white/5 flex justify-between items-center shrink-0">
+                                    <h4 class="text-[10px] uppercase tracking-widest text-zinc-300 font-mono font-bold">
+                                        Histórico de Transações</h4>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left font-mono text-[10px] border-collapse">
+                                        <thead>
+                                            <tr class="text-zinc-500 border-b border-zinc-800">
+                                                <th class="py-2.5 px-4">Data</th>
+                                                <th class="py-2.5 px-4">Descrição</th>
+                                                <th class="py-2.5 px-4">Categoria</th>
+                                                <th class="py-2.5 px-4 text-right">Valor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-zinc-900 bg-black/5">
+                                            <tr class="text-zinc-300">
+                                                <td class="py-2 px-4 text-zinc-500">03/07/2026</td>
+                                                <td class="py-2 px-4 font-bold text-white">Groq API Bill</td>
+                                                <td class="py-2 px-4"><span
+                                                        class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700/50 text-zinc-400">Serviços</span>
+                                                </td>
+                                                <td class="py-2 px-4 text-right text-rose-400 font-semibold">- R$ 120,50
+                                                </td>
+                                            </tr>
+                                            <tr class="text-zinc-300">
+                                                <td class="py-2 px-4 text-zinc-500">02/07/2026</td>
+                                                <td class="py-2 px-4 font-bold text-white">Freelance Dev Fee</td>
+                                                <td class="py-2 px-4"><span
+                                                        class="px-1.5 py-0.5 rounded bg-[var(--brand-dark)]/50 border border-[var(--brand-primary)]/20 text-[var(--brand-light)]">Receita</span>
+                                                </td>
+                                                <td class="py-2 px-4 text-right text-emerald-400 font-semibold">+ R$
+                                                    4.500,00</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGENDA TAB -->
+            <div id="agenda" class="tab-content h-full w-full overflow-y-auto">
+                <div class="p-4 lg:p-6 pb-24 mx-auto w-full max-w-7xl animate-slide-left space-y-6">
+                    <div
+                        class="holographic-card p-5 flex flex-col xl:flex-row gap-6 border-white/5 border glass-panel bg-black/10">
+                        <div class="w-full xl:w-1/3 flex flex-col gap-6">
+                            <h3
+                                class="text-xs font-mono font-medium text-[var(--brand-light)] uppercase flex items-center gap-1.5 border-b border-white/5 pb-2 mb-2 w-full">
+                                <i data-lucide="calendar" class="h-4 w-4 text-[var(--brand-primary)]"></i> Lançamento de
+                                Agenda
+                            </h3>
+                            <form class="space-y-3 bg-black/20 border border-white/5 p-4 rounded-xl flex-1"
+                                onsubmit="event.preventDefault()">
+                                <h4 class="text-xs text-zinc-400 font-mono mb-2">Agendar novo compromisso</h4>
+                                <div>
+                                    <label class="text-[9px] text-zinc-550 text-zinc-500 block mb-1">Título do
+                                        Evento</label>
+                                    <input type="text" value="Brain Sync Session"
+                                        class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-zinc-500 block mb-1">Data e Hora</label>
+                                    <input type="datetime-local" value="2026-07-04T10:00"
+                                        class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white focus:outline-none [color-scheme:dark]" />
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-zinc-500 block mb-1">Categoria</label>
+                                    <select
+                                        class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white focus:outline-none">
+                                        <option>Trabalho</option>
+                                        <option>Pessoal</option>
+                                        <option>Estudos</option>
+                                    </select>
+                                </div>
+                                <button
+                                    class="w-full mt-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-zinc-950 rounded py-2 text-xs font-mono uppercase tracking-wider transition-all font-bold cursor-pointer">
+                                    Salvar Compromisso
+                                </button>
+                            </form>
+                        </div>
+                        <div
+                            class="w-full xl:w-2/3 border-t xl:border-t-0 xl:border-l border-white/5 xl:pl-6 pt-6 xl:pt-0">
+                            <h3
+                                class="text-xs font-mono font-medium text-zinc-300 uppercase tracking-widest pl-2 border-l-2 border-[var(--brand-primary)] mb-4">
+                                Compromissos Registrados
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono w-full">
+                                <div
+                                    class="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col h-full hover:border-[var(--brand-border)] transition duration-300">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span
+                                            class="px-2 py-0.5 bg-[var(--brand-dark)] border border-[var(--brand-border)] text-[9px] text-[var(--brand-light)] rounded">Trabalho</span>
+                                    </div>
+                                    <h4 class="text-xs font-semibold text-white mt-1">Reunião Geral Jarvis Core</h4>
+                                    <div
+                                        class="text-[10px] text-zinc-500 pt-2 pb-2 mb-auto mt-2 border-y border-white/5">
+                                        Discussão técnica sobre as rotas distribuídas.</div>
+                                    <div class="text-[10px] font-medium mt-3 text-[var(--brand-light)]">04/07/2026 -
+                                        10:00</div>
+                                </div>
+                                <div
+                                    class="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col h-full hover:border-[var(--brand-border)] transition duration-300">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span
+                                            class="px-2 py-0.5 bg-[var(--brand-dark)] border border-[var(--brand-border)] text-[9px] text-[var(--brand-light)] rounded">Estudos</span>
+                                    </div>
+                                    <h4 class="text-xs font-semibold text-white mt-1">Refatoração de Algoritmos RAG</h4>
+                                    <div
+                                        class="text-[10px] text-zinc-500 pt-2 pb-2 mb-auto mt-2 border-y border-white/5">
+                                        Ler sobre embeddings multimodais e caches.</div>
+                                    <div class="text-[10px] font-medium mt-3 text-[var(--brand-light)]">05/07/2026 -
+                                        15:30</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DATABASE TAB -->
+            <div id="database" class="tab-content h-full w-full overflow-y-auto">
+                <div class="p-4 lg:p-6 pb-24 mx-auto w-full max-w-7xl animate-slide-left space-y-6">
+                    <div
+                        class="flex justify-between items-center glass-panel p-4 rounded-xl border border-white/5 bg-black/10">
+                        <div class="flex flex-col">
+                            <h3
+                                class="text-[var(--brand-light)] font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                <i data-lucide="database" class="h-4.5 w-4.5 text-[var(--brand-primary)]"></i>
+                                Visualizador de Banco de Dados & RAG
+                            </h3>
+                            <span class="text-zinc-500 font-mono text-[9px] mt-0.5">Acesso direto ao SQLite e memória de
+                                longo prazo (Obsidian Vault).</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <!-- Left nav -->
+                        <div
+                            class="md:col-span-1 glass-panel p-4 space-y-2 flex flex-col border border-white/5 bg-black/10 h-fit rounded-xl">
+                            <button onclick="switchDbTab('db-obsidian', this)"
+                                class="flex items-center gap-2 p-2.5 w-full rounded-lg transition-all font-mono text-xs text-left text-white bg-[var(--brand-primary)] border border-[var(--brand-border)] cursor-pointer">
+                                <i data-lucide="folder" class="h-4 w-4"></i> Obsidian (Vault)
+                            </button>
+                            <button onclick="switchDbTab('db-finance', this)"
+                                class="flex items-center gap-2 p-2.5 w-full rounded-lg transition-all font-mono text-xs text-left text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer">
+                                <i data-lucide="table" class="h-4 w-4"></i> SQLite: Finance
+                            </button>
+                            <button onclick="switchDbTab('db-agenda', this)"
+                                class="flex items-center gap-2 p-2.5 w-full rounded-lg transition-all font-mono text-xs text-left text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer">
+                                <i data-lucide="table" class="h-4 w-4"></i> SQLite: Agenda
+                            </button>
+                        </div>
+                        <!-- Right panels -->
+                        <div
+                            class="md:col-span-3 glass-panel p-5 min-h-[400px] border border-white/5 bg-black/10 rounded-xl relative">
+                            <!-- Obsidian Vault Panel -->
+                            <div id="db-obsidian" class="db-tab-content active space-y-4">
+                                <h4
+                                    class="text-[11px] text-[var(--brand-light)] font-mono uppercase tracking-widest border-b border-white/5 pb-2">
+                                    Vault de Notas RAG (.md)</h4>
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div class="space-y-3">
+                                        <h5 class="text-[9px] text-zinc-500 font-mono uppercase font-bold">Documentos
+                                            Carregados</h5>
+                                        <div
+                                            class="bg-black/40 border border-white/5 rounded-lg max-h-[250px] overflow-y-auto divide-y divide-zinc-900">
+                                            <div class="p-3 text-xs font-mono text-zinc-300">
+                                                <div class="font-bold text-[var(--brand-light)] mb-1">Gostos Pessoais
+                                                </div>
+                                                <pre
+                                                    class="text-[9px] text-zinc-500 bg-black/85 p-2 rounded">Nome do usuário: Vinícius. Gosta de interfaces escuras glassmorphism e café expresso.</pre>
+                                            </div>
+                                            <div class="p-3 text-xs font-mono text-zinc-300">
+                                                <div class="font-bold text-[var(--brand-light)] mb-1">Configurações Home
+                                                </div>
+                                                <pre
+                                                    class="text-[9px] text-zinc-500 bg-black/85 p-2 rounded">Dispositivo de Luz IP 192.168.1.15. TV da sala está conectada no switch Zigbee.</pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <form class="bg-black/30 border border-white/5 p-4 rounded-lg space-y-3"
+                                        onsubmit="event.preventDefault()">
+                                        <h5
+                                            class="text-[9px] text-[var(--brand-primary)] font-mono uppercase font-bold">
+                                            Adicionar Nota Contextual</h5>
+                                        <input type="text" placeholder="Caminho ex: /perfil/dados.md"
+                                            class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white focus:outline-none" />
+                                        <textarea placeholder="Conteúdo da nota em Markdown..." rows="4"
+                                            class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white font-mono focus:outline-none"></textarea>
+                                        <button
+                                            class="w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-zinc-950 font-bold text-xs font-mono py-2 rounded transition-all cursor-pointer">Criar
+                                            Nota</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <!-- Finance SQLite Panel -->
+                            <div id="db-finance" class="db-tab-content space-y-4 hidden">
+                                <h4
+                                    class="text-[11px] text-[var(--brand-light)] font-mono uppercase tracking-widest border-b border-white/5 pb-2">
+                                    Banco SQLite: Finances Table</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left font-mono text-[9px] border-collapse bg-black/20">
+                                        <thead>
+                                            <tr class="bg-white/5 border-b border-zinc-800 text-zinc-400">
+                                                <th class="p-2">ID</th>
+                                                <th class="p-2">Descrição</th>
+                                                <th class="p-2">Valor</th>
+                                                <th class="p-2">Tipo</th>
+                                                <th class="p-2">Categoria</th>
+                                                <th class="p-2">Data</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-zinc-900">
+                                            <tr class="text-zinc-300">
+                                                <td class="p-2 text-zinc-550">1</td>
+                                                <td class="p-2">Freelance Fee</td>
+                                                <td class="p-2 text-[var(--brand-light)]">R$ 4.500,00</td>
+                                                <td class="p-2">Receita</td>
+                                                <td class="p-2">Trabalho</td>
+                                                <td class="p-2">02/07/2026</td>
+                                            </tr>
+                                            <tr class="text-zinc-300">
+                                                <td class="p-2 text-zinc-550">2</td>
+                                                <td class="p-2">Groq Token Usage</td>
+                                                <td class="p-2 text-rose-400">R$ 120,50</td>
+                                                <td class="p-2">Despesa</td>
+                                                <td class="p-2">Serviços</td>
+                                                <td class="p-2">03/07/2026</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- Agenda SQLite Panel -->
+                            <div id="db-agenda" class="db-tab-content space-y-4 hidden">
+                                <h4
+                                    class="text-[11px] text-[var(--brand-light)] font-mono uppercase tracking-widest border-b border-white/5 pb-2">
+                                    Banco SQLite: Agenda Table</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left font-mono text-[9px] border-collapse bg-black/20">
+                                        <thead>
+                                            <tr class="bg-white/5 border-b border-zinc-800 text-zinc-400">
+                                                <th class="p-2">ID</th>
+                                                <th class="p-2">Título do Evento</th>
+                                                <th class="p-2">Data e Hora</th>
+                                                <th class="p-2">Categoria</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-zinc-900">
+                                            <tr class="text-zinc-300">
+                                                <td class="p-2">1</td>
+                                                <td class="p-2 font-bold text-white">Reunião Geral Jarvis Core</td>
+                                                <td class="p-2 text-[var(--brand-primary)]">04/07/2026 - 10:00</td>
+                                                <td class="p-2">Trabalho</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="settings" class="tab-content h-full w-full overflow-hidden">
+                <div
+                    class="h-full flex flex-1 min-h-0 w-full overflow-hidden border border-white/5 rounded-xl bg-black/20 backdrop-blur-md relative z-10 shadow-2xl">
+                    <!-- Internal Sub-tab Sidebar -->
+                    <div class="w-56 shrink-0 border-r border-white/5 bg-black/10 flex flex-col overflow-y-auto">
+                        <div
+                            class="p-3 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-white/5 bg-black/20">
+                            Categorias
+                        </div>
+                        <div class="flex flex-col p-2 gap-1 font-mono text-xs">
+                            <button onclick="switchSettingsTab('settings-general', this)"
+                                class="settings-sub-btn px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer text-white bg-[var(--brand-primary)]/20 border border-[var(--brand-primary)]/30 font-bold shadow-[0_0_10px_var(--brand-glow)]">
+                                ⚙️ Configurações & IoT
+                            </button>
+                            <button onclick="switchSettingsTab('settings-appearance', this)"
+                                class="settings-sub-btn px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer text-zinc-400 hover:text-white hover:bg-white/5">
+                                🎨 Aparência / Persona
+                            </button>
+                            <button onclick="switchSettingsTab('settings-updates', this)"
+                                class="settings-sub-btn px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer text-zinc-400 hover:text-white hover:bg-white/5">
+                                🔄 Atualizações Git
+                            </button>
+                            <button onclick="switchSettingsTab('settings-tokens', this)"
+                                class="settings-sub-btn px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer text-zinc-400 hover:text-white hover:bg-white/5">
+                                🔐 API Tokens
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Right content area -->
+                    <div class="flex-1 p-6 overflow-y-auto bg-black/5 font-sans">
+                        <!-- General settings -->
+                        <div id="settings-general" class="settings-pane active space-y-6">
+                            <h4
+                                class="text-xs font-mono font-bold text-white uppercase tracking-wider border-l-2 border-[var(--brand-primary)] pl-2">
+                                Configurações IoT & Servidor</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="glass-panel p-4 rounded-xl border border-white/5 space-y-3 bg-black/10">
+                                    <h5 class="text-xs text-white font-mono">Dispositivos Domóticos</h5>
+                                    <div>
+                                        <label class="text-[9px] text-zinc-550 text-zinc-500 font-mono block mb-1">IP
+                                            Home Assistant Host</label>
+                                        <input type="text" value="http://192.168.1.50:8123"
+                                            class="w-full bg-black/45 border border-white/10 rounded p-2 text-xs text-white focus:outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Appearance tab -->
+                        <div id="settings-appearance" class="settings-pane space-y-6 hidden">
+                            <h4
+                                class="text-xs font-mono font-bold text-white uppercase tracking-wider border-l-2 border-[var(--brand-primary)] pl-2">
+                                Personalização da Persona de IA</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button onclick="changePersona('jarvis')"
+                                    class="p-4 rounded-xl border transition-all text-left bg-[var(--brand-dark)] border-[var(--brand-primary)]/50 cursor-pointer shadow-[0_0_10px_var(--brand-glow)]">
+                                    <span class="block text-xs font-bold text-white">JARVIS CORES (Padrão)</span>
+                                    <span class="block text-[9px] text-zinc-400 font-mono mt-1">Espectro roxo e ciano de
+                                        alta inteligência.</span>
+                                </button>
+                                <button onclick="changePersona('friday')"
+                                    class="p-4 rounded-xl border border-white/5 transition-all text-left bg-black/20 hover:border-red-500/50 cursor-pointer">
+                                    <span class="block text-xs font-bold text-white">F.R.I.D.A.Y</span>
+                                    <span class="block text-[9px] text-zinc-400 font-mono mt-1">Estilo armadura vermelha
+                                        e laranja vibrante.</span>
+                                </button>
+                                <button onclick="changePersona('glados')"
+                                    class="p-4 rounded-xl border border-white/5 transition-all text-left bg-black/20 hover:border-yellow-500/50 cursor-pointer">
+                                    <span class="block text-xs font-bold text-white">G.L.A.D.O.S</span>
+                                    <span class="block text-[9px] text-zinc-400 font-mono mt-1">Visual científico em
+                                        tons amarelo e dourado.</span>
+                                </button>
+                                <button onclick="changePersona('hal')"
+                                    class="p-4 rounded-xl border border-white/5 transition-all text-left bg-black/20 hover:border-red-650 hover:border-red-600/50 cursor-pointer">
+                                    <span class="block text-xs font-bold text-white">HAL 9000</span>
+                                    <span class="block text-[9px] text-zinc-400 font-mono mt-1">Monolito futurista
+                                        carmesim monocromático.</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Git & Updates -->
+                        <div id="settings-updates" class="settings-pane space-y-6 hidden">
+                            <h4
+                                class="text-xs font-mono font-bold text-white uppercase tracking-wider border-l-2 border-[var(--brand-primary)] pl-2">
+                                Atualizações e Repositório</h4>
+                            <div class="glass-panel p-5 rounded-xl border border-white/5 bg-black/10 space-y-3">
+                                <div class="flex items-center justify-between text-xs font-mono">
+                                    <span class="text-zinc-400">Branch Atual:</span>
+                                    <span class="text-[var(--brand-light)] font-bold">main (origem/git)</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-mono">
+                                    <span class="text-zinc-400">Último Commit Remoto:</span>
+                                    <span class="text-zinc-550 text-zinc-500">ab41d2f [Fixed screen refactor
+                                        glass]</span>
+                                </div>
+                                <button
+                                    class="mt-4 px-4 py-2 hover-glow bg-[var(--brand-primary)] border border-[var(--brand-light)] text-zinc-950 font-bold text-xs uppercase tracking-wider rounded font-mono transition-all cursor-pointer">
+                                    Sincronizar Repositório Agora
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- API keys -->
+                        <div id="settings-tokens" class="settings-pane space-y-6 hidden">
+                            <h4
+                                class="text-xs font-mono font-bold text-white uppercase tracking-wider border-l-2 border-[var(--brand-primary)] pl-2">
+                                Gerenciamento de API Tokens</h4>
+                            <div class="glass-panel p-5 rounded-xl border border-white/5 bg-black/10 space-y-4">
+                                <div>
+                                    <label class="text-[9px] text-zinc-500 font-mono block mb-1">Groq AI API Key</label>
+                                    <input type="password" value="gsk_l4k1k2k3k4k5k6k7k8k9k0"
+                                        class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-zinc-500 font-mono block mb-1">Google Sheets
+                                        ID</label>
+                                    <input type="text" value="1A2B3C4D5E6F7G8H9I0J"
+                                        class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white focus:outline-none" />
+                                </div>
+                                <button
+                                    class="px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-zinc-950 font-bold text-xs font-mono rounded transition-all cursor-pointer">
+                                    Salvar Credenciais
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIAGNOSTICS TAB (Terminal SSH) -->
+            <div id="diagnostics" class="tab-content h-full w-full overflow-hidden">
+                <div class="p-4 lg:p-6 pb-24 mx-auto w-full max-w-7xl animate-slide-left h-full flex flex-col">
+                    <div
+                        class="flex-1 glass-panel border border-white/5 rounded-xl bg-black/40 p-5 font-mono text-xs overflow-hidden flex flex-col">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2.5 mb-3 shrink-0">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                                <span class="ml-2 font-bold text-zinc-400">Terminal SSH - root@jarvis-host</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto space-y-2 p-2 select-text text-zinc-300">
+                            <div><span class="text-zinc-500">root@jarvis-host:~#</span> ssh -v local@192.168.1.100</div>
+                            <div class="text-zinc-500">OpenSSH_8.9p1 Ubuntu-3ubuntu0.4, OpenSSL 3.0.2 15 Mar 2022</div>
+                            <div class="text-emerald-500">[OK] Estabelecendo conexão via chave pública...</div>
+                            <div class="text-emerald-500">[OK] Autenticado com sucesso.</div>
+                            <div>- Carregando diagnósticos de hardware do HOST principal...</div>
+                            <div class="text-cyan-400">CPU Load: 12.5% | GPU CUDA Memory: 4200/8192 MB (Active)</div>
+                            <div><span class="text-zinc-500">root@jarvis-host:~#</span> <span
+                                    class="animate-pulse">_</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Initialize lucide icons matching React components
+        lucide.createIcons();
+
+        // Setup Tabs
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            const destTab = document.getElementById(tabId);
+            if (destTab) destTab.classList.add('active');
+
+            document.querySelectorAll('.magnetic-btn').forEach(el => {
+                el.classList.remove('sidebar-active', 'active');
+                const iconDiv = el.querySelector('div');
+                if (iconDiv) {
+                    iconDiv.className = "p-1.5 rounded-lg bg-black/30 group-hover:bg-[var(--brand-primary)]/20 transition-colors";
+                    const i = iconDiv.querySelector('i');
+                    if (i) i.className = "w-4 h-4 text-zinc-400 group-hover:text-white transition-colors";
+                }
+            });
+
+            btnElement.classList.add('sidebar-active', 'active');
+            const iconDiv = btnElement.querySelector('div');
+            if (iconDiv) {
+                iconDiv.className = "p-1.5 rounded-lg bg-[var(--brand-primary)]/20";
+                const i = iconDiv.querySelector('i');
+                if (i) i.className = "w-4 h-4 text-[var(--brand-light)] transition-colors";
+            }
+
+            // Re-render icons if any were inside hidden view
+            lucide.createIcons();
+        }
+
+        // Sub-tabs for Settings
+        function switchSettingsTab(paneId, btnElement) {
+            document.querySelectorAll('.settings-pane').forEach(el => el.classList.add('hidden'));
+            document.getElementById(paneId).classList.remove('hidden');
+
+            document.querySelectorAll('.settings-sub-btn').forEach(el => {
+                el.className = "settings-sub-btn px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer text-zinc-400 hover:text-white hover:bg-white/5";
+            });
+
+            btnElement.className = "settings-sub-btn px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer text-white bg-[var(--brand-primary)]/20 border border-[var(--brand-primary)]/30 font-bold shadow-[0_0_10px_var(--brand-glow)]";
+        }
+
+        // Sub-tabs for Database
+        function switchDbTab(paneId, btnElement) {
+            document.querySelectorAll('.db-tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(paneId).classList.remove('hidden');
+
+            const parentNode = btnElement.parentNode;
+            parentNode.querySelectorAll('button').forEach(el => {
+                el.className = "flex items-center gap-2 p-2.5 w-full rounded-lg transition-all font-mono text-xs text-left text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer";
+            });
+
+            btnElement.className = "flex items-center gap-2 p-2.5 w-full rounded-lg transition-all font-mono text-xs text-left text-white bg-[var(--brand-primary)] border border-[var(--brand-border)] cursor-pointer";
+        }
+
+        // Persona Selection Style Changer
+        function changePersona(personaId) {
+            const root = document.documentElement;
+            // Clear current active borders first
+            document.querySelectorAll('#settings-appearance button').forEach(el => {
+                el.className = "p-4 rounded-xl border border-white/5 transition-all text-left bg-black/20 hover:border-white/20 cursor-pointer";
+            });
+
+            // Highlight selected button
+            const clickedBtn = event.currentTarget;
+            clickedBtn.className = "p-4 rounded-xl border transition-all text-left bg-[var(--brand-dark)] border-[var(--brand-primary)]/50 cursor-pointer shadow-[0_0_10px_var(--brand-glow)]";
+
+            if (personaId === 'jarvis') {
+                root.style.setProperty('--brand-primary', '#8b5cf6');
+                root.style.setProperty('--brand-light', '#06b6d4');
+                root.style.setProperty('--brand-dark', '#2e1065');
+                root.style.setProperty('--brand-glow', 'rgba(139, 92, 246, 0.15)');
+                root.style.setProperty('--brand-border', 'rgba(139, 92, 246, 0.3)');
+            } else if (personaId === 'friday') {
+                root.style.setProperty('--brand-primary', '#ef4444');
+                root.style.setProperty('--brand-light', '#f97316');
+                root.style.setProperty('--brand-dark', '#7f1d1d');
+                root.style.setProperty('--brand-glow', 'rgba(239, 68, 68, 0.15)');
+                root.style.setProperty('--brand-border', 'rgba(239, 68, 68, 0.3)');
+            } else if (personaId === 'glados') {
+                root.style.setProperty('--brand-primary', '#eab308');
+                root.style.setProperty('--brand-light', '#facc15');
+                root.style.setProperty('--brand-dark', '#713f12');
+                root.style.setProperty('--brand-glow', 'rgba(234, 179, 8, 0.15)');
+                root.style.setProperty('--brand-border', 'rgba(234, 179, 8, 0.3)');
+            } else if (personaId === 'hal') {
+                root.style.setProperty('--brand-primary', '#dc2626');
+                root.style.setProperty('--brand-light', '#fca5a5');
+                root.style.setProperty('--brand-dark', '#450a0a');
+                root.style.setProperty('--brand-glow', 'rgba(220, 38, 38, 0.15)');
+                root.style.setProperty('--brand-border', 'rgba(220, 38, 38, 0.3)');
+            }
+        }
+
+        // Update real clock as in App.tsx
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const clockEl = document.getElementById('realtime-clock');
+            if (clockEl) {
+                clockEl.innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5 text-[var(--brand-light)]"></i> ` + timeStr;
+                lucide.createIcons();
+            }
+        }, 1000);
+
+        // Galaxy Nucleus JS Animation Mock
+        function simTalk() {
+            const badge = document.getElementById('ai-state-badge');
+            const core = document.getElementById('ai-core');
+            const cells = document.querySelectorAll('.p-cell');
+
+            badge.innerText = "◉ TRANSMITINDO";
+            badge.className = "text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border transition-all duration-500 text-[var(--brand-light)] border-[var(--brand-primary)]/50 bg-[var(--brand-primary)]/10";
+
+            core.style.transform = "scale(1.4)";
+
+            cells.forEach(c => {
+                c.style.background = "#fff";
+                c.style.animationDuration = "1.5s";
+            });
+
+            setTimeout(() => {
+                badge.innerText = "○ STANDBY";
+                badge.className = "text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border transition-all duration-500 text-zinc-600 border-zinc-800 bg-transparent";
+                core.style.transform = "scale(1)";
+                cells.forEach(c => {
+                    c.style.background = "rgba(255,255,255,0.5)";
+                    c.style.animationDuration = c.getAttribute('style').includes('duration:7s') ? '7s' : c.getAttribute('style').includes('duration:12s') ? '12s' : '5s';
+                });
+            }, 5000);
+        }
+    </script>
+</body>
+
+</html>

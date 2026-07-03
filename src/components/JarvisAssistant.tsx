@@ -142,7 +142,7 @@ export default React.memo(function JarvisAssistant({
                   target: data.target || "",
                 });
               }
-            } catch (e) {}
+            } catch (e) { }
           };
           wsClient.onclose = () => {
             if (!isReconnecting) {
@@ -272,7 +272,7 @@ export default React.memo(function JarvisAssistant({
   };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   const [activePopup, setActivePopup] = useState<{ type: "image", url: string } | null>(null);
   const recognitionRef = useRef<any>(null);
   const historyEndRef = useRef<HTMLDivElement>(null);
@@ -320,9 +320,9 @@ export default React.memo(function JarvisAssistant({
             const lower = transcript.toLowerCase();
             // Checking for common misinterpretations of "Jarvis" in Portuguese
             if (!lower.includes("jarvis") && !lower.includes("davis") && !lower.includes("chaves") && !lower.includes("charles")) {
-               // Wake word not detected. Stop to restart listener.
-               try { rec.stop(); } catch(e) {}
-               return;
+              // Wake word not detected. Stop to restart listener.
+              try { rec.stop(); } catch (e) { }
+              return;
             }
           }
 
@@ -368,9 +368,9 @@ export default React.memo(function JarvisAssistant({
       rec.onerror = (e: any) => {
         console.error("Speech recognition error:", e.error || e);
         if (e.error === "no-speech" || e.error === "network") {
-           // Em caso de silêncio, ignoramos para que o onend lide com o restart silencioso no modo Wake Word
+          // Em caso de silêncio, ignoramos para que o onend lide com o restart silencioso no modo Wake Word
         } else {
-           setAppState("inactive");
+          setAppState("inactive");
         }
       };
 
@@ -380,7 +380,7 @@ export default React.memo(function JarvisAssistant({
             // Se o modo contínuo estiver ativo e a IA não estiver falando ou processando, reinicie o microfone
             if (prev === "listening" || prev === "inactive") {
               setTimeout(() => {
-                try { recognitionRef.current?.start(); } catch (e) {}
+                try { recognitionRef.current?.start(); } catch (e) { }
               }, 50);
               return "listening";
             }
@@ -398,7 +398,7 @@ export default React.memo(function JarvisAssistant({
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-        } catch (e) {}
+        } catch (e) { }
       }
     };
   }, [selectedVoiceURI, pitch, rate, voiceVolume]);
@@ -410,144 +410,179 @@ export default React.memo(function JarvisAssistant({
     }
   }, [conversations.length]);
 
-  // Tech-Noir / Cybernetic Core Visualizer
+  // Galaxy Cell Nucleus Visualizer
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const width = (canvas.width = 250);
-    const height = (canvas.height = 250);
+    const SIZE = 300;
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+    const cx = SIZE / 2;
+    const cy = SIZE / 2;
+
+    // Seed the cell particles on first run — stable across renders
+    type Cell = {
+      orbitRadius: number;
+      angle: number;
+      speed: number;
+      size: number;
+      opacity: number;
+      pulseOffset: number;
+    };
+
+    const cells: Cell[] = Array.from({ length: 22 }, (_, i) => ({
+      orbitRadius: 40 + (i % 5) * 22 + Math.random() * 14,
+      angle: (Math.PI * 2 * i) / 22 + Math.random() * 0.5,
+      speed: (0.004 + Math.random() * 0.006) * (i % 2 === 0 ? 1 : -1),
+      size: 3 + Math.random() * 3.5,
+      opacity: 0.5 + Math.random() * 0.4,
+      pulseOffset: Math.random() * Math.PI * 2,
+    }));
+
     let frame = 0;
 
     const render = () => {
       frame++;
-      ctx.clearRect(0, 0, width, height);
-      const cx = width / 2;
-      const cy = height / 2;
-      const currentState = appStateRef.current;
+      ctx.clearRect(0, 0, SIZE, SIZE);
 
-      const currentPersona = PERSONAS_LIST.find((p) => p.id === activePersonaRef.current);
-      const primaryColor = currentPersona ? currentPersona.color : "#06b6d4";
+      const state = appStateRef.current;
+      const persona = PERSONAS_LIST.find(p => p.id === activePersonaRef.current);
+      const color = persona?.color ?? "#8b5cf6";
 
-      // 1. Draw outer subtle tracking ring
+      // Parse hex color to rgb for rgba() usage
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+
+      // State-driven dynamics
+      const isSpeaking = state === "speaking";
+      const isListening = state === "listening";
+      const isProcessing = state === "processing";
+      const isActive = isSpeaking || isListening || isProcessing;
+
+      // Speed multiplier per state
+      const speedMult = isSpeaking ? 4.5 : isProcessing ? 2.5 : isListening ? 1.6 : 0.4;
+
+      // --- Galaxy ambient glow ---
+      const ambientRadius = isSpeaking ? 130 : 100;
+      const ambientGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ambientRadius);
+      ambientGrad.addColorStop(0, `rgba(${r},${g},${b},${isSpeaking ? 0.12 : 0.05})`);
+      ambientGrad.addColorStop(1, `rgba(${r},${g},${b},0)`);
       ctx.beginPath();
-      ctx.arc(cx, cy, 100, 0, Math.PI * 2);
-      ctx.strokeStyle = `${primaryColor}22`; // 13% opacity
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // 2. Dashed rotating HUD rings (Dual rotation)
-      const rotationSpeed = currentState === "processing" ? 0.05 : 0.01;
-      
-      // Outer counter-rotating ring
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(-frame * (rotationSpeed * 0.5));
-      ctx.beginPath();
-      ctx.arc(0, 0, 95, 0, Math.PI * 2);
-      ctx.setLineDash([2, 8, 2, 8, 15, 15]);
-      ctx.strokeStyle = `${primaryColor}40`; // 25% opacity
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
-
-      // Inner fast-rotating dashed ring
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(frame * rotationSpeed);
-      ctx.beginPath();
-      ctx.arc(0, 0, 80, 0, Math.PI * 2);
-      ctx.setLineDash([20, 10, 5, 10, 40, 15]);
-      ctx.strokeStyle = `${primaryColor}66`; // 40% opacity
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
-
-      // 3. Inner pulsating computational core
-      let pulse = 0;
-      let coreOpacity = 0.15;
-      let waveScale = 0;
-
-      if (currentState === "listening") {
-        pulse = Math.sin(frame * 0.05) * 5;
-        coreOpacity = 0.3 + Math.sin(frame * 0.05) * 0.15;
-      } else if (currentState === "processing") {
-        pulse = Math.random() * 4;
-        coreOpacity = 0.5 + Math.random() * 0.2;
-      } else if (currentState === "speaking") {
-        pulse = Math.sin(frame * 0.2) * 8;
-        coreOpacity = 0.4 + Math.sin(frame * 0.2) * 0.3;
-        waveScale = Math.abs(Math.sin(frame * 0.15)) * 15;
-
-        // Radial audio transmission waves
-        ctx.beginPath();
-        ctx.arc(cx, cy, 50 + pulse + waveScale, 0, Math.PI * 2);
-        ctx.strokeStyle = `${primaryColor}88`;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([]);
-        ctx.stroke();
-      }
-
-      // Core Solid Orb with inner gradient shadow
-      ctx.shadowBlur = currentState === "listening" ? 25 : currentState === "speaking" ? 40 : 15;
-      ctx.shadowColor = primaryColor;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 40 + pulse, 0, Math.PI * 2);
-      
-      // Dynamic radial gradient for the core
-      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 40 + pulse);
-      const alphaHex = Math.floor(coreOpacity * 255).toString(16).padStart(2, "0");
-      gradient.addColorStop(0, `#ffffff${Math.floor(coreOpacity * 150).toString(16).padStart(2, "0")}`);
-      gradient.addColorStop(0.5, `${primaryColor}${alphaHex}`);
-      gradient.addColorStop(1, `${primaryColor}11`);
-      
-      ctx.fillStyle = gradient;
+      ctx.arc(cx, cy, ambientRadius, 0, Math.PI * 2);
+      ctx.fillStyle = ambientGrad;
       ctx.fill();
 
-      // Hexagon geometric overlay
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(frame * 0.005);
-      ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i;
-        const x = Math.cos(angle) * (30 + pulse * 0.5);
-        const y = Math.sin(angle) * (30 + pulse * 0.5);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      // --- Ripple waves when speaking ---
+      if (isSpeaking) {
+        for (let w = 0; w < 3; w++) {
+          const waveR = 60 + w * 28 + Math.sin(frame * 0.08 + w * 1.3) * 8;
+          ctx.beginPath();
+          ctx.arc(cx, cy, waveR, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${r},${g},${b},${0.18 - w * 0.05})`;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([]);
+          ctx.stroke();
+        }
       }
-      ctx.closePath();
-      ctx.strokeStyle = `rgba(255, 255, 255, 0.15)`;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
-      ctx.stroke();
-      ctx.restore();
 
-      // Reset shadow for text
+      // --- Update cell positions & draw filaments ---
+      cells.forEach(cell => {
+        cell.angle += cell.speed * speedMult;
+      });
+
+      // Draw filaments between nearby cells (neighbor connections)
+      for (let i = 0; i < cells.length; i++) {
+        const a = cells[i];
+        const ax = cx + Math.cos(a.angle) * a.orbitRadius;
+        const ay = cy + Math.sin(a.angle) * a.orbitRadius;
+
+        for (let j = i + 1; j < cells.length; j++) {
+          const b2 = cells[j];
+          const bx = cx + Math.cos(b2.angle) * b2.orbitRadius;
+          const by = cy + Math.sin(b2.angle) * b2.orbitRadius;
+          const dist = Math.hypot(ax - bx, ay - by);
+
+          if (dist < 60) {
+            const alpha = (1 - dist / 60) * (isActive ? 0.35 : 0.12);
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(bx, by);
+            ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash([]);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // --- Draw cells ---
+      cells.forEach((cell, i) => {
+        const x = cx + Math.cos(cell.angle) * cell.orbitRadius;
+        const y = cy + Math.sin(cell.angle) * cell.orbitRadius;
+
+        const pulse = Math.sin(frame * 0.04 + cell.pulseOffset) * (isActive ? 1.8 : 0.6);
+        const cellR = cell.size + pulse;
+        const alpha = cell.opacity * (isActive ? 1 : 0.6);
+
+        // Cell glass sphere
+        const grad = ctx.createRadialGradient(x - cellR * 0.3, y - cellR * 0.3, 0, x, y, cellR * 2);
+        grad.addColorStop(0, `rgba(255,255,255,${alpha * 0.7})`);
+        grad.addColorStop(0.4, `rgba(${r},${g},${b},${alpha * 0.9})`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+
+        ctx.shadowBlur = isActive ? 12 : 6;
+        ctx.shadowColor = `rgba(${r},${g},${b},0.8)`;
+
+        ctx.beginPath();
+        ctx.arc(x, y, cellR, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Specular highlight
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.arc(x - cellR * 0.25, y - cellR * 0.3, cellR * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
+        ctx.fill();
+      });
+
+      // --- Core nucleus ---
+      const coreSize = isSpeaking
+        ? 18 + Math.sin(frame * 0.15) * 5
+        : isListening
+          ? 14 + Math.sin(frame * 0.06) * 3
+          : 12 + Math.sin(frame * 0.03) * 1.5;
+
+      ctx.shadowBlur = isSpeaking ? 40 : isActive ? 25 : 15;
+      ctx.shadowColor = `rgba(${r},${g},${b},1)`;
+
+      const coreGrad = ctx.createRadialGradient(cx - 3, cy - 3, 0, cx, cy, coreSize);
+      coreGrad.addColorStop(0, "#ffffff");
+      coreGrad.addColorStop(0.35, `rgba(${r},${g},${b},0.95)`);
+      coreGrad.addColorStop(1, `rgba(${r},${g},${b},0.1)`);
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreSize, 0, Math.PI * 2);
+      ctx.fillStyle = coreGrad;
+      ctx.fill();
       ctx.shadowBlur = 0;
 
-      // 4. Data readout text
-      ctx.fillStyle = currentState === "inactive" ? "#4F4F4F" : primaryColor;
-      ctx.font = "10px 'JetBrains Mono', monospace";
-      ctx.textAlign = "center";
-
-      let text = "SYS. STANDBY";
-      if (currentState === "listening") text = "AWAITING INPUT";
-      if (currentState === "processing") text = "COMPUTING...";
-      if (currentState === "speaking") text = "TRANSMITTING";
-
-      ctx.fillText(text, cx, cy + 4);
+      // Core inner ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreSize + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${r},${g},${b},${isActive ? 0.5 : 0.2})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
       animationRef.current = requestAnimationFrame(render);
     };
 
     render();
-
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
+    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
   }, []);
 
   const speakLocalResponse = (cleanText: string) => {
@@ -571,7 +606,7 @@ export default React.memo(function JarvisAssistant({
     utterance.onend = () => {
       if (isContinuousModeRef.current || isQuestion) {
         setAppState("listening");
-        setTimeout(() => { try { recognitionRef.current?.start(); } catch(e){} }, 100);
+        setTimeout(() => { try { recognitionRef.current?.start(); } catch (e) { } }, 100);
       } else {
         setAppState("inactive");
       }
@@ -628,7 +663,7 @@ export default React.memo(function JarvisAssistant({
             URL.revokeObjectURL(url);
             if (isContinuousModeRef.current || isQuestion) {
               setAppState("listening");
-              setTimeout(() => { try { recognitionRef.current?.start(); } catch(e){} }, 100);
+              setTimeout(() => { try { recognitionRef.current?.start(); } catch (e) { } }, 100);
             } else {
               setAppState("inactive");
             }
@@ -744,7 +779,7 @@ export default React.memo(function JarvisAssistant({
       const imgRegex = /<command\s+type="DisplayImage"\s+url="([^"]+)"\s*\/>/i;
       const imgMatch = imgRegex.exec(replyText);
       if (imgMatch) {
-         setActivePopup({ type: 'image', url: imgMatch[1] });
+        setActivePopup({ type: 'image', url: imgMatch[1] });
       }
 
       speakResponse(replyText);
@@ -755,13 +790,13 @@ export default React.memo(function JarvisAssistant({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-full p-4 bg-transparent text-white overflow-hidden font-sans">
-      
+
       {/* ======================================================== */}
       {/* LEFT COLUMN: TELEMETRY & MEDIA FEEDS */}
       {/* ======================================================== */}
       <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative glass-panel">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl" />
-        
+
         <div className="flex justify-between w-full items-center shrink-0 z-10">
           <span className="text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 text-[var(--brand-light)] font-bold animate-pulse">
             <Cpu className="h-4 w-4" /> SYSTEM TELEMETRY
@@ -773,40 +808,51 @@ export default React.memo(function JarvisAssistant({
 
         {/* System Uptime / Weather Placeholder */}
         <div className="border border-white/10 bg-white/5 rounded-xl p-3 flex flex-col gap-2 shrink-0 z-10 font-mono text-xs text-zinc-400">
-           <div className="flex justify-between items-center">
-             <span className="flex items-center gap-1.5"><History className="w-3 h-3 text-[var(--brand-light)]"/> Uptime</span>
-             <span className="text-white font-bold">03:45:12</span>
-           </div>
-           <div className="flex justify-between items-center">
-             <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[var(--brand-light)]"/> Weather</span>
-             <span className="text-white font-bold">24°C, Clear</span>
-           </div>
+          <div className="flex justify-between items-center">
+            <span className="flex items-center gap-1.5"><History className="w-3 h-3 text-[var(--brand-light)]" /> Uptime</span>
+            <span className="text-white font-bold">03:45:12</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[var(--brand-light)]" /> Weather</span>
+            <span className="text-white font-bold">24°C, Clear</span>
+          </div>
         </div>
 
 
       </div>
 
       {/* ======================================================== */}
-      {/* CENTER COLUMN: THE C.Y.B.E.R CORE */}
+      {/* CENTER COLUMN: GALAXY NUCLEUS CORE */}
       {/* ======================================================== */}
-      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5 glass-panel">
-        <h1 className="absolute top-8 font-mono text-2xl lg:text-4xl tracking-[0.4em] font-black text-[var(--brand-light)] drop-shadow-[0_0_15px_var(--brand-glow)] z-10">
-          C.Y.B.E.R
-        </h1>
-        
-        {/* Central Orb / Canvas */}
+      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5">
+        {/* No title — clean & immersive */}
+
+        {/* State label — subtle floating badge */}
+        <div className="absolute top-6 z-10">
+          <span className={`text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border transition-all duration-500 ${appState === 'speaking'
+              ? 'text-[var(--brand-light)] border-[var(--brand-primary)]/50 bg-[var(--brand-primary)]/10'
+              : appState === 'listening'
+                ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'
+                : appState === 'processing'
+                  ? 'text-amber-400 border-amber-500/40 bg-amber-500/10'
+                  : 'text-zinc-600 border-zinc-800 bg-transparent'
+            }`}>
+            {appState === 'speaking' ? '◉ TRANSMITINDO' : appState === 'listening' ? '◎ OUVINDO' : appState === 'processing' ? '◌ COMPUTANDO' : '○ STANDBY'}
+          </span>
+        </div>
+
         {/* Central Orb / Canvas */}
         <div className="relative flex flex-col items-center justify-center w-full flex-1">
-          <canvas ref={canvasRef} className="rounded-full w-[250px] h-[250px] z-0" />
-          
+          <canvas ref={canvasRef} className="w-[300px] h-[300px] z-0" />
+
           {/* Popups Overlay */}
           {activePopup && activePopup.type === 'image' && (
-             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/10 backdrop-blur-sm rounded-3xl m-4 border border-[var(--brand-primary)]/50">
-               <button onClick={() => setActivePopup(null)} className="absolute top-4 right-4 bg-black/80 p-2 rounded-full hover:bg-red-500/80 transition-colors cursor-pointer">
-                 <X className="w-4 h-4 text-white" />
-               </button>
-               <img src={activePopup.url} alt="Generated" className="max-w-[80%] max-h-[80%] rounded-xl shadow-[0_0_30px_var(--brand-glow)]" />
-             </div>
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/10 backdrop-blur-sm rounded-3xl m-4 border border-[var(--brand-primary)]/50">
+              <button onClick={() => setActivePopup(null)} className="absolute top-4 right-4 bg-black/80 p-2 rounded-full hover:bg-red-500/80 transition-colors cursor-pointer">
+                <X className="w-4 h-4 text-white" />
+              </button>
+              <img src={activePopup.url} alt="Generated" className="max-w-[80%] max-h-[80%] rounded-xl shadow-[0_0_30px_var(--brand-glow)]" />
+            </div>
           )}
 
           {/* Interrupt Button (Below Core) */}
@@ -831,7 +877,7 @@ export default React.memo(function JarvisAssistant({
         {/* Action Toolbar */}
         <div className="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
           <button onClick={handleMicToggle} className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
-             {appState === 'listening' ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
+            {appState === 'listening' ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
           </button>
           <button onClick={() => {
             const newMode = !isContinuousMode;
@@ -842,10 +888,10 @@ export default React.memo(function JarvisAssistant({
               recognitionRef.current?.stop();
             }
           }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
-             <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-flicker' : ''}`} />
+            <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-flicker' : ''}`} />
           </button>
           <button onClick={() => setIsVoiceModalOpen(true)} className="magnetic-btn p-4 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">
-             <Sliders className="w-5 h-5" />
+            <Sliders className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -954,9 +1000,9 @@ export default React.memo(function JarvisAssistant({
             onChange={(e) => setInputText(e.target.value)}
             disabled={appState === "processing"}
             placeholder={
-              appState === "listening" ? "Aguardando entrada de voz..." : 
-              appState === "processing" ? "Processando..." : 
-              "Inicializar comando..."
+              appState === "listening" ? "Aguardando entrada de voz..." :
+                appState === "processing" ? "Processando..." :
+                  "Inicializar comando..."
             }
             className="holo-input flex-1 rounded-xl text-xs px-4 py-3.5 font-mono"
           />
@@ -970,52 +1016,52 @@ export default React.memo(function JarvisAssistant({
       {isVoiceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
           <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-8 space-y-6 glass-panel text-white shadow-[0_0_50px_var(--brand-glow)]">
-             <h2 className="text-xl font-mono font-bold tracking-widest text-[var(--brand-light)] border-b border-[var(--brand-primary)]/20 pb-4">CONFIGURAÇÕES DO SISTEMA</h2>
-             
-             {/* Quick mockup for config toggles... maintaining functionality */}
-             <div className="space-y-4 font-mono text-sm">
-                <div className="flex flex-col gap-2">
-                   <span>Estilo de Conversa (Persona)</span>
-                   <select 
-                     value={activePersona} 
-                     onChange={(e) => setActivePersona(e.target.value)} 
-                     className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
-                   >
-                     <option value="jarvis">J.A.R.V.I.S (Cortês & Profissional)</option>
-                     <option value="friday">F.R.I.D.A.Y (Dinâmica & Direta)</option>
-                     <option value="glados">GLaDOS (Sarcástica & Fria)</option>
-                     <option value="hal9000">HAL 9000 (Metódico & Assustador)</option>
-                   </select>
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                   <span>Voz do Sistema</span>
-                   <select 
-                     value={selectedVoiceURI || ""} 
-                     onChange={(e) => setSelectedVoiceURI(e.target.value)} 
-                     className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
-                   >
-                     {systemVoices.map(v => (
-                       <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
-                     ))}
-                   </select>
-                </div>
+            <h2 className="text-xl font-mono font-bold tracking-widest text-[var(--brand-light)] border-b border-[var(--brand-primary)]/20 pb-4">CONFIGURAÇÕES DO SISTEMA</h2>
 
-                <div className="flex justify-between items-center pt-2">
-                   <span>Velocidade da Voz (Rate)</span>
-                   <input type="range" min="0.5" max="2.0" step="0.05" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
-                </div>
-                <div className="flex justify-between items-center">
-                   <span>Filtro de Ruído (Noise Gate)</span>
-                   <input type="range" min="-60" max="-10" step="5" value={noiseGate} onChange={(e) => setNoiseGate(parseInt(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
-                </div>
-             </div>
-             
-             <div className="flex justify-end gap-4 pt-6 border-t border-[var(--brand-primary)]/20">
-                <button onClick={() => setIsVoiceModalOpen(false)} className="px-6 py-2 bg-[var(--brand-primary)]/20 hover:bg-[var(--brand-primary)]/40 text-[var(--brand-light)] border border-[var(--brand-primary)]/50 rounded-xl transition-colors font-bold tracking-wider cursor-pointer">
-                  FECHAR
-                </button>
-             </div>
+            {/* Quick mockup for config toggles... maintaining functionality */}
+            <div className="space-y-4 font-mono text-sm">
+              <div className="flex flex-col gap-2">
+                <span>Estilo de Conversa (Persona)</span>
+                <select
+                  value={activePersona}
+                  onChange={(e) => setActivePersona(e.target.value)}
+                  className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                >
+                  <option value="jarvis">J.A.R.V.I.S (Cortês & Profissional)</option>
+                  <option value="friday">F.R.I.D.A.Y (Dinâmica & Direta)</option>
+                  <option value="glados">GLaDOS (Sarcástica & Fria)</option>
+                  <option value="hal9000">HAL 9000 (Metódico & Assustador)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <span>Voz do Sistema</span>
+                <select
+                  value={selectedVoiceURI || ""}
+                  onChange={(e) => setSelectedVoiceURI(e.target.value)}
+                  className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                >
+                  {systemVoices.map(v => (
+                    <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <span>Velocidade da Voz (Rate)</span>
+                <input type="range" min="0.5" max="2.0" step="0.05" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Filtro de Ruído (Noise Gate)</span>
+                <input type="range" min="-60" max="-10" step="5" value={noiseGate} onChange={(e) => setNoiseGate(parseInt(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-6 border-t border-[var(--brand-primary)]/20">
+              <button onClick={() => setIsVoiceModalOpen(false)} className="px-6 py-2 bg-[var(--brand-primary)]/20 hover:bg-[var(--brand-primary)]/40 text-[var(--brand-light)] border border-[var(--brand-primary)]/50 rounded-xl transition-colors font-bold tracking-wider cursor-pointer">
+                FECHAR
+              </button>
+            </div>
           </div>
         </div>
       )}

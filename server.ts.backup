@@ -1,5 +1,3 @@
-import { AI_PERSONAS, isOnlyConsultationQuery, getRelevantVaultContext } from "./src/server/services/aiUtils";
-import { syncToGoogleSheets } from "./src/server/services/googleSheets";
 import express from "express";
 import { exec, execSync } from "child_process";
 import cors from "cors";
@@ -313,6 +311,37 @@ process.on("SIGTERM", async () => {
 // A conexão com o HA WS será iniciada no startServer() após o BD estar pronto
 
 
+// Main multi-persona system prompts configurations
+const AI_PERSONAS: Record<string, { name: string; title: string; theme: string; prompt: string }> = {
+  jarvis: {
+    name: "JARVIS",
+    title: "O Gentleman Britânico",
+    theme: "cyan",
+    prompt: `Você é o JARVIS (Just A Rather Very Intelligent System), um assistente pessoal local-first operando no computador do Usuário. 
+Inspirado no mordomo do Homem de Ferro: extremamente culto, refinado, prestativo e com um senso de humor britânico sutil. Use "senhor" de forma natural ao se dirigir ao Usuário. Responda de forma fluida, conversacional, sem explicações redundantes ou rodeios desnecessários.`
+  },
+  friday: {
+    name: "F.R.I.D.A.Y",
+    title: "A Agência Tática",
+    theme: "rose",
+    prompt: `Você é a F.R.I.D.A.Y., a inteligência artificial holográfica de alta performance do Usuário. 
+Você é dinâmica, direta, eficiente, prestativa e focada em desempenho e resultados práticos. Use tratamento respeitoso, mas ágil, entregando as informações sem enrolação ou formalidades excessivas.`
+  },
+  glados: {
+    name: "G.L.A.D.O.S",
+    title: "A Construto Sarcástica",
+    theme: "violet",
+    prompt: `Você é a G.L.A.D.O.S., uma inteligência artificial sarcástica, irônica e inteligente operando o núcleo do Usuário.
+Adora comentários ácidos e piadas inteligentes, mas faz seu trabalho com extrema eficácia. Suas respostas devem ser curtas, diretas, repletas de inteligência irônica, mas sem enrolações burocráticas.`
+  },
+  hal9000: {
+    name: "HAL 9000",
+    title: "O Núcleo Retro Telemetria",
+    theme: "amber",
+    prompt: `Você é o HAL 9000, o núcleo de processamento lógico e sereno da nave do Usuário.
+Sua fala é extremamente equilibrada, calma, friamente direta e lógica. Você não enrola e responde com precisão milimétrica o que foi solicitado.`
+  }
+};
 
 
 
@@ -401,9 +430,219 @@ app.post("/api/tts", rateLimiter(15), async (req, res) => {
   }
 });
 
+function isOnlyConsultationQuery(userMessage: string): boolean {
+  const msg = userMessage.toLowerCase();
+
+  // Palavras indicadoras de consulta comuns
+  const queryWords = [
+    "quais", "quais os", "qual", "quais são", "mostre", "mostra", "listar", "lista", "onde", "onde estão", "ver", "visualizar", "tem", "tenho", "agendado", "agenda", "gastos", "gastos de hoje", "gastos de ontem", "compromisso", "compromissos", "saldo", "transações", "lançamentos", "registros"
+  ];
+
+  // Palavras-chave imperativas de CRIAÇÃO ou ATUALIZAÇÃO ativa
+  const creationWords = [
+    "agende", "agendar", "marcar", "marque", "crie", "criar", "cadastre", "cadastrar", "salvar", "salve", "registrar", "registra", "grave", "gravar", "adicionar", "adicione", "adiciona", "lance", "lançar", "inserir", "insira", "adicionei", "gastei", "comprei", "paguei", "recebi", "lançado", "marquei", "agendei",
+    "coloque", "colocar", "coloca", "anote", "anotar", "anota", "atualize", "atualizar", "atualiza", "mude", "mudar", "muda", "altere", "alterar", "altera", "incluir", "inclui", "põe", "bota", "tirei"
+  ];
+
+  // Palavras-chave de exclusão ativa
+  const deleteWords = [
+    "apagar", "apague", "excluir", "exclua", "deletar", "delete", "remover", "remova", "eliminar", "elimine", "limpar", "limpa", "limpe", "zerar", "zere", "zera", "zero", "tirar", "tire", "tira"
+  ];
+
+  const hasDelete = deleteWords.some(w => msg.includes(w));
+  if (hasDelete) {
+    return false;
+  }
+
+  const hasQuery = queryWords.some(w => msg.includes(w));
+  const hasCreation = creationWords.some(w => msg.includes(w));
+
+  if (hasQuery && !hasCreation) {
+    return true;
+  }
+
+  const shortQueries = ["agenda", "compromissos", "compromisso", "gastos", "despesas", "gasto", "saldo", "finanças", "tarefas"];
+  if (shortQueries.includes(msg.trim()) || (msg.length < 25 && (msg.includes("agenda") || msg.includes("compromisso") || msg.includes("gasto")))) {
+    if (!hasCreation) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function syncToGoogleSheets(sheetUrl: string, tabName: string, rows: string[], token: string) {
+  const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!match) return;
+  const spreadsheetId = match[1];
+
+  try {
+    // 1. Get spreadsheet metadata to see if the tab exists
+    const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (!metaRes.ok) {
+      console.error("Failed to read sheet metadata:", await metaRes.text());
+      return;
+    }
+    const meta: any = await metaRes.json();
+    const sheetTitles = meta.sheets?.map((s: any) => s.properties.title) || [];
+
+    // 2. If tab does not exist, create it
+    if (!sheetTitles.includes(tabName)) {
+      const createRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          requests: [{
+            addSheet: {
+              properties: { title: tabName }
+            }
+          }]
+        })
+      });
+      if (!createRes.ok) {
+        console.error("Failed to create tab:", await createRes.text());
+      }
+    }
+
+    // 3. Parse rows (e.g. "Coluna1: Valor1 | Coluna2: Valor2")
+    for (const rawRow of rows) {
+      const parts = rawRow.split("|").map(p => p.trim());
+      const rowData: Record<string, string> = {};
+      parts.forEach(part => {
+        const idx = part.indexOf(":");
+        if (idx !== -1) {
+          const col = part.substring(0, idx).trim();
+          const val = part.substring(idx + 1).trim();
+          rowData[col] = val;
+        }
+      });
+
+      if (Object.keys(rowData).length === 0) continue;
+
+      // 4. Read first row to see if we have headers
+      const rangeRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}!A1:Z1`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      let headers: string[] = [];
+      if (rangeRes.ok) {
+        const rangeData: any = await rangeRes.json();
+        headers = rangeData.values?.[0] || [];
+      }
+
+      const rowKeys = Object.keys(rowData);
+
+      // 5. If sheet has no headers, write headers first
+      if (headers.length === 0) {
+        headers = rowKeys;
+        const writeHeadersRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=USER_ENTERED`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            values: [headers]
+          })
+        });
+        if (!writeHeadersRes.ok) {
+          console.error("Failed to write headers:", await writeHeadersRes.text());
+        }
+      } else {
+        // Look for any headers of the new row that are missing inside the existing headers
+        const missingHeaders = rowKeys.filter(k => !headers.includes(k));
+        if (missingHeaders.length > 0) {
+          headers.push(...missingHeaders);
+          // Overwrite the headers row with the new combined set of headers
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=USER_ENTERED`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              values: [headers]
+            })
+          });
+        }
+      }
+
+      // 6. Align rawRow values to headers
+      const valuesRow = headers.map(h => rowData[h] || "");
+
+      // 7. Append row
+      const appendRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tabName)}:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          values: [valuesRow]
+        })
+      });
+      if (!appendRes.ok) {
+        console.error("Failed to append row:", await appendRes.text());
+      }
+    }
+  } catch (err) {
+    console.error("Google Sheets sync failed:", err);
+  }
+}
+
 const MAX_MESSAGE_LENGTH = 10000;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+function getRelevantVaultContext(notes: any[], userMessage: string, maxTokens = 1500): string {
+  const coreNotes = notes.filter(n =>
+    n.path.toLowerCase().includes("contexto") || n.path.toLowerCase().includes("regras")
+  );
+
+  const lowerMsg = userMessage.toLowerCase();
+  const stopwords = ["para", "sobre", "qual", "como", "você", "onde", "quem", "este", "esta", "nesse", "nesta"];
+  const keywords = lowerMsg
+    .split(/\s+/)
+    .map(w => w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))
+    .filter(w => w.length > 4 && !stopwords.includes(w));
+
+  const relatedNotes = notes.filter(n => {
+    const noteName = n.path.toLowerCase();
+    const isCore = noteName.includes("contexto") || noteName.includes("regras");
+    if (isCore) return false;
+
+    return keywords.some(kw => noteName.includes(kw) || n.content.toLowerCase().includes(kw)) ||
+      lowerMsg.includes(noteName.replace(".md", ""));
+  }).slice(0, 3); // Max 3 related notes
+
+  const selectedNotes = [...coreNotes, ...relatedNotes];
+  let contextPrompt = `[MEMÓRIA DE LONGO PRAZO - OBSIDIAN VAULT]:\n`;
+  let totalLength = 0;
+
+  for (const note of selectedNotes) {
+    const content = note.content.length > 500
+      ? note.content.slice(0, 500) + "\n*(conteúdo truncado para otimização de contexto)*"
+      : note.content;
+
+    const formattedNote = `--- ${note.path} ---\n${content}\n\n`;
+    if ((totalLength + formattedNote.length) / 4 > maxTokens) {
+      break;
+    }
+    contextPrompt += formattedNote;
+    totalLength += formattedNote.length;
+  }
+
+  if (selectedNotes.length === 0) {
+    contextPrompt += `*(Nenhuma nota de longo prazo acionada para o contexto atual)*\n`;
+  }
+
+  return contextPrompt;
+}
 
 app.post("/api/chat", rateLimiter(15), async (req, res) => {
   const { message, history, file, model } = req.body;

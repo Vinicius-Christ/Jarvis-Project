@@ -263,7 +263,7 @@ export default function App() {
             const typeMatchAttr = attributesStr.match(/typeAttr="([^"]+)"/); // AI might use type="..." but type is already the main command type, let's look for financeType or just look for type="..." inside the match? No, wait, type is the XML tag's type!
             // Wait, the AI tag is <command type="Finance" financeType="Receita" /> ?
             const financeTypeMatch = attributesStr.match(/financeType="([^"]+)"/);
-
+            
             if (valueMatch && catMatch) {
               await fetchAutenticado("/api/update/finance", {
                 method: "POST",
@@ -679,16 +679,8 @@ export default function App() {
   };
 
   const activeHoloTheme = HOLO_THEMES[currentTheme];
-  // Convert primary hex to rgb triplet for CSS variable usage
-  const hexToRgb = (hex: string) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `${r}, ${g}, ${b}`;
-  };
   const themeStyles = {
     "--brand-primary": activeHoloTheme.primary,
-    "--brand-primary-rgb": hexToRgb(activeHoloTheme.primary),
     "--brand-light": activeHoloTheme.light,
     "--brand-glow": activeHoloTheme.glow,
     "--brand-glow-strong": activeHoloTheme.glowStrong,
@@ -699,46 +691,40 @@ export default function App() {
   return (
     <div
       style={themeStyles}
-      className={`w-full h-[100dvh] flex font-sans overflow-hidden select-none transition-colors duration-700 text-zinc-100 relative`}
+      className={`w-full h-[100dvh] flex font-sans overflow-hidden select-none transition-all duration-500 text-zinc-300 relative`}
     >
-      {/* SVG Displacement Map — invisible, enables liquid refraction via CSS filter: url(#liquid-glass-filter) */}
-      <svg style={{ display: 'none' }} aria-hidden="true">
-        <defs>
-          <filter id="liquid-glass-filter" x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.008" numOctaves="3" seed="5" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-      </svg>
-
+      {/* KINETIC GRID (Deep tech feeling) */}
+      <div className="fixed inset-0 kinetic-grid z-0 opacity-40"></div>
+      
       {/* DYNAMIC BACKGROUND IMAGE */}
       {bgImage && (
-        <div
-          className="fixed inset-0 z-0 opacity-25 transition-all duration-1000"
-          style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', mixBlendMode: 'luminosity' }}
+        <div 
+          className="fixed inset-0 z-0 opacity-30 transition-all duration-1000 mix-blend-screen"
+          style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         />
       )}
 
-      {/* Sidebar Navigation — Liquid Glass Primary Panel */}
+      {/* GLOBAL SCANLINES */}
+      <div className="fixed inset-0 scanlines z-50 pointer-events-none opacity-20"></div>
+
+      {/* Sidebar Navigation */}
       <aside
-        className={`glass-panel border-r border-white/[0.07] ${isSidebarOpen ? "w-64" : "w-16"
-          } transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex flex-col shrink-0 z-20`}
+        className={`glass-panel border-r border-[var(--brand-primary)]/10 ${isSidebarOpen ? "w-64" : "w-16"} transition-all duration-500 flex flex-col shrink-0 z-20 shadow-[4px_0_30px_-10px_rgba(0,0,0,0.8)]`}
       >
-        <div className="h-[68px] flex items-center justify-between px-4 border-b border-white/[0.06] shrink-0">
+        <div className="h-[73px] flex items-center justify-between p-4 border-b border-white/5 shrink-0 sticky top-0 bg-transparent z-30">
           {isSidebarOpen && (
-            <div className="flex items-center gap-2.5 overflow-hidden whitespace-nowrap animate-slide-left">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)]/40 to-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/30">
-                <Shield className="h-3.5 w-3.5 text-[var(--brand-light)]" />
-              </div>
-              <span className="font-bold tracking-[0.15em] text-xs text-white">
+            <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+              <Shield className="h-5 w-5 text-[var(--brand-light)] shrink-0" />
+              <span className={`font-bold tracking-widest text-xs ${"text-white"}`}>
                 JARVIS OS
               </span>
             </div>
           )}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-1.5 rounded-lg magnetic-btn shrink-0 ${isSidebarOpen ? "" : "mx-auto"
-              } text-zinc-400 hover:text-white`}
+            className={`p-1.5 rounded-lg transition border shrink-0 ${isSidebarOpen ? "" : "mx-auto"
+              } ${"bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border-transparent hover:border-white/10"
+              }`}
           >
             {isSidebarOpen ? (
               <ChevronLeft className="h-4 w-4" />
@@ -748,57 +734,52 @@ export default function App() {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-1 p-2 flex-1 overflow-y-auto overflow-x-hidden w-full">
+        <nav className="flex flex-col gap-1.5 p-2 font-mono flex-1 overflow-y-auto overflow-x-hidden w-full relative">
           {[
             { id: "jarvis", label: "JARVIS Core", icon: Sliders },
             { id: "home", label: "Casa Inteligente", icon: Home },
             { id: "system", label: "Sistema & DevOps", icon: Activity },
-            { id: "finance", label: "Financeiro", icon: DollarSign },
-            { id: "agenda", label: "Agenda", icon: Calendar },
+            { id: "finance", label: "Financeiro", icon: Database },
+            { id: "agenda", label: "Agenda", icon: BookOpen },
             { id: "database", label: "Banco de Dados", icon: Database },
-            { id: "settings", label: "Configurações", icon: Settings },
+            { id: "settings", label: "Configs & Integrações", icon: Settings },
             { id: "diagnostics", label: "Diagnósticos & SSH", icon: Terminal },
             { id: "readme", label: "Documentação", icon: Info },
           ].map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as any)}
-                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all duration-300 cursor-pointer w-full ${isActive
-                  ? "text-white font-semibold"
-                  : "text-zinc-500 hover:text-zinc-200"
-                  }`}
+                className={`relative flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs transition-all duration-300 cursor-pointer whitespace-nowrap w-full group ${
+                  activeTab === item.id
+                    ? "text-[var(--brand-light)] font-bold"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                }`}
                 title={item.label}
               >
-                {isActive && (
+                {activeTab === item.id && (
                   <motion.div
-                    layoutId="activeSidebarGlass"
-                    className="absolute inset-0 rounded-xl"
-                    style={{
-                      background: `rgba(${activeHoloTheme.primary.slice(1).match(/.{2}/g)?.map(h => parseInt(h, 16)).join(',') || '168,85,247'}, 0.12)`,
-                      border: `1px solid rgba(${activeHoloTheme.primary.slice(1).match(/.{2}/g)?.map(h => parseInt(h, 16)).join(',') || '168,85,247'}, 0.35)`,
-                      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.1), 0 0 20px rgba(${activeHoloTheme.primary.slice(1).match(/.{2}/g)?.map(h => parseInt(h, 16)).join(',') || '168,85,247'}, 0.15)`,
-                    }}
+                    layoutId="activeSidebarTabIndicator"
+                    className="absolute inset-0 bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/40 rounded-lg shadow-[inset_0_0_12px_rgba(168,85,247,0.1),0_0_15px_rgba(168,85,247,0.2)]"
                     initial={false}
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                <Icon className={`h-4 w-4 shrink-0 relative z-10 transition-colors ${isActive ? 'text-[var(--brand-light)]' : ''
-                  }`} />
-                {isSidebarOpen && (
-                  <span className="relative z-10 tracking-wide">{item.label}</span>
-                )}
+                <Icon className="h-4 w-4 shrink-0 relative z-10" />
+                {isSidebarOpen && <span className="relative z-10">{item.label}</span>}
               </button>
             );
           })}
 
-          <div className="flex-1" />
+          <div className="flex-1 mt-4"></div>
 
           <button
-            onClick={() => { localStorage.removeItem("jarvis_token"); window.location.reload(); }}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-300 cursor-pointer w-full text-red-400/70 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20"
+            onClick={() => {
+              localStorage.removeItem("jarvis_token");
+              window.location.reload();
+            }}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer w-full text-red-500 hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 shadow-none hover:shadow-[0_0_10px_rgba(239,68,68,0.2)]"
             title="Sair"
           >
             <LogOut className="h-4 w-4 shrink-0" />
@@ -806,108 +787,145 @@ export default function App() {
           </button>
         </nav>
 
-        <div className="px-4 pb-4 flex justify-center">
-          {isSidebarOpen ? (
-            <span className="font-mono text-[9px] tracking-[0.25em] text-zinc-700">JARVIS OS v5</span>
-          ) : (
-            <span className="font-mono text-[8px] text-zinc-800">v5</span>
-          )}
+        {/* Simple collapse indication / settings at bottom if wanted */}
+        <div className={`p-3 flex justify-center font-mono text-[8px] tracking-widest shrink-0 mt-auto truncate w-full border-t ${"border-zinc-900 text-zinc-600"
+          }`}>
+          {isSidebarOpen ? "TERMINAL MESTRE" : "TM"}
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col h-full overflow-x-hidden p-4 md:p-5 w-full ${(activeTab === "jarvis" || activeTab === "settings") ? "overflow-hidden" : "overflow-y-auto"
-        }`}>
-        {/* Header */}
-        <header className="flex items-center justify-between gap-4 border-b border-white/[0.06] pb-4 mb-5 shrink-0">
-          <div className="flex items-center gap-3.5">
-            {/* Status orb */}
-            <div className="relative">
-              <div className="w-10 h-10 rounded-2xl glass-card flex items-center justify-center border border-[var(--brand-primary)]/20">
-                <div className={`w-3 h-3 rounded-full transition-all duration-500 ${systemState?.systemActive
-                    ? systemState?.installer?.status === "installing"
-                      ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]"
-                      : "bg-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow-strong)]"
-                    : "bg-zinc-600"
-                  }`} />
-              </div>
-              {systemState?.systemActive && (
-                <div className="absolute inset-0 rounded-2xl ring-1 ring-[var(--brand-primary)]/20 animate-pulse" />
-              )}
+      <div className={`flex-1 flex flex-col h-full overflow-x-hidden p-4 md:p-6 w-full ${(activeTab === "jarvis" || activeTab === "settings") ? "overflow-hidden" : "overflow-y-auto"}`}>
+        {/* Immersive HUD Header Section */}
+        <header className={`flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 border-b pb-4 mb-6 shrink-0 relative ${"border-zinc-900"
+          }`}>
+          <div className="flex items-center gap-4">
+            <div className={`w-11 h-11 border border-[var(--brand-border)] rounded-full flex items-center justify-center shadow-[0_4px_12px_var(--brand-glow-strong)] ${"bg-slate-950"
+              }`}>
+              <div
+                className={`w-4-dot w-4 h-4 rounded-full ${systemState?.systemActive ? (systemState?.installer?.status === "installing" ? " bg-yellow-400" : "transition-opacity duration-300 bg-[var(--brand-light)]") : "bg-zinc-600"}`}
+              ></div>
             </div>
             <div>
-              <h1 id="main_title" className="text-xl font-bold tracking-wide text-white flex items-center gap-2">
-                JARVIS
-                <span className="text-brand-gradient">CHRIST</span>
-                <span className="text-[10px] font-mono glass-card px-2 py-0.5 rounded-lg text-[var(--brand-light)] border border-[var(--brand-primary)]/20 tracking-widest">
+              <div className="flex items-center gap-2">
+                <h1
+                  id="main_title"
+                  className={`text-2xl font-bold tracking-widest font-sans flex items-center gap-1.5 ${"text-white"}`}
+                >
+                  JARVIS{" "}
+                  <span className="text-[var(--brand-light)]">CHRIST</span>
+                </h1>
+                <span className="text-sm bg-[var(--brand-glow)] text-[var(--brand-light)] px-2 py-0.5 rounded border border-[var(--brand-border)] font-mono">
                   v5.0-LOCAL
                 </span>
-              </h1>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-medium mt-0.5">
-                AI Control & Automation System
+              </div>
+              <p className="text-xs uppercase tracking-[0.25em] text-[var(--brand-light)]/70 font-semibold font-mono">
+                Automated Deployment & AI Control System
               </p>
             </div>
           </div>
 
-          {/* Right side: shortcuts + status + toggle */}
-          <div className="flex items-center gap-3">
-            {/* Quick links */}
-            <div className="flex items-center gap-1.5">
-              {[
-                { href: "http://localhost:5678", icon: Workflow, title: "n8n" },
-                { href: "http://localhost:8123", icon: Home, title: "Home Assistant" },
-                { href: systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/", icon: Table, title: "Google Sheets" },
-                { href: "/api-docs", icon: Code, title: "API Docs" },
-              ].map(({ href, icon: Icon, title }) => (
-                <a
-                  key={title}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={title}
-                  className="w-8 h-8 rounded-xl magnetic-btn flex items-center justify-center text-zinc-400 hover:text-[var(--brand-light)] transition-all"
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                </a>
-              ))}
+          {/* HUD Quick Info & Network status */}
+          <div className="flex items-center gap-6 self-end md:self-auto">
+            {/* System Shortcuts */}
+            <div className="flex items-center gap-2">
+              <a
+                href="http://localhost:5678"
+                target="_blank"
+                rel="noreferrer"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${"border-zinc-800/40 bg-zinc-900"
+                  }`}
+                title="Abrir n8n (Porta 5678)"
+              >
+                <Workflow className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[var(--brand-light)]" />
+              </a>
+              <a
+                href="http://localhost:8123"
+                target="_blank"
+                rel="noreferrer"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${"border-white/10 bg-white/5 backdrop-blur-md"
+                  }`}
+                title="Abrir Home Assistant (Porta 8123)"
+              >
+                <Home className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[var(--brand-light)]" />
+              </a>
+              <a
+                href={systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/"}
+                target="_blank"
+                rel="noreferrer"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] hover:border-[var(--brand-primary)]/50 hover:bg-[var(--brand-primary)]/10 transition-all group ${"border-white/10 bg-white/5 backdrop-blur-md"
+                  }`}
+                title="Abrir Memória Central (Google Sheets)"
+                onClick={(e) => {
+                  if (!systemState?.googleSheetUrl) {
+                    e.preventDefault();
+                    setActiveTab("settings");
+                    setSettingsTab("general");
+                  }
+                }}
+              >
+                <Table className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[var(--brand-light)]" />
+              </a>
+              <a
+                href="/api-docs"
+                target="_blank"
+                rel="noreferrer"
+                className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[var(--brand-glow)] hover:border-[var(--brand-border)] hover:text-[var(--brand-light)] transition-all group ${"border-white/10 bg-white/5 backdrop-blur-md"
+                  }`}
+                title="Abrir JARVIS Web/Dev (Porta 3000)"
+              >
+                <Code className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[var(--brand-light)]" />
+              </a>
             </div>
 
-            {/* Divider */}
-            <div className="h-6 w-px bg-white/10" />
-
-            {/* Clock */}
-            <div className="text-right">
-              <span className="text-[10px] text-zinc-600 uppercase tracking-wider block">Local Time</span>
-              <span id="digital_clock" className="text-xs font-mono font-semibold text-white flex items-center gap-1 justify-end">
+            <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800/40"}`}>
+              <span className="text-xs text-zinc-500 uppercase block tracking-wider">
+                Servidor "Servidor Jarvis"
+              </span>
+              <div
+                className={`flex items-center gap-1.5 justify-end text-xs ${systemState?.systemActive ? "opacity-100" : "opacity-30"} ${"text-white"
+                  }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${systemState?.systemActive ? "bg-[var(--brand-primary)] " : "bg-zinc-500"}`}
+                ></span>
+                "GPU Local" CUDA:{" "}
+                {systemState?.systemActive ? "ATIVO" : "INATIVO"}
+              </div>
+            </div>
+            <div className={`border-l pl-4 text-right font-mono ${"border-zinc-800/40"}`}>
+              <span className="text-xs text-zinc-500 uppercase block tracking-wider">
+                Estação Horária
+              </span>
+              <span
+                id="digital_clock"
+                className={`text-sm font-semibold tracking-widest flex items-center gap-1 ${"text-white"
+                  }`}
+              >
                 <Clock className="h-3 w-3 text-[var(--brand-light)]" />
                 {timeStr}
               </span>
             </div>
-
-            {/* System status pill */}
-            <div className="glass-card px-3 py-1.5 rounded-xl flex items-center gap-2">
-              <span className={`h-1.5 w-1.5 rounded-full ${systemState?.systemActive ? 'status-online' : 'status-offline'
-                }`} />
-              <span className="text-[10px] font-mono text-zinc-400">
-                {systemState?.systemActive ? 'ONLINE' : 'OFFLINE'}
-              </span>
+            <div className={`border-l pl-4 flex items-center justify-center ${"border-zinc-800/40"}`}>
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch(getServerUrl() + "/api/system/toggle", { method: "POST" });
+                    fetchSystemState();
+                  } catch (e) {
+                    console.error("Failed to toggle system", e);
+                  }
+                }}
+                className={`px-4 py-2 border rounded hover-glow font-mono text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95
+                  ${systemState?.systemActive
+                    ? "bg-zinc-900 border-zinc-700 text-yellow-500 hover:bg-zinc-800"
+                    : "bg-[var(--brand-primary)] border-[var(--brand-light)] text-white hover:bg-[var(--brand-light)] hover:text-black shadow-[0_2px_8px_var(--brand-glow-strong)]"
+                  }
+                `}
+              >
+                {systemState?.systemActive ? "Pausar JARVIS" : "Iniciar JARVIS"}
+              </button>
             </div>
-
-            {/* Toggle */}
-            <button
-              onClick={async () => {
-                try {
-                  await fetch(getServerUrl() + "/api/system/toggle", { method: "POST" });
-                  fetchSystemState();
-                } catch (e) { console.error(e); }
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${systemState?.systemActive
-                  ? "magnetic-btn text-zinc-300"
-                  : "liquid-btn text-white"
-                }`}
-            >
-              {systemState?.systemActive ? "Pausar" : "Iniciar"}
-            </button>
           </div>
         </header>
 
@@ -1032,8 +1050,8 @@ export default function App() {
                                 key={p}
                                 onClick={() => triggerPresetChange(p)}
                                 className={`px-2.5 py-1 rounded border transition-all cursor-pointer ${selectedPreset === p
-                                  ? "bg-[var(--brand-dark)] border-[var(--brand-primary)] text-[var(--brand-light)] font-bold"
-                                  : "bg-black/20 backdrop-blur-md/40 border-zinc-800/40 text-zinc-500 hover:text-zinc-300"
+                                    ? "bg-[var(--brand-dark)] border-[var(--brand-primary)] text-[var(--brand-light)] font-bold"
+                                    : "bg-black/20 backdrop-blur-md/40 border-zinc-800/40 text-zinc-500 hover:text-zinc-300"
                                   }`}
                               >
                                 {p}
@@ -1049,8 +1067,8 @@ export default function App() {
                             <div
                               key={device.id}
                               className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${device.state === "on"
-                                ? "bg-[var(--brand-dark)] border-[var(--brand-border)]"
-                                : "bg-black/20 backdrop-blur-md/40 border-zinc-900/60 text-zinc-500"
+                                  ? "bg-[var(--brand-dark)] border-[var(--brand-border)]"
+                                  : "bg-black/20 backdrop-blur-md/40 border-zinc-900/60 text-zinc-500"
                                 }`}
                             >
                               <div>
@@ -1063,14 +1081,14 @@ export default function App() {
                                       toggleDeviceState(device.id, device.state)
                                     }
                                     className={`w-11 h-6 rounded-full p-0.5 transition-all duration-300 ease-in-out cursor-pointer relative flex items-center shrink-0 active:scale-90 hover:brightness-110 shadow-inner ${device.state === "on"
-                                      ? "bg-[var(--brand-primary,rgb(6,182,212))] shadow-[0_0_10px_var(--brand-primary,rgba(6,182,212,0.45))]"
-                                      : "bg-zinc-800 border border-zinc-700/35"
+                                        ? "bg-[var(--brand-primary,rgb(6,182,212))] shadow-[0_0_10px_var(--brand-primary,rgba(6,182,212,0.45))]"
+                                        : "bg-zinc-800 border border-zinc-700/35"
                                       }`}
                                   >
                                     <div
                                       className={`bg-black/20 backdrop-blur-md w-4.5 h-4.5 rounded-full shadow-inner transition-transform duration-300 ease-in-out flex items-center justify-center ${device.state === "on"
-                                        ? "transform translate-x-5"
-                                        : "transform translate-x-0"
+                                          ? "transform translate-x-5"
+                                          : "transform translate-x-0"
                                         }`}
                                     >
                                       <div
@@ -1091,7 +1109,7 @@ export default function App() {
 
                               {device.type === "light" && device.state === "on" && (
                                 <div className="mt-4 flex items-center justify-between gap-3 pt-3 border-t border-zinc-500/20">
-                                  <CyberGauge
+                                  <CyberGauge 
                                     value={device.brightness || 100}
                                     color={device.color}
                                     onChange={(val) => fetch(getServerUrl() + "/api/update/iot", {

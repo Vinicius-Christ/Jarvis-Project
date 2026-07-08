@@ -992,6 +992,17 @@ export default function App() {
           <div
             className={`flex-1 flex flex-col min-h-0 transition-opacity duration-500 relative ${!systemState?.systemActive ? "opacity-0 pointer-events-none" : "opacity-100"}`}
           >
+            {/* The Jarvis Assistant Component (Always mounted, manages its own widget mode layout) */}
+            {systemState?.systemActive && (
+              <div className={`transition-all duration-500 ${activeTab === "jarvis" ? "absolute inset-0 z-10 pointer-events-auto" : "absolute inset-0 z-50 pointer-events-none"}`}>
+                <JarvisAssistant
+                  conversations={systemState?.conversations || []}
+                  onSendMessage={onSendMessageStable}
+                  isWidget={activeTab !== "jarvis"}
+                />
+              </div>
+            )}
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -1003,11 +1014,8 @@ export default function App() {
               >
                 {/* TAB 1: JARVIS CORE */}
                 {activeTab === "jarvis" && (
-                  <div className="h-full flex-1 w-full flex flex-col animate-fade-in relative z-10 shadow-2xl rounded-xl overflow-hidden glass-panel">
-                    <JarvisAssistant
-                      conversations={systemState?.conversations || []}
-                      onSendMessage={onSendMessageStable}
-                    />
+                  <div className="h-full flex-1 w-full flex flex-col animate-fade-in relative z-0">
+                    {/* Placeholder for the layout space. The actual component is rendered globally. */}
                   </div>
                 )}
 

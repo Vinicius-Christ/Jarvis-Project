@@ -1,7 +1,7 @@
 import DOMPurify from "dompurify";
 import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useDragControls, useMotionValue } from "motion/react";
 import {
   Mic,
   MicOff,
@@ -58,12 +58,14 @@ interface JarvisAssistantProps {
   conversations: any[];
   onSendMessage: (msg: string, file?: any, model?: string) => Promise<any>;
   isDarkMode?: boolean;
+  isWidget?: boolean;
 }
 
 export default React.memo(function JarvisAssistant({
   conversations,
   onSendMessage,
   isDarkMode = true,
+  isWidget = false,
 }: JarvisAssistantProps) {
   const [inputText, setInputText] = useState("");
   const [appState, setAppState] = useState<
@@ -77,24 +79,60 @@ export default React.memo(function JarvisAssistant({
   } | null>(null);
   const [showNotePopup, setShowNotePopup] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  useEffect(() => {
+    if (!isWidget) {
+      x.set(0);
+      y.set(0);
+      if (containerRef.current) {
+        containerRef.current.style.width = "";
+        containerRef.current.style.height = "";
+        containerRef.current.style.transform = "none";
+      }
+    }
+  }, [isWidget, x, y]);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
 
   // Idea 3: Deep Voice Engine state variables and advanced local telemetry
   const [pitch, setPitch] = useState(1.0);
-  const [rate, setRate] = useState(1.15);
+  const [rate, setRate] = useState(() => {
+    if (typeof window !== "undefined") {
+      return parseFloat(localStorage.getItem("jarvis_rate") || "1.15");
+    }
+    return 1.15;
+  });
   const [voiceVolume, setVoiceVolume] = useState(1.0);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("jarvis_voice") || "";
+    }
+    return "";
+  });
   const [systemVoices, setSystemVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [engineType, setEngineType] = useState("microsoft_edge_tts");
-  const [noiseGate, setNoiseGate] = useState(-45);
+  const [noiseGate, setNoiseGate] = useState(() => {
+    if (typeof window !== "undefined") {
+      return parseInt(localStorage.getItem("jarvis_noise_gate") || "-45", 10);
+    }
+    return -45;
+  });
   const [lastMeasureLatency, setLastMeasureLatency] = useState({
     stt: 14,
     llm: 215,
     tts: 28,
   });
-  const [activePersona, setActivePersona] = useState("friday");
+  const [activePersona, setActivePersona] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("jarvis_persona") || "friday";
+    }
+    return "friday";
+  });
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
 
@@ -789,11 +827,34 @@ export default React.memo(function JarvisAssistant({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-full p-4 bg-transparent text-white overflow-hidden font-sans">
+    <motion.div 
+      ref={containerRef}
+      drag={isWidget ? true : false}
+      dragControls={dragControls}
+      dragListener={false}
+      dragMomentum={false}
+      style={{ x, y, resize: isWidget ? "both" : "none" }}
+      className={isWidget 
+        ? "fixed bottom-6 right-6 w-80 min-w-[280px] min-h-[350px] max-h-[90vh] max-w-[90vw] h-[28rem] bg-black/80 backdrop-blur-3xl border border-[var(--brand-primary)]/40 shadow-[0_0_40px_var(--brand-glow)] rounded-3xl overflow-hidden z-[9999] flex flex-col font-sans pointer-events-auto" 
+        : "grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-full p-4 bg-transparent text-white overflow-hidden font-sans"}
+    >
+      {isWidget && (
+        <div 
+          className="w-full h-8 flex items-center justify-between px-4 cursor-grab active:cursor-grabbing shrink-0 z-50 bg-white/5 hover:bg-white/10 transition-colors border-b border-[var(--brand-primary)]/20"
+          onPointerDown={(e) => dragControls.start(e)}
+        >
+          <div className="w-4 h-4" />
+          <div className="w-12 h-1 bg-[var(--brand-light)]/40 rounded-full" />
+          <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setIsVoiceModalOpen(true)} className="text-zinc-500 hover:text-white transition-colors cursor-pointer z-50 p-1">
+             <Sliders className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* LEFT COLUMN: TELEMETRY & MEDIA FEEDS */}
       {/* ======================================================== */}
+      {!isWidget && (
       <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative glass-panel">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl" />
 
@@ -820,15 +881,16 @@ export default React.memo(function JarvisAssistant({
 
 
       </div>
+      )}
 
       {/* ======================================================== */}
       {/* CENTER COLUMN: GALAXY NUCLEUS CORE */}
       {/* ======================================================== */}
-      <div className="flex flex-col items-center justify-center relative h-full rounded-3xl overflow-hidden glass-panel border border-white/5">
+      <div className={`flex flex-col items-center justify-center relative overflow-hidden ${isWidget ? "flex-none h-[140px] bg-transparent" : "rounded-3xl glass-panel border border-white/5 h-full"}`}>
         {/* No title — clean & immersive */}
 
         {/* State label — subtle floating badge */}
-        <div className="absolute top-6 z-10">
+        <div className={`absolute z-10 ${isWidget ? "top-2" : "top-6"}`}>
           <span className={`text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border transition-all duration-500 ${appState === 'speaking'
               ? 'text-[var(--brand-light)] border-[var(--brand-primary)]/50 bg-[var(--brand-primary)]/10'
               : appState === 'listening'
@@ -842,7 +904,7 @@ export default React.memo(function JarvisAssistant({
         </div>
 
         {/* Central Orb / Canvas */}
-        <div className="relative flex flex-col items-center justify-center w-full flex-1">
+        <div className={`relative flex flex-col items-center justify-center w-full flex-1 ${isWidget ? "scale-[0.4] mt-2" : ""}`}>
           <canvas ref={canvasRef} className="w-[300px] h-[300px] z-0" />
 
           {/* Popups Overlay */}
@@ -875,6 +937,7 @@ export default React.memo(function JarvisAssistant({
         </div>
 
         {/* Action Toolbar */}
+        {!isWidget && (
         <div className="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
           <button onClick={handleMicToggle} className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
             {appState === 'listening' ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
@@ -894,12 +957,14 @@ export default React.memo(function JarvisAssistant({
             <Sliders className="w-5 h-5" />
           </button>
         </div>
+        )}
       </div>
 
       {/* ======================================================== */}
       {/* RIGHT COLUMN: CHAT TERMINAL */}
       {/* ======================================================== */}
-      <div className="glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] flex flex-col justify-between overflow-hidden h-full relative rounded-3xl glass-panel">
+      <div className={`glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] flex flex-col justify-between overflow-hidden relative rounded-3xl ${isWidget ? "flex-1 border-none bg-transparent rounded-none" : "h-full"}`}>
+        {!isWidget && (
         <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-white/5 shrink-0">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
@@ -908,6 +973,7 @@ export default React.memo(function JarvisAssistant({
             </span>
           </div>
         </div>
+        )}
 
         {/* Dialogue Scroll area */}
         <div className="p-5 flex-1 overflow-y-auto space-y-5 select-text scrollbar-thin scrollbar-thumb-[var(--brand-primary)]/50">
@@ -989,26 +1055,47 @@ export default React.memo(function JarvisAssistant({
         )}
 
         {/* Input area */}
-        <form onSubmit={handleSendText} className="p-4 border-t border-[var(--brand-primary)]/20 flex gap-3 items-center bg-white/5 backdrop-blur-3xl z-10 shrink-0">
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" />
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="magnetic-btn p-3.5 rounded-xl border border-white/10 bg-white/10 text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer shrink-0">
-            <Paperclip className="h-4 w-4" />
-          </button>
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            disabled={appState === "processing"}
-            placeholder={
-              appState === "listening" ? "Aguardando entrada de voz..." :
-                appState === "processing" ? "Processando..." :
-                  "Inicializar comando..."
-            }
-            className="holo-input flex-1 rounded-xl text-xs px-4 py-3.5 font-mono"
-          />
-          <button type="submit" disabled={appState === "processing" || (!inputText.trim() && !attachedFile)} className="magnetic-btn px-6 py-3.5 bg-[var(--brand-primary)]/80 hover:bg-[var(--brand-primary)] text-white border border-[var(--brand-primary)]/50 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center font-bold cursor-pointer shrink-0 shadow-[0_0_15px_var(--brand-glow-strong)]">
-            <Send className="h-4 w-4" />
-          </button>
+        <form onSubmit={handleSendText} className={`p-3 border-t border-[var(--brand-primary)]/20 flex flex-col gap-2 bg-white/5 backdrop-blur-3xl z-10 shrink-0 ${isWidget ? "" : "p-4 gap-3 flex-row items-center"}`}>
+          {isWidget && (
+            <div className="flex gap-2 w-full justify-center">
+              <button type="button" onClick={handleMicToggle} className={`magnetic-btn p-2 rounded-xl flex items-center justify-center cursor-pointer flex-1 transition-all ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
+                {appState === 'listening' ? <MicOff className="w-4 h-4 animate-pulse" /> : <Mic className="w-4 h-4" />}
+              </button>
+              <button type="button" onClick={() => {
+                const newMode = !isContinuousMode;
+                setIsContinuousMode(newMode);
+                if (newMode && appState === "inactive") {
+                  recognitionRef.current?.start();
+                } else if (!newMode && appState === "listening") {
+                  recognitionRef.current?.stop();
+                }
+              }} className={`magnetic-btn p-2 rounded-xl flex items-center justify-center cursor-pointer flex-1 transition-all ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
+                <Radio className={`w-4 h-4 ${isContinuousMode ? 'animate-flicker' : ''}`} />
+              </button>
+            </div>
+          )}
+          
+          <div className="flex gap-2 items-center w-full">
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" />
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="magnetic-btn p-3 rounded-xl border border-white/10 bg-white/10 text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer shrink-0">
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              disabled={appState === "processing"}
+              placeholder={
+                appState === "listening" ? "Ouvindo..." :
+                  appState === "processing" ? "Computando..." :
+                    "Comando..."
+              }
+              className="holo-input flex-1 rounded-xl text-[11px] px-3 py-3 font-mono"
+            />
+            <button type="submit" disabled={appState === "processing" || (!inputText.trim() && !attachedFile)} className="magnetic-btn px-4 py-3 bg-[var(--brand-primary)]/80 hover:bg-[var(--brand-primary)] text-white border border-[var(--brand-primary)]/50 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center font-bold cursor-pointer shrink-0 shadow-[0_0_15px_var(--brand-glow-strong)]">
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
         </form>
       </div>
 
@@ -1027,10 +1114,10 @@ export default React.memo(function JarvisAssistant({
                   onChange={(e) => setActivePersona(e.target.value)}
                   className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
                 >
-                  <option value="jarvis">J.A.R.V.I.S (Cortês & Profissional)</option>
-                  <option value="friday">F.R.I.D.A.Y (Dinâmica & Direta)</option>
-                  <option value="glados">GLaDOS (Sarcástica & Fria)</option>
-                  <option value="hal9000">HAL 9000 (Metódico & Assustador)</option>
+                  <option className="bg-black text-white" value="jarvis">J.A.R.V.I.S (Cortês & Profissional)</option>
+                  <option className="bg-black text-white" value="friday">F.R.I.D.A.Y (Dinâmica & Direta)</option>
+                  <option className="bg-black text-white" value="glados">GLaDOS (Sarcástica & Fria)</option>
+                  <option className="bg-black text-white" value="hal9000">HAL 9000 (Metódico & Assustador)</option>
                 </select>
               </div>
 
@@ -1042,7 +1129,7 @@ export default React.memo(function JarvisAssistant({
                   className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
                 >
                   {systemVoices.map(v => (
-                    <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
+                    <option className="bg-black text-white" key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
                   ))}
                 </select>
               </div>
@@ -1058,13 +1145,24 @@ export default React.memo(function JarvisAssistant({
             </div>
 
             <div className="flex justify-end gap-4 pt-6 border-t border-[var(--brand-primary)]/20">
-              <button onClick={() => setIsVoiceModalOpen(false)} className="px-6 py-2 bg-[var(--brand-primary)]/20 hover:bg-[var(--brand-primary)]/40 text-[var(--brand-light)] border border-[var(--brand-primary)]/50 rounded-xl transition-colors font-bold tracking-wider cursor-pointer">
-                FECHAR
+              <button onClick={() => {
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("jarvis_persona", activePersona);
+                  localStorage.setItem("jarvis_voice", selectedVoiceURI);
+                  localStorage.setItem("jarvis_rate", rate.toString());
+                  localStorage.setItem("jarvis_noise_gate", noiseGate.toString());
+                }
+                setIsVoiceModalOpen(false);
+              }} className="px-6 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/80 text-white rounded-xl transition-colors font-bold tracking-wider cursor-pointer shadow-[0_0_15px_var(--brand-glow-strong)] border border-[var(--brand-primary)]/50">
+                SALVAR
+              </button>
+              <button onClick={() => setIsVoiceModalOpen(false)} className="px-6 py-2 bg-transparent hover:bg-white/10 text-zinc-400 border border-white/20 rounded-xl transition-colors font-bold tracking-wider cursor-pointer">
+                CANCELAR
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 });

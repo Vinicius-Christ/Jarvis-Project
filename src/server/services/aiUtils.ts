@@ -1,4 +1,4 @@
-const AI_PERSONAS: Record<string, { name: string; title: string; theme: string; prompt: string }> = {
+export const AI_PERSONAS: Record<string, { name: string; title: string; theme: string; prompt: string }> = {
     jarvis: {
         name: "JARVIS",
         title: "O Gentleman Britânico",

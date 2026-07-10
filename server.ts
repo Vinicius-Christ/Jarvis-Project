@@ -44,7 +44,9 @@ if (typeof AbortSignal.timeout !== "function") {
 
 
 const app = express();
-app.use(helmet());
+if (process.env.NODE_ENV === "production") {
+  app.use(helmet());
+}
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -1496,7 +1498,7 @@ app.post("/api/delete/agenda", async (req, res) => {
 });
 
 app.post("/api/update/iot", async (req, res) => {
-  const { deviceId, state, brightness, color, presetName } = req.body;
+  const { deviceId, state, brightness, color, color_temp, presetName } = req.body;
 
   const HOME_ASSISTANT_IP = jarvisState.homeAssistant.ip || "";
   // const HA_TOKEN = jarvisState.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI"; 
@@ -1597,9 +1599,23 @@ app.post("/api/update/iot", async (req, res) => {
       // =============== MUNDO REAL (WEBSOCKET FIRST, FALLBACK TO WEBHOOK) ===============
       const domain = deviceId.split(".")[0] || "light";
       const service = state === "on" ? "turn_on" : "turn_off";
-      const serviceData = brightness !== undefined ? { brightness_pct: brightness } : undefined;
+      
+      const serviceData: any = {};
+      if (brightness !== undefined) serviceData.brightness_pct = brightness;
+      if (color_temp !== undefined) serviceData.color_temp = color_temp;
+      if (color !== undefined && color.startsWith("#")) {
+        const hex = color.replace("#", "");
+        if (hex.length === 6) {
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          serviceData.rgb_color = [r, g, b];
+        }
+      }
 
-      const wsSuccessful = callHAService(deviceId, service, domain, serviceData);
+      // If serviceData is completely empty, send undefined so callHAService doesn't get an empty object 
+      // (though an empty object is fine, undefined is safer based on existing code).
+      const wsSuccessful = callHAService(deviceId, service, domain, Object.keys(serviceData).length > 0 ? serviceData : undefined);
 
       if (!wsSuccessful) {
         try {

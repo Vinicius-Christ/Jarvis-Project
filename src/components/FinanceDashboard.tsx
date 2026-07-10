@@ -18,7 +18,7 @@ export default function FinanceDashboard({
   systemState, fetchSystemState, handleExportPDF, handleFileUpload, handleDeleteFinance, handleDeleteGoal
 }: FinanceDashboardProps) {
   
-  const [financeForm, setFinanceForm] = useState({ id: null as number | null, value: "", type: "Despesa", category: "EducaÃ§Ã£o", description: "" });
+  const [financeForm, setFinanceForm] = useState({ id: null as number | null, value: "", type: "Despesa", category: "Educação", description: "" });
   const [goalForm, setGoalForm] = useState({ limit: "", reason: "" });
 
   const handleFinanceSubmit = async (e: React.FormEvent) => {
@@ -36,7 +36,7 @@ export default function FinanceDashboard({
           id: financeForm.id
         }),
       });
-      setFinanceForm({ id: null, value: "", type: "Despesa", category: "EducaÃ§Ã£o", description: "" });
+      setFinanceForm({ id: null, value: "", type: "Despesa", category: "Educação", description: "" });
       fetchSystemState();
     } catch { /* ignore */ }
   };
@@ -59,7 +59,7 @@ export default function FinanceDashboard({
       id: item.id,
       value: item.value.toString(),
       type: item.type || "Despesa",
-      category: item.category || "EducaÃ§Ã£o",
+      category: item.category || "Educação",
       description: item.description || ""
     });
     document.getElementById("finance-report-area")?.scrollIntoView({ behavior: "smooth" });
@@ -72,7 +72,7 @@ export default function FinanceDashboard({
     const res = systemState.finances.reduce(
         (acc: any, f: any) => {
           const val = Math.abs(typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0);
-          if (f.type === "Receita" || ["renda", "receita", "salÃ¡rio", "salario"].includes((f.category || "").toLowerCase())) acc.income += val;
+          if (f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) acc.income += val;
           else acc.expense += val;
           return acc;
         },
@@ -108,7 +108,7 @@ export default function FinanceDashboard({
            if (isNaN(localDate.getTime())) return;
            
            const val = Math.abs(typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0);
-           const isIncome = f.type === "Receita" || ["renda", "receita", "salÃ¡rio", "salario"].includes((f.category || "").toLowerCase());
+           const isIncome = f.type === "Receita" || ["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase());
            
            if (localDate < boundaryDate) {
                if (isIncome) accumulatedSavings += val;
@@ -119,7 +119,7 @@ export default function FinanceDashboard({
                    if (isIncome) monthlyData[monthKey].income += val;
                    else monthlyData[monthKey].expense += val;
                } else {
-                   // Se por acaso for de um mÃªs no futuro (improvÃ¡vel, mas possÃ­vel)
+                   // Se por acaso for de um mês no futuro (improvável, mas possível)
                    if (isIncome) accumulatedSavings += val;
                    else accumulatedSavings -= val;
                }
@@ -151,7 +151,7 @@ export default function FinanceDashboard({
     if (!systemState?.finances) return [];
     const gastos: Record<string, number> = {};
     systemState.finances.forEach((f: any) => {
-      if (f.type !== "Receita" && !["renda", "receita", "salÃ¡rio", "salario"].includes((f.category || "").toLowerCase())) {
+      if (f.type !== "Receita" && !["renda", "receita", "salário", "salario"].includes((f.category || "").toLowerCase())) {
         const val = Math.abs(typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0);
         const cat = f.category || "Outros";
         gastos[cat] = (gastos[cat] || 0) + val;
@@ -169,9 +169,9 @@ export default function FinanceDashboard({
         <div className="flex justify-between items-center holographic-card bg-gradient-to-r from-[var(--brand-dark)]/20 to-zinc-950 border-[var(--brand-primary)]/30 hover-glow">
             <div className="flex flex-col">
                 <h3 className="text-[var(--brand-light)] font-mono text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                    <Wallet className="h-5 w-5" /> InteligÃªncia Financeira
+                    <Wallet className="h-5 w-5" /> Inteligência Financeira
                 </h3>
-                <span className="text-zinc-500 font-mono text-[11px] mt-1">AnÃ¡lise de Fluxo de Caixa e ProjeÃ§Ãµes</span>
+                <span className="text-zinc-500 font-mono text-[11px] mt-1">Análise de Fluxo de Caixa e Projeções</span>
             </div>
             <button 
                 onClick={handleExportPDF}
@@ -201,7 +201,7 @@ export default function FinanceDashboard({
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Wallet className="h-16 w-16 text-[var(--brand-light)]" />
                 </div>
-                <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Saldo Atual (LÃ­quido)</span>
+                <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Saldo Atual (Líquido)</span>
                 <span className={`text-3xl font-bold ${guardado >= 0 ? 'text-[var(--brand-light)]' : 'text-red-500'}`}>
                     R$ {guardado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </span>
@@ -210,7 +210,7 @@ export default function FinanceDashboard({
 
         <div id="finance-report-area" className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
-            {/* Lado Esquerdo: Metas e LanÃ§amento */}
+            {/* Lado Esquerdo: Metas e Lançamento */}
             <div className="space-y-6">
                 
                 {/* Meta Financeira */}
@@ -271,15 +271,15 @@ export default function FinanceDashboard({
                     </form>
                 </div>
 
-                {/* Formulario de LanÃ§amento */}
+                {/* Formulario de Lançamento */}
                 <div className="holographic-card p-5 rounded-2xl glass-panel border border-white/10 backdrop-blur-md">
                     <h3 className="text-xs font-mono font-medium text-[var(--brand-light)] uppercase tracking-widest flex items-center gap-2 mb-4">
-                        <Edit2 className="h-4 w-4" /> LanÃ§amento RÃ¡pido
+                        <Edit2 className="h-4 w-4" /> Lançamento Rápido
                     </h3>
                     
                     <form onSubmit={handleFinanceSubmit} className="space-y-4">
                         <div>
-                            <label className="text-[10px] text-zinc-500 font-mono block mb-1">DescriÃ§Ã£o</label>
+                            <label className="text-[10px] text-zinc-500 font-mono block mb-1">Descrição</label>
                             <input
                                 type="text" required
                                 value={financeForm.description}
@@ -350,7 +350,7 @@ export default function FinanceDashboard({
                             <input
                                 type="file"
                                 className="hidden"
-                                onChange={(e) => handleFileUpload(e, "FinanÃ§as")}
+                                onChange={(e) => handleFileUpload(e, "Finanças")}
                                 accept=".pdf,.xml,.csv"
                             />
                         </label>
@@ -362,12 +362,12 @@ export default function FinanceDashboard({
             {/* Lado Direito: Dashboards e Tabela */}
             <div className="col-span-1 xl:col-span-2 flex flex-col space-y-6">
                 
-                {/* GrÃ¡ficos */}
+                {/* Gráficos */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* GrÃ¡fico de EvoluÃ§Ã£o (Composed) */}
+                    {/* Gráfico de Evolução (Composed) */}
                     <div className="holographic-card p-5 rounded-2xl glass-panel border border-white/10 backdrop-blur-md h-[320px] flex flex-col">
                         <h4 className="text-[11px] uppercase tracking-widest text-[var(--brand-light)] font-mono mb-4 flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4" /> EvoluÃ§Ã£o de Fluxo de Caixa
+                            <TrendingUp className="h-4 w-4" /> Evolução de Fluxo de Caixa
                         </h4>
                         <div className="flex-1 w-full">
                             {savingsData.length > 0 ? (
@@ -389,12 +389,12 @@ export default function FinanceDashboard({
                                     </ComposedChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="h-full flex items-center justify-center text-zinc-600 text-xs font-mono">Sem dados histÃ³ricos</div>
+                                <div className="h-full flex items-center justify-center text-zinc-600 text-xs font-mono">Sem dados históricos</div>
                             )}
                         </div>
                     </div>
 
-                    {/* GrÃ¡fico de Categorias (Pie) */}
+                    {/* Gráfico de Categorias (Pie) */}
                     <div className="holographic-card p-5 rounded-2xl glass-panel border border-white/10 backdrop-blur-md h-[320px] flex flex-col">
                         <h4 className="text-[11px] uppercase tracking-widest text-[var(--brand-light)] font-mono mb-4 flex items-center gap-2">
                             <PieChartIcon className="h-4 w-4" /> Despesas por Categoria
@@ -435,7 +435,7 @@ export default function FinanceDashboard({
                                 <div className="h-full flex items-center justify-center text-zinc-600 text-xs font-mono">Sem dados de despesa</div>
                             )}
                             
-                            {/* Centro do GrÃ¡fico */}
+                            {/* Centro do Gráfico */}
                             {categoryChartData.length > 0 && (
                                 <div className="absolute top-1/2 left-[50%] md:left-[35%] lg:left-[30%] xl:left-[35%] -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                                     <span className="block text-[10px] text-zinc-500 font-mono">Total</span>
@@ -446,17 +446,17 @@ export default function FinanceDashboard({
                     </div>
                 </div>
 
-                {/* Tabela de TransaÃ§Ãµes */}
+                {/* Tabela de Transações */}
                 <div className="holographic-card rounded-2xl glass-panel border border-white/10 backdrop-blur-md overflow-hidden flex flex-col flex-1">
                     <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                        <h4 className="text-[11px] uppercase tracking-widest text-zinc-300 font-mono font-bold">HistÃ³rico de TransaÃ§Ãµes</h4>
+                        <h4 className="text-[11px] uppercase tracking-widest text-zinc-300 font-mono font-bold">Histórico de Transações</h4>
                     </div>
                     <div className="flex-1 overflow-x-auto">
                         <table className="w-full text-left font-mono text-[11px] border-collapse relative">
                             <thead className="sticky top-0 glass-panel backdrop-blur z-10 shadow-sm">
                                 <tr className="text-zinc-500">
                                     <th className="py-3 px-4 font-medium">Data</th>
-                                    <th className="py-3 px-4 font-medium">DescriÃ§Ã£o</th>
+                                    <th className="py-3 px-4 font-medium">Descrição</th>
                                     <th className="py-3 px-4 font-medium">Categoria</th>
                                     <th className="py-3 px-4 font-medium text-right">Valor</th>
                                     <th className="py-3 px-4"></th>
@@ -497,7 +497,7 @@ export default function FinanceDashboard({
                                 ) : (
                                     <tr>
                                         <td colSpan={5} className="py-8 text-center text-zinc-500 text-xs font-mono">
-                                            Nenhuma transaÃ§Ã£o registrada.
+                                            Nenhuma transação registrada.
                                         </td>
                                     </tr>
                                 )}

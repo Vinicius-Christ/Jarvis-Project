@@ -55,6 +55,7 @@ import MCPSettings from "./components/MCPSettings";
 import TokensManager from "./components/TokensManager";
 import UserManager from "./components/UserManager";
 import DatabaseViewer from "./components/DatabaseViewer";
+import { HALightControlModal } from "./components/HALightControlModal";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
@@ -75,6 +76,7 @@ export default function App() {
   >("general");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [systemState, setSystemState] = useState<any>(null);
+  const [selectedLight, setSelectedLight] = useState<any>(null);
 
   const [timeStr, setTimeStr] = useState("");
   const [selectedPreset, setSelectedPreset] = useState("Modo Trabalho");
@@ -820,7 +822,7 @@ export default function App() {
       <div className={`flex-1 flex flex-col h-full overflow-x-hidden p-4 md:p-5 w-full ${(activeTab === "jarvis" || activeTab === "settings") ? "overflow-hidden" : "overflow-y-auto"
         }`}>
         {/* Header */}
-        <header className="flex items-center justify-between gap-4 border-b border-white/[0.06] pb-4 mb-5 shrink-0">
+        <header className="relative z-50 flex items-center justify-between gap-4 border-b border-white/[0.06] pb-4 mb-5 shrink-0">
           <div className="flex items-center gap-3.5">
             {/* Status orb */}
             <div className="relative">
@@ -855,8 +857,8 @@ export default function App() {
             {/* Quick links */}
             <div className="flex items-center gap-1.5">
               {[
-                { href: "http://localhost:5678", icon: Workflow, title: "n8n" },
-                { href: "http://localhost:8123", icon: Home, title: "Home Assistant" },
+                { href: `http://${window.location.hostname}:5678`, icon: Workflow, title: "n8n" },
+                { href: `http://${window.location.hostname}:8123`, icon: Home, title: "Home Assistant" },
                 { href: systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/", icon: Table, title: "Google Sheets" },
                 { href: "/api-docs", icon: Code, title: "API Docs" },
               ].map(({ href, icon: Icon, title }) => (
@@ -1000,6 +1002,8 @@ export default function App() {
                   conversations={systemState?.conversations || []}
                   onSendMessage={onSendMessageStable}
                   isWidget={activeTab !== "jarvis"}
+                  devices={systemState?.homeAssistant?.devices || []}
+                  serverUrl={getServerUrl()}
                 />
               </div>
             )}
@@ -1057,7 +1061,14 @@ export default function App() {
                           (device: any) => (
                             <div
                               key={device.id}
-                              className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${device.state === "on"
+                              onClick={(e) => {
+                                // Prevent modal open if they clicked the toggle button
+                                if ((e.target as HTMLElement).closest('.toggle-btn')) return;
+                                if (device.type === "light") {
+                                  setSelectedLight(device);
+                                }
+                              }}
+                              className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${device.type === "light" ? "cursor-pointer hover:border-[var(--brand-primary)]/50" : ""} ${device.state === "on"
                                 ? "bg-[var(--brand-dark)] border-[var(--brand-border)]"
                                 : "bg-black/20 backdrop-blur-md/40 border-zinc-900/60 text-zinc-500"
                                 }`}
@@ -1071,7 +1082,7 @@ export default function App() {
                                     onClick={() =>
                                       toggleDeviceState(device.id, device.state)
                                     }
-                                    className={`w-11 h-6 rounded-full p-0.5 transition-all duration-300 ease-in-out cursor-pointer relative flex items-center shrink-0 active:scale-90 hover:brightness-110 shadow-inner ${device.state === "on"
+                                    className={`toggle-btn w-11 h-6 rounded-full p-0.5 transition-all duration-300 ease-in-out cursor-pointer relative flex items-center shrink-0 active:scale-90 hover:brightness-110 shadow-inner ${device.state === "on"
                                       ? "bg-[var(--brand-primary,rgb(6,182,212))] shadow-[0_0_10px_var(--brand-primary,rgba(6,182,212,0.45))]"
                                       : "bg-zinc-800 border border-zinc-700/35"
                                       }`}
@@ -1097,30 +1108,6 @@ export default function App() {
                                   </span>
                                 </div>
                               </div>
-
-                              {device.type === "light" && device.state === "on" && (
-                                <div className="mt-4 flex items-center justify-between gap-3 pt-3 border-t border-zinc-500/20">
-                                  <CyberGauge
-                                    value={device.brightness || 100}
-                                    color={device.color}
-                                    onChange={(val) => fetch(getServerUrl() + "/api/update/iot", {
-                                      method: "POST", headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ deviceId: device.id, brightness: val })
-                                    })}
-                                  />
-                                  <div className="relative w-8 h-8 rounded-full border border-zinc-700 overflow-hidden shadow-[0_0_10px_rgba(255,255,255,0.1)] group hover:border-[var(--brand-primary)] transition-all shrink-0">
-                                    <input
-                                      type="color"
-                                      className="absolute inset-[-10px] w-12 h-12 p-0 border-0 bg-transparent cursor-pointer"
-                                      value={device.color || "#FFFFFF"}
-                                      onChange={(e) => fetch(getServerUrl() + "/api/update/iot", {
-                                        method: "POST", headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ deviceId: device.id, color: e.target.value })
-                                      })}
-                                    />
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           ),
                         )}
@@ -1876,6 +1863,14 @@ export default function App() {
             </span>
           </div>
         </footer>
+      {/* Modals */}
+      {selectedLight && (
+        <HALightControlModal
+          device={selectedLight}
+          onClose={() => setSelectedLight(null)}
+          serverUrl={getServerUrl()}
+        />
+      )}
       </div>
     </div>
   );

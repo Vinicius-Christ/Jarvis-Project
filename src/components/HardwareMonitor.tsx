@@ -53,7 +53,7 @@ export function SystemHealthMonitor() {
       <div className="flex justify-between items-center border-b border-white/5 pb-2">
         <h3 className="text-xs font-mono font-bold tracking-widest text-[var(--brand-light)] uppercase flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 text-[var(--brand-light)] animate-pulse" />
-          Monitor de SaÃºde do Sistema
+          Monitor de Saúde do Sistema
         </h3>
         <span className="text-[10px] bg-[var(--brand-glow)] border border-[var(--brand-border)] px-1.5 py-0.5 font-bold rounded font-mono text-[var(--brand-light)]">
           LIVE
@@ -66,7 +66,7 @@ export function SystemHealthMonitor() {
           <div className="flex justify-between items-center text-[11px] mb-1">
             <span className="text-zinc-400 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary)]"></span>
-              LatÃªncia do Docker
+              Latência do Docker
             </span>
             <span className="font-bold text-[var(--brand-light)]">
               {healthStatus.docker.latency} ms
@@ -88,7 +88,7 @@ export function SystemHealthMonitor() {
           <div className="flex justify-between items-center text-[11px] mb-1">
             <span className="text-zinc-400 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary)] animate-pulse"></span>
-              LatÃªncia do Groq API
+              Latência do Groq API
             </span>
             <span className="font-bold text-[var(--brand-light)]">
               {healthStatus.groq.latency} ms
@@ -161,7 +161,7 @@ export function HardwareProcessingMonitor({ hardwareStats: initialStats, setActi
     <div className="holographic-card hover-glow space-y-4">
       <div className="flex justify-between items-center border-l border-[var(--brand-primary)] pl-2">
         <h3 className="text-xs font-mono font-medium tracking-wider text-[var(--brand-light)] uppercase">
-          MÃ©tricas de VRAM & Processamento
+          Métricas de VRAM & Processamento
         </h3>
         <button
           onClick={() => {

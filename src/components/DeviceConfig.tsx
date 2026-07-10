@@ -19,32 +19,32 @@ const PERSONAS_LIST = [
   {
     id: "jarvis",
     name: "Classic J.A.R.V.I.S.",
-    title: "O Gentleman BritÃ¢nico",
-    desc: "Refinado, polidÃ­ssimo, extremamente sofisticado. Seu mordomo inteligente ideal.",
+    title: "O Gentleman Britânico",
+    desc: "Refinado, polidíssimo, extremamente sofisticado. Seu mordomo inteligente ideal.",
     theme: "cyan" as const,
     color: "#06b6d4"
   },
   {
     id: "friday",
     name: "F.R.I.D.A.Y.",
-    title: "A Agente TÃ¡tica",
-    desc: "Direta, tÃ¡tica, ultra-tecnolÃ³gica. Focada em performance e telemetria de seguranÃ§a.",
+    title: "A Agente Tática",
+    desc: "Direta, tática, ultra-tecnológica. Focada em performance e telemetria de segurança.",
     theme: "rose" as const,
     color: "#f43f5e"
   },
   {
     id: "glados",
     name: "G.L.A.D.O.S.",
-    title: "A Construto SarcÃ¡stica",
-    desc: "Mente brilhante recheada de humor Ã¡cido, piadas de laboratÃ³rio e sarcasmo inteligente.",
+    title: "A Construto Sarcástica",
+    desc: "Mente brilhante recheada de humor ácido, piadas de laboratório e sarcasmo inteligente.",
     theme: "violet" as const,
     color: "#8b5cf6"
   },
   {
     id: "hal9000",
     name: "HAL 9000",
-    title: "O NÃºcleo Retro Telemetria",
-    desc: "Sussurro suave, friamente racional e isento de variaÃ§Ãµes emocionais. SeguranÃ§a absoluta.",
+    title: "O Núcleo Retro Telemetria",
+    desc: "Sussurro suave, friamente racional e isento de variações emocionais. Segurança absoluta.",
     theme: "amber" as const,
     color: "#f59e0b"
   }
@@ -52,22 +52,22 @@ const PERSONAS_LIST = [
 
 const HOLO_THEMES = {
   cyan: {
-    name: "Cyan Holo (PadrÃ£o)",
-    desc: "Estilo padrÃ£o JARVIS. Tom azul gelado ciberneÌtico e limpo.",
+    name: "Cyan Holo (Padrão)",
+    desc: "Estilo padrão JARVIS. Tom azul gelado ciberneÌtico e limpo.",
     color: "#06b6d4",
     bgClass: "from-[var(--brand-dark)] to-blue-950/10 border-[var(--brand-primary)]/25",
     textClass: "text-[var(--brand-light)]"
   },
   amber: {
     name: "Amber Matrix",
-    desc: "Filtro ouro tÃ¡tico. Computador de bordo militar retro-futurista.",
+    desc: "Filtro ouro tático. Computador de bordo militar retro-futurista.",
     color: "#f59e0b",
     bgClass: "from-amber-950/20 to-yellow-950/10 border-amber-500/25",
     textClass: "text-amber-400"
   },
   violet: {
     name: "Violet Nebula",
-    desc: "Estilo inteligÃªncia cÃ³smica or magenta neon espacial.",
+    desc: "Estilo inteligência cósmica or magenta neon espacial.",
     color: "#8b5cf6",
     bgClass: "from-violet-950/20 to-fuchsia-950/10 border-violet-500/25",
     textClass: "text-violet-400"
@@ -81,7 +81,7 @@ const HOLO_THEMES = {
   },
   rose: {
     name: "Crimson Laser",
-    desc: "Protocolo Stark de seguranÃ§a mÃ¡xima. Alerta laser vermelho ativo.",
+    desc: "Protocolo Stark de segurança máxima. Alerta laser vermelho ativo.",
     color: "#f43f5e",
     bgClass: "from-rose-950/20 to-red-950/10 border-rose-500/25",
     textClass: "text-rose-400"
@@ -171,7 +171,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
   }, []);
 
   const [name, setName] = useState("");
-  const [type, setType] = useState("LÃ¢mpada Inteligente");
+  const [type, setType] = useState("Lâmpada Inteligente");
   const [brand, setBrand] = useState("Positivo Casa Inteligente");
   const [integration, setIntegration] = useState("Tuya Local Integration");
   const [status, setStatus] = useState("Sincronizado via LocalTuya");
@@ -181,12 +181,12 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const deviceTypes = [
-    "LÃ¢mpada Inteligente (RGB/Dimmer)",
+    "Lâmpada Inteligente (RGB/Dimmer)",
     "Fita LED Inteligente",
     "Ar-Condicionado / Climatizador",
     "Alto-falante Alexa / Echo Dot",
     "Tomada Inteligente (Smart Plug)",
-    "RobÃ´ Aspirador",
+    "Robô Aspirador",
     "Interruptor Inteligente"
   ];
 
@@ -309,7 +309,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
         body: JSON.stringify({ ip: haIp, token: haToken })
       });
       if (res.ok) {
-        setSuccessMsg("Ponte de comunicaÃ§Ã£o Home Assistant WebSocket estabelecida!");
+        setSuccessMsg("Ponte de comunicação Home Assistant WebSocket estabelecida!");
         onRefresh();
         setTimeout(() => setSuccessMsg(null), 4000);
       }
@@ -331,7 +331,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               Plano de Fundo (Wallpaper)
             </h3>
             <p className="text-xs text-zinc-400 mt-1 mb-3">
-              FaÃ§a o upload de uma imagem (gif, jpg, png) para substituir o fundo escuro por um wallpaper personalizado.
+              Faça o upload de uma imagem (gif, jpg, png) para substituir o fundo escuro por um wallpaper personalizado.
             </p>
             <div className="flex flex-col gap-3">
               <input
@@ -346,7 +346,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     try {
                       onChangeBgImage?.(base64);
                     } catch (err) {
-                      alert("Imagem muito grande! O limite de armazenamento local foi excedido. Tente uma imagem com resoluÃ§Ã£o menor.");
+                      alert("Imagem muito grande! O limite de armazenamento local foi excedido. Tente uma imagem com resolução menor.");
                     }
                   };
                   reader.readAsDataURL(file);
@@ -367,10 +367,10 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
               <Palette className="w-4 h-4 text-[var(--brand-light)]" />
-              Selecione seu Esquema de Cor HologrÃ¡fica (Vibe Virtual)
+              Selecione seu Esquema de Cor Holográfica (Vibe Virtual)
             </h3>
             <p className="text-xs text-zinc-400 mt-1">
-              Altere as cores principais das linhas de varredura laser, botÃµes de comando, badges de telemetria e grÃ¡ficos instantaneamente.
+              Altere as cores principais das linhas de varredura laser, botões de comando, badges de telemetria e gráficos instantaneamente.
             </p>
           </div>
 
@@ -413,7 +413,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
           {/* Elegant Preview Hud Frame */}
           <div className="bg-white/5 border border-white/10 p-5 rounded-xl space-y-4 font-mono text-xs">
             <div className="flex justify-between items-center border-b border-white/10 pb-2">
-              <span className="text-zinc-500 uppercase text-[10px]">DemonstraÃ§Ã£o de Elementos HologrÃ¡ficos</span>
+              <span className="text-zinc-500 uppercase text-[10px]">Demonstração de Elementos Holográficos</span>
               <span className="text-[9px] text-zinc-500">PREVIEW LIVE DO TEMA ATIVO</span>
             </div>
 
@@ -426,13 +426,13 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                 </span>
               </div>
               <div className="p-3.5 rounded-xl border border-white/10 bg-white/10 flex items-center justify-between">
-                <span>Badge hologrÃ¡fico:</span>
+                <span>Badge holográfico:</span>
                 <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-widest bg-[var(--brand-glow)] border border-[var(--brand-border)] text-[var(--brand-light)]">
                   Status OK
                 </span>
               </div>
               <button className="p-3.5 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-glow)] text-[var(--brand-light)] hover:bg-[var(--brand-glow-strong)] transition-all font-bold flex items-center justify-center gap-1 text-[11px] cursor-pointer">
-                BotÃ£o HologrÃ¡fico Ativo
+                Botão Holográfico Ativo
               </button>
             </div>
           </div>
@@ -449,7 +449,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
             <div className="flex items-center justify-between border-b border-zinc-805 pb-3">
               <h3 className="text-sm font-sans font-semibold text-[var(--brand-light,rgb(6,182,212))] uppercase tracking-wider flex items-center gap-2">
                 <Wifi className="h-4 w-4 text-[var(--brand-light,rgb(6,182,212))]" />
-                DomÃ³tica: HA Live WebSocket
+                Domótica: HA Live WebSocket
               </h3>
               
               <span className={`text-[9px] px-2 py-0.5 rounded font-mono uppercase font-bold flex items-center gap-1 border shadow-inner ${
@@ -471,7 +471,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
             </div>
 
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Consuma dados reais de sensores de temperatura, iluminaÃ§Ã£o e interruptores da sua residÃªncia (IP: <code className="text-[var(--brand-light)] font-mono">{haIp}</code>) conectando-se diretamente ao barramento de eventos do Home Assistant.
+              Consuma dados reais de sensores de temperatura, iluminação e interruptores da sua residência (IP: <code className="text-[var(--brand-light)] font-mono">{haIp}</code>) conectando-se diretamente ao barramento de eventos do Home Assistant.
             </p>
 
             <form onSubmit={handleSaveHAConfig} className="space-y-3 font-mono text-xs p-3.5 bg-white/5 border border-white/10 rounded-xl">
@@ -492,11 +492,11 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               </div>
 
               <div>
-                <label className="text-zinc-500 block text-[9px] uppercase mb-1">Token de Acesso de Longa DuraÃ§Ã£o (Long-Lived Token)</label>
+                <label className="text-zinc-500 block text-[9px] uppercase mb-1">Token de Acesso de Longa Duração (Long-Lived Token)</label>
                 <input
                   type="password"
                   required
-                  placeholder="Seu token dente das configuraÃ§Ãµes de perfil do Home Assistant"
+                  placeholder="Seu token dente das configurações de perfil do Home Assistant"
                   value={haToken}
                   onChange={(e) => setHaToken(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 text-zinc-300 font-mono text-xs px-2 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)]"
@@ -517,11 +517,11 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
           <div className="holographic-card p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-805 pb-3">
               <h3 className="text-sm font-sans font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                DomÃ³tica: MemÃ³ria Central Sheets
+                Domótica: Memória Central Sheets
               </h3>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              O JARVIS cria uma base de memÃ³ria central e persistente baseada em arquivos de Google Sheets gerados em sua integraÃ§Ã£o. Adicione o link de uma de suas planilhas para permitir acesso direto pelo botÃ£o central da interface.
+              O JARVIS cria uma base de memória central e persistente baseada em arquivos de Google Sheets gerados em sua integração. Adicione o link de uma de suas planilhas para permitir acesso direto pelo botão central da interface.
             </p>
             <form onSubmit={handleSaveGoogleSheetUrl} className="space-y-3 font-mono text-xs p-3.5 bg-white/5 border border-white/10 rounded-xl">
               <div>
@@ -544,7 +544,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
             </form>
 
             <div className="pt-3 border-t border-white/10/60 flex flex-col gap-2">
-              <label className="text-zinc-500 block text-[9px] uppercase font-mono">ConexÃ£o da Conta Google (Google API OAuth)</label>
+              <label className="text-zinc-500 block text-[9px] uppercase font-mono">Conexão da Conta Google (Google API OAuth)</label>
               {isGoogleConnected ? (
                 <div className="flex items-center justify-between bg-emerald-950/40 border border-emerald-900/40 text-emerald-400 font-mono text-[10px] px-3 py-2 rounded-xl">
                   <div className="flex flex-col animate-fadeIn">
@@ -571,7 +571,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                   </button>
                   {window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && (
                     <div className="bg-amber-950/30 border border-amber-900/45 text-amber-300/90 font-mono text-[9px] p-2.5 rounded-xl leading-relaxed mt-1">
-                      âš ï¸ <strong>LimitaÃ§Ã£o do Google:</strong> O Google OAuth nÃ£o aceita IPs privados (como <code>{window.location.hostname}</code>). Para autenticar com sucesso, abra o sistema em <strong>http://localhost:3000</strong> ou <strong>http://127.0.0.1:3000</strong> e conecte lÃ¡. O login persistirÃ¡.
+                      âš ï¸ <strong>Limitação do Google:</strong> O Google OAuth não aceita IPs privados (como <code>{window.location.hostname}</code>). Para autenticar com sucesso, abra o sistema em <strong>http://localhost:3000</strong> ou <strong>http://127.0.0.1:3000</strong> e conecte lá. O login persistirá.
                     </div>
                   )}
                 </>
@@ -592,7 +592,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
           </div>
 
           <p className="text-xs text-zinc-400 leading-relaxed">
-            De acordo com as especificaÃ§Ãµes, seu JARVIS <strong>usarÃ¡ infraestrutura de aceleraÃ§Ã£o LPU do Groq</strong>. Toda a lÃ³gica de NLP e respostas sÃ£o executadas quase instantaneamente de forma terceirizada via API (Modelos Llama 3).
+            De acordo com as especificações, seu JARVIS <strong>usará infraestrutura de aceleração LPU do Groq</strong>. Toda a lógica de NLP e respostas são executadas quase instantaneamente de forma terceirizada via API (Modelos Llama 3).
           </p>
 
           <div className="space-y-3 font-mono text-xs bg-white/5 border border-white/10 rounded-xl p-4">
@@ -600,7 +600,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               <label className="text-zinc-500 block text-[10px] uppercase mb-1">Status da Chave (Token Groq)</label>
               <div className="flex gap-2">
                 <div className="flex-1 bg-white/10 border border-white/10 text-zinc-400 font-mono text-xs px-2.5 py-1.5 rounded select-none cursor-not-allowed">
-                  ValidaÃ§Ã£o via "Chaves APIs"
+                  Validação via "Chaves APIs"
                 </div>
               </div>
             </div>
@@ -625,7 +625,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               <span className="h-2 w-2 rounded-full bg-emerald-400  mt-1 shrink-0"></span>
               <div>
                 <strong className="block">DEPLOY CLOUD LIGADO:</strong>
-                Se vocÃª adicionou o token Groq na aba MÃ³dulo de Tokens, o LLM e RAG responderÃ£o em milisegundos usando o Groq.
+                Se você adicionou o token Groq na aba Módulo de Tokens, o LLM e RAG responderão em milisegundos usando o Groq.
               </div>
             </div>
           </div>
@@ -642,7 +642,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                 <div>
                   <span className="font-semibold block text-white text-[11px]">Gerar e Inserir API Keys</span>
                   <div className="text-[11px] text-zinc-400 mt-1">
-                    VÃ¡ atÃ© a guia "ConfiguraÃ§Ãµes Globais" {'>'} "Gerenciador de Tokens". LÃ¡ vocÃª verÃ¡ as configuraÃ§Ãµes do <strong>Groq API Key</strong>. Registre-se em <code className="text-zinc-400 font-mono bg-white/10 px-1 py-0.5 rounded">console.groq.com</code> e valide e insira a chave obtida lÃ¡ no painel esquerdo.
+                    Vá até a guia "Configurações Globais" {'>'} "Gerenciador de Tokens". Lá você verá as configurações do <strong>Groq API Key</strong>. Registre-se em <code className="text-zinc-400 font-mono bg-white/10 px-1 py-0.5 rounded">console.groq.com</code> e valide e insira a chave obtida lá no painel esquerdo.
                   </div>
                 </div>
               </div>
@@ -650,9 +650,9 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               <div className="flex gap-2.5 items-start">
                 <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5.5 w-5.5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
                 <div>
-                  <span className="font-semibold block text-white text-[11px]">SincronizaÃ§Ã£o FÃ­sica Real do Obsidian Vault no Contexto</span>
+                  <span className="font-semibold block text-white text-[11px]">Sincronização Física Real do Obsidian Vault no Contexto</span>
                   <p className="text-[11px] text-zinc-400">
-                    O ecossistema detecta as anotaÃ§Ãµes geradas via aplicativo Obsidian salvas em texto puro Markdown na pasta <code className="text-yellow-400 font-mono">C:\jarvis-vault</code> no Windows e constrÃ³i o prompt injetando-os perfeitamente junto ao modelo local e online, orquestrando um RAG nativo e sem dependÃªncia extra.
+                    O ecossistema detecta as anotações geradas via aplicativo Obsidian salvas em texto puro Markdown na pasta <code className="text-yellow-400 font-mono">C:\jarvis-vault</code> no Windows e constrói o prompt injetando-os perfeitamente junto ao modelo local e online, orquestrando um RAG nativo e sem dependência extra.
                   </p>
                 </div>
               </div>
@@ -660,9 +660,9 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               <div className="flex gap-2.5 items-start">
                 <span className="bg-[var(--brand-dark)] text-[var(--brand-light)] rounded-full h-5.5 w-5.5 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
                 <div>
-                  <span className="font-semibold block text-white text-[11px]">Conectando com LÃ¢mpadas Positivos e Alexa</span>
+                  <span className="font-semibold block text-white text-[11px]">Conectando com Lâmpadas Positivos e Alexa</span>
                   <p className="text-[11px] text-zinc-400">
-                    O Home Assistant atua como o seu Hub IoT unificado. Como ele roda em <code className="text-[var(--brand-light)] font-mono">network_mode: host</code> no Docker, ele varre automaticamente a rede Wi-Fi da sua residÃªncia buscando lÃ¢mpadas Tuya/Positivo e caixas Echo Dot via protocolo UPnP. VocÃª sÃ³ precisa pareÃ¡-las adicionando a integraÃ§Ã£o correspondente no portal.
+                    O Home Assistant atua como o seu Hub IoT unificado. Como ele roda em <code className="text-[var(--brand-light)] font-mono">network_mode: host</code> no Docker, ele varre automaticamente a rede Wi-Fi da sua residência buscando lâmpadas Tuya/Positivo e caixas Echo Dot via protocolo UPnP. Você só precisa pareá-las adicionando a integração correspondente no portal.
                   </p>
                 </div>
               </div>
@@ -670,10 +670,10 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
               <div className="mt-8 border-t border-white/10 pt-5 space-y-4">
                 <h4 className="text-[13px] font-sans font-bold text-cyan-400 uppercase tracking-wide flex items-center gap-2">
                   <Wifi className="h-4 w-4" />
-                  MÃ³dulo de Acesso Remoto: Acesso de Qualquer Lugar (NÃ­vel Ultra FÃ¡cil)
+                  Módulo de Acesso Remoto: Acesso de Qualquer Lugar (Nível Ultra Fácil)
                 </h4>
                 <p className="text-[11px] text-zinc-400 leading-relaxed max-w-2xl">
-                  Vamos usar a "MÃ¡gica do Cloudflare". Ã‰ como criar um tÃºnel invisÃ­vel da sua casa direto pro seu celular. NÃ£o importa onde vocÃª esteja, vocÃª clica e entra na sua casa.
+                  Vamos usar a "Mágica do Cloudflare". Ã‰ como criar um túnel invisível da sua casa direto pro seu celular. Não importa onde você esteja, você clica e entra na sua casa.
                 </p>
 
                 {/* Fase 1 */}
@@ -685,7 +685,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                   <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
                     <li>Pelo seu computador da casa, entre no site <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">dash.cloudflare.com</a>.</li>
                     <li>Clique em <strong>"Sign Up"</strong> (que significa "Cadastrar") para criar uma conta com seu e-mail e uma senha.</li>
-                    <li>Depois que criar, vocÃª precisa avisar pro site qual serÃ¡ o seu "endereÃ§o mÃ¡gico" (por exemplo, <code className="text-pink-400 font-mono">meunome.com</code>). Assista um video rÃ¡pido no YouTube ensinando como ter um "domÃ­nio na Cloudflare" ou "freenom Cloudflare" caso vocÃª nÃ£o tenha nenhum.</li>
+                    <li>Depois que criar, você precisa avisar pro site qual será o seu "endereço mágico" (por exemplo, <code className="text-pink-400 font-mono">meunome.com</code>). Assista um video rápido no YouTube ensinando como ter um "domínio na Cloudflare" ou "freenom Cloudflare" caso você não tenha nenhum.</li>
                   </ul>
                 </div>
 
@@ -693,13 +693,13 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                 <div className="bg-white/5 p-4 rounded-xl border border-white/10 focus-ring hover:border-cyan-500/30 transition-colors mt-3">
                   <h5 className="text-[12px] font-bold text-cyan-400 flex items-center gap-2 mb-3">
                     <span className="bg-cyan-500/20 text-cyan-400 w-5 h-5 rounded flex items-center justify-center">2</span>
-                    Cavando o TÃºnel (Zero Trust)
+                    Cavando o Túnel (Zero Trust)
                   </h5>
                   <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
                     <li>Dentro do Cloudflare, procure pela palavra <strong>Zero Trust</strong> no lado esquerdo (tem o desenho de um escudinho azul) e clique nela.</li>
-                    <li>Escolha o plano <strong>Free</strong> (GrÃ¡tis).</li>
-                    <li>Na nova tela, Ã  esquerda, clique na palavra <strong>Networks</strong> (Redes) e depois clique embaixo em <strong>Tunnels</strong> (TÃºneis).</li>
-                    <li>Clique no <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded">BotÃ£o Azul</span> no meio da tela chamado <strong>"Create a tunnel"</strong>.</li>
+                    <li>Escolha o plano <strong>Free</strong> (Grátis).</li>
+                    <li>Na nova tela, Ã  esquerda, clique na palavra <strong>Networks</strong> (Redes) e depois clique embaixo em <strong>Tunnels</strong> (Túneis).</li>
+                    <li>Clique no <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded">Botão Azul</span> no meio da tela chamado <strong>"Create a tunnel"</strong>.</li>
                     <li>Marque a primeira bolinha chamada <strong>"Cloudflared"</strong> e clique em <em>Next</em>.</li>
                     <li>Ele vai pedir um nome. Escreva <code className="text-pink-400 font-mono">MeuJarvis</code> e clique em <strong>"Save tunnel"</strong>.</li>
                   </ul>
@@ -709,14 +709,14 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                 <div className="bg-white/5 p-4 rounded-xl border border-white/10 focus-ring hover:border-cyan-500/30 transition-colors mt-3">
                   <h5 className="text-[12px] font-bold text-cyan-400 flex items-center gap-2 mb-3">
                     <span className="bg-cyan-500/20 text-cyan-400 w-5 h-5 rounded flex items-center justify-center">3</span>
-                    Ligando o TÃºnel no seu Computador
+                    Ligando o Túnel no seu Computador
                   </h5>
                   <ul className="text-[11px] text-zinc-300 space-y-2.5 list-disc pl-4 marker:text-zinc-600">
-                    <li>O site agora mostra um cÃ³digo de instalaÃ§Ã£o. Olhe as caixinhas de sistema em cima e clique em <strong>Windows</strong>.</li>
-                    <li>No quadrado cinza embaixo, olhe pro lado direito dele e <b>clique no desenho de 2 folhinhas</b>. Isso vai "Copiar" esse script grandÃ£o para a memÃ³ria.</li>
+                    <li>O site agora mostra um código de instalação. Olhe as caixinhas de sistema em cima e clique em <strong>Windows</strong>.</li>
+                    <li>No quadrado cinza embaixo, olhe pro lado direito dele e <b>clique no desenho de 2 folhinhas</b>. Isso vai "Copiar" esse script grandão para a memória.</li>
                     <li>Abra o PowerShell no seu Servidor Windows como Administrador.</li>
-                    <li>Cole o comando completo e aperte <strong>"ENTER"</strong> no teclado. Ele irÃ¡ baixar o pacote e instalar o cloudflared daemon.</li>
-                    <li>Espere baixar e instalar. Volte pro site do Cloudflare: se lÃ¡ embaixo estiver escrito <strong><span className="text-emerald-400">Connected</span></strong> (Conectado), sorria! VocÃª conseguiu fazer o tÃºnel! Clique em <strong>Next</strong>.</li>
+                    <li>Cole o comando completo e aperte <strong>"ENTER"</strong> no teclado. Ele irá baixar o pacote e instalar o cloudflared daemon.</li>
+                    <li>Espere baixar e instalar. Volte pro site do Cloudflare: se lá embaixo estiver escrito <strong><span className="text-emerald-400">Connected</span></strong> (Conectado), sorria! Você conseguiu fazer o túnel! Clique em <strong>Next</strong>.</li>
                   </ul>
                 </div>
 
@@ -726,26 +726,26 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     <span className="bg-cyan-500/20 text-cyan-400 w-5 h-5 rounded flex items-center justify-center">4</span>
                     Ensinando o Caminho Pro Seu Celular
                   </h5>
-                  <p className="text-[11px] text-zinc-300 mb-3">Agora a gente cria as rotas para o JARVIS e para os amigos dele (n8n e Casa) passarem pelo tÃºnel.</p>
+                  <p className="text-[11px] text-zinc-300 mb-3">Agora a gente cria as rotas para o JARVIS e para os amigos dele (n8n e Casa) passarem pelo túnel.</p>
                   
                   <div className="pl-2 border-l border-cyan-500/30 ml-2 space-y-4">
                     <div>
                       <strong className="text-pink-400 text-[11px]">Passo 1: A Rota do JARVIS!</strong>
                       <ul className="text-[11px] text-zinc-400 list-disc pl-5 mt-1 space-y-1">
                         <li>Ele pergunta o "Subdomain". Escreva: <strong>jarvis</strong></li>
-                        <li>No "Domain", selecione o seu site que vocÃª cadastrou no comeÃ§o da Fase 1.</li>
+                        <li>No "Domain", selecione o seu site que você cadastrou no começo da Fase 1.</li>
                         <li>No "Service Type", escolha do menu: <strong>HTTP</strong></li>
                         <li>No "URL", digite exatamente: <strong>localhost:3000</strong></li>
-                        <li>E clique no botÃ£o azul <strong>"Save hostname"</strong>. Pronto! O Jarvis jÃ¡ estÃ¡ na internet!</li>
+                        <li>E clique no botão azul <strong>"Save hostname"</strong>. Pronto! O Jarvis já está na internet!</li>
                       </ul>
                     </div>
 
                     <div>
-                      <strong className="text-yellow-400 text-[11px]">Passo 2: A Rota do n8n (As MÃ£os)</strong>
+                      <strong className="text-yellow-400 text-[11px]">Passo 2: A Rota do n8n (As Mãos)</strong>
                       <ul className="text-[11px] text-zinc-400 list-disc pl-5 mt-1 space-y-1">
-                        <li>Clique em cima do tÃºnel que vocÃª acabou de criar e clique para Configurar (Configure).</li>
-                        <li>LÃ¡ em cima, clique na aba <strong>Public Hostnames</strong>.</li>
-                        <li>Clique no botÃ£o azul <strong>Add a public hostname</strong>.</li>
+                        <li>Clique em cima do túnel que você acabou de criar e clique para Configurar (Configure).</li>
+                        <li>Lá em cima, clique na aba <strong>Public Hostnames</strong>.</li>
+                        <li>Clique no botão azul <strong>Add a public hostname</strong>.</li>
                         <li>Em Subdomain escreva <strong>n8n</strong></li>
                         <li>Service Type: <strong>HTTP</strong></li>
                         <li>URL: <strong>localhost:5678</strong></li>
@@ -756,7 +756,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     <div>
                       <strong className="text-emerald-400 text-[11px]">Passo 3: A Rota do Home Assistant (A Casa)</strong>
                       <ul className="text-[11px] text-zinc-400 list-disc pl-5 mt-1 space-y-1">
-                        <li>FaÃ§a de novo: <strong>Add a public hostname</strong>.</li>
+                        <li>Faça de novo: <strong>Add a public hostname</strong>.</li>
                         <li>Em Subdomain escreva <strong>casa</strong></li>
                         <li>Service Type: <strong>HTTP</strong></li>
                         <li>URL: <strong>localhost:8123</strong></li>
@@ -772,7 +772,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     E pra eu atualizar o aplicativo da rua?! Funciona?
                   </h5>
                   <p className="text-[11px] text-zinc-300 leading-relaxed font-semibold">
-                    Sim! O seu celular pelo 4G entra pelo tÃºnel do site. Quando vocÃª estÃ¡ dentro do site do JARVIS na rua e aperta o botÃ£o <span className="text-emerald-400 bg-emerald-900/30 px-1 rounded">Atualizar do Git</span> na aba de ModificaÃ§Ãµes, este comando viagem super rÃ¡pido da nuvem do seu celular, desce o tÃºnel, chega no seu computador do quarto e ele mesmo puxa o novo arquivo da internet e reinicia SOZINHO! Quando seu celular piscar, jÃ¡ carregarÃ¡ a versÃ£o nova perfeitamente!
+                    Sim! O seu celular pelo 4G entra pelo túnel do site. Quando você está dentro do site do JARVIS na rua e aperta o botão <span className="text-emerald-400 bg-emerald-900/30 px-1 rounded">Atualizar do Git</span> na aba de Modificações, este comando viagem super rápido da nuvem do seu celular, desce o túnel, chega no seu computador do quarto e ele mesmo puxa o novo arquivo da internet e reinicia SOZINHO! Quando seu celular piscar, já carregará a versão nova perfeitamente!
                   </p>
                 </div>
               </div>
@@ -792,7 +792,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
             </h3>
 
             <p className="text-xs text-zinc-400 leading-normal mb-4">
-              Tenha controle total! Adicione lÃ¢mpadas Positivo, assistentes Alexa ou novos aparelhos Zigbee/Matter. Defina qual container Docker ou site Ã© responsÃ¡vel pela configuraÃ§Ã£o dele.
+              Tenha controle total! Adicione lâmpadas Positivo, assistentes Alexa ou novos aparelhos Zigbee/Matter. Defina qual container Docker ou site é responsável pela configuração dele.
             </p>
 
             <form onSubmit={handleAddDevice} className="space-y-4 font-mono text-xs">
@@ -803,7 +803,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                   <input
                     type="text"
                     required
-                    placeholder="Ex: LÃ¢mpada do Quarto Positivo"
+                    placeholder="Ex: Lâmpada do Quarto Positivo"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 text-zinc-300 px-2.5 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)] text-xs"
@@ -958,7 +958,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                 ))
               ) : (
                 <div className="text-zinc-650 italic text-center text-xs py-4">
-                  Nenhum dispositivo cadastrado no momento. Preencha o formulÃ¡rio acima.
+                  Nenhum dispositivo cadastrado no momento. Preencha o formulário acima.
                 </div>
               )}
             </div>
@@ -967,7 +967,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
           {/* Modes Config UI */}
           <div className="holographic-card p-5 mt-6">
             <h3 className="text-xs font-mono font-medium text-zinc-400 uppercase border-l border-[var(--brand-primary)] pl-2 mb-4">
-              ConfiguraÃ§Ã£o dos Modos
+              Configuração dos Modos
             </h3>
             <div className="space-y-4">
               {Object.entries(modesConfig).map(([mode, config]: [string, any]) => (

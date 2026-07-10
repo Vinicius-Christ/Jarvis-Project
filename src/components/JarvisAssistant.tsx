@@ -22,6 +22,7 @@ import {
   StopCircle,
   Radio,
 } from "lucide-react";
+import { HALightControlPanel } from "./HALightControlPanel";
 
 const PERSONAS_LIST = [
   {
@@ -59,6 +60,8 @@ interface JarvisAssistantProps {
   onSendMessage: (msg: string, file?: any, model?: string) => Promise<any>;
   isDarkMode?: boolean;
   isWidget?: boolean;
+  devices?: any[];
+  serverUrl?: string;
 }
 
 export default React.memo(function JarvisAssistant({
@@ -66,6 +69,8 @@ export default React.memo(function JarvisAssistant({
   onSendMessage,
   isDarkMode = true,
   isWidget = false,
+  devices = [],
+  serverUrl = "",
 }: JarvisAssistantProps) {
   const [inputText, setInputText] = useState("");
   const [appState, setAppState] = useState<
@@ -878,7 +883,23 @@ export default React.memo(function JarvisAssistant({
             <span className="text-white font-bold">24°C, Clear</span>
           </div>
         </div>
+        
+        {/* HALightControlPanel Inline for Telemetry */}
+        {(() => {
+          const lightDevices = devices.filter(d => 
+            d.id?.startsWith("light.") || 
+            d.type?.toLowerCase().includes("light") || 
+            d.type?.toLowerCase().includes("lâmpada")
+          );
 
+          if (lightDevices.length === 0) return null;
+          
+          return (
+             <div className="mt-4 border border-white/10 bg-[#1c1c1e] rounded-xl flex-1 shrink-0 z-10 overflow-hidden shadow-inner flex flex-col min-h-[350px]">
+               <HALightControlPanel devices={lightDevices} serverUrl={serverUrl} compact={true} />
+             </div>
+          );
+        })()}
 
       </div>
       )}

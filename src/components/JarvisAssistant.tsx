@@ -995,13 +995,25 @@ export default React.memo(function JarvisAssistant({
                   </div>
 
                   {commandMatches && (
-                    <div className="flex flex-wrap gap-1.5 mt-1 font-mono">
+                    <div className="flex flex-col gap-2 mt-1 font-mono w-full">
                       {commandMatches.map((cmd, idx) => {
                         const typeMatch = cmd.match(/type="([^"]+)"/);
                         const type = typeMatch ? typeMatch[1] : "System";
+                        
+                        let imageUrl = null;
+                        if (type === "DisplayImage") {
+                          const urlMatch = cmd.match(/url="([^"]+)"/);
+                          if (urlMatch) imageUrl = urlMatch[1];
+                        }
+
                         return (
-                          <div key={idx} className="text-[9px] uppercase font-bold border border-[var(--brand-primary)]/40 px-2 py-1 rounded flex items-center gap-1 bg-white/5 text-[var(--brand-light)]">
-                            <Sparkles className="h-3 w-3" /> [AÇÃO EXECUTADA]: {type}
+                          <div key={idx} className="flex flex-col gap-1.5 items-start">
+                            {imageUrl && (
+                              <img src={imageUrl} alt="Imagem gerada pela IA" className="rounded-lg max-w-[240px] w-full border border-[var(--brand-primary)]/30 shadow-md object-cover mb-1" />
+                            )}
+                            <div className="text-[9px] uppercase font-bold border border-[var(--brand-primary)]/40 px-2 py-1 rounded flex items-center gap-1 bg-white/5 text-[var(--brand-light)]">
+                              <Sparkles className="h-3 w-3" /> [AÇÃO EXECUTADA]: {type}
+                            </div>
                           </div>
                         );
                       })}
@@ -1101,18 +1113,18 @@ export default React.memo(function JarvisAssistant({
 
       {/* Voice Configuration Modal */}
       {isVoiceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
-          <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-8 space-y-6 glass-panel text-white shadow-[0_0_50px_var(--brand-glow)]">
-            <h2 className="text-xl font-mono font-bold tracking-widest text-[var(--brand-light)] border-b border-[var(--brand-primary)]/20 pb-4">CONFIGURAÇÕES DO SISTEMA</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xl">
+          <div className="border border-[var(--brand-primary)]/30 rounded-3xl max-w-lg w-full p-4 sm:p-8 space-y-4 sm:space-y-6 glass-panel text-white shadow-[0_0_50px_var(--brand-glow)] max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-mono font-bold tracking-widest text-[var(--brand-light)] border-b border-[var(--brand-primary)]/20 pb-4">CONFIGURAÇÕES DO SISTEMA</h2>
 
             {/* Quick mockup for config toggles... maintaining functionality */}
-            <div className="space-y-4 font-mono text-sm">
-              <div className="flex flex-col gap-2">
-                <span>Estilo de Conversa (Persona)</span>
+            <div className="space-y-4 font-mono text-xs sm:text-sm">
+              <div className="flex flex-col gap-1 sm:gap-2">
+                <span className="text-zinc-300">Estilo de Conversa (Persona)</span>
                 <select
                   value={activePersona}
                   onChange={(e) => setActivePersona(e.target.value)}
-                  className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                  className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-3 sm:px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
                 >
                   <option className="bg-black text-white" value="jarvis">J.A.R.V.I.S (Cortês & Profissional)</option>
                   <option className="bg-black text-white" value="friday">F.R.I.D.A.Y (Dinâmica & Direta)</option>
@@ -1121,12 +1133,12 @@ export default React.memo(function JarvisAssistant({
                 </select>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <span>Voz do Sistema</span>
+              <div className="flex flex-col gap-1 sm:gap-2">
+                <span className="text-zinc-300">Voz do Sistema</span>
                 <select
                   value={selectedVoiceURI || ""}
                   onChange={(e) => setSelectedVoiceURI(e.target.value)}
-                  className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
+                  className="w-full bg-white/5 border border-[var(--brand-primary)]/30 rounded-xl px-3 sm:px-4 py-2 focus:outline-none focus:border-[var(--brand-primary)] text-white cursor-pointer"
                 >
                   {systemVoices.map(v => (
                     <option className="bg-black text-white" key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
@@ -1134,13 +1146,20 @@ export default React.memo(function JarvisAssistant({
                 </select>
               </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <span>Velocidade da Voz (Rate)</span>
-                <input type="range" min="0.5" max="2.0" step="0.05" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-300">Velocidade da Voz (Rate)</span>
+                  <span className="text-[var(--brand-primary)]">{rate}</span>
+                </div>
+                <input type="range" min="0.5" max="2.0" step="0.05" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="w-full accent-[var(--brand-primary)] cursor-pointer" />
               </div>
-              <div className="flex justify-between items-center">
-                <span>Filtro de Ruído (Noise Gate)</span>
-                <input type="range" min="-60" max="-10" step="5" value={noiseGate} onChange={(e) => setNoiseGate(parseInt(e.target.value))} className="accent-[var(--brand-primary)] cursor-pointer" />
+              
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-300">Filtro de Ruído (Noise Gate)</span>
+                  <span className="text-[var(--brand-primary)]">{noiseGate}dB</span>
+                </div>
+                <input type="range" min="-60" max="-10" step="5" value={noiseGate} onChange={(e) => setNoiseGate(parseInt(e.target.value))} className="w-full accent-[var(--brand-primary)] cursor-pointer" />
               </div>
             </div>
 

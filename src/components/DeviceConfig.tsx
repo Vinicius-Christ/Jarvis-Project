@@ -1,4 +1,4 @@
-﻿import { getServerUrl } from "../lib/api";
+import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect } from "react";
 import { Plus, Wifi, Save, ArrowUpRight, Cpu, ShieldCheck, Palette } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -817,7 +817,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     className="w-full bg-white/5 border border-white/10 text-zinc-300 p-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)] text-xs"
                   >
                     {deviceTypes.map(t => (
-                      <option key={t} value={t}>{t}</option>
+                      <option className="bg-black text-white" key={t} value={t}>{t}</option>
                     ))}
                   </select>
                 </div>
@@ -832,7 +832,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     className="w-full bg-white/5 border border-white/10 text-zinc-300 p-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)] text-xs"
                   >
                     {brands.map(b => (
-                      <option key={b} value={b}>{b}</option>
+                      <option className="bg-black text-white" key={b} value={b}>{b}</option>
                     ))}
                   </select>
                 </div>
@@ -844,7 +844,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     className="w-full bg-white/5 border border-white/10 text-zinc-300 p-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)] text-xs"
                   >
                     {integrations.map(i => (
-                      <option key={i} value={i}>{i}</option>
+                      <option className="bg-black text-white" key={i} value={i}>{i}</option>
                     ))}
                   </select>
                 </div>
@@ -852,7 +852,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-500 block text-[10px] uppercase mb-1">Status de ComunicaÃ§Ã£o (Inicial)</label>
+                  <label className="text-zinc-500 block text-[10px] uppercase mb-1">Status de Comunicação (Inicial)</label>
                   <input
                     type="text"
                     required
@@ -863,7 +863,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-500 block text-[10px] uppercase mb-1">URL de ConfiguraÃ§Ã£o do Docker/HA</label>
+                  <label className="text-zinc-500 block text-[10px] uppercase mb-1">URL de Configuração do Docker/HA</label>
                   <div className="w-full bg-white/10 border border-white/10 text-zinc-400 font-mono text-xs px-2.5 py-1.5 rounded select-none cursor-not-allowed">
                     {targetUrl || "Auto-detected"}
                   </div>

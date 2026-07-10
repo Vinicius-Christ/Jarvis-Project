@@ -102,8 +102,8 @@ export default function UserManager() {
             onChange={(e) => setRole(e.target.value)}
             className="bg-black/50 border border-zinc-800 p-2 rounded text-sm text-zinc-200 outline-none focus:border-[var(--brand-primary)]"
           >
-            <option value="user">Usuário Comum</option>
-            <option value="admin">Administrador</option>
+            <option className="bg-black text-white" value="user">Usuário Comum</option>
+            <option className="bg-black text-white" value="admin">Administrador</option>
           </select>
           {editingId ? (
             <div className="flex gap-2">

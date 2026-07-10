@@ -3,13 +3,16 @@ import { syncToGoogleSheets } from "./src/server/services/googleSheets";
 import express from "express";
 import { exec, execSync } from "child_process";
 import cors from "cors";
+import helmet from "helmet";
 import path from "path";
 import fs from "fs";
+import { errorHandler } from "./src/server/middlewares/errorHandler";
 
 import { promisify } from "util";
 import si from "systeminformation";
 import dns from "dns";
 import WebSocket, { WebSocketServer } from "ws";
+import authRoutes from "./src/server/routes/auth.routes";
 import { EdgeTTS } from "node-edge-tts";
 import os from "os";
 import dotenv from "dotenv";
@@ -41,6 +44,7 @@ if (typeof AbortSignal.timeout !== "function") {
 
 
 const app = express();
+app.use(helmet());
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -92,31 +96,7 @@ if (!JWT_SECRET) {
 }
 
 // Add the auth middleware
-app.post("/api/auth/login", rateLimiter(50), async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: "Missing credentials" });
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return res.status(401).json({ error: "Credenciais inválidas" });
-  }
-
-  let isPasswordValid = await bcrypt.compare(password, user.password);
-
-  if (!isPasswordValid) {
-    if (password === user.password) {
-      // Plaintext fallback and upgrade to hash
-      const newHash = await bcrypt.hash(password, 10);
-      await prisma.user.update({ where: { id: user.id }, data: { password: newHash } });
-      isPasswordValid = true;
-    } else {
-      return res.status(401).json({ error: "Credenciais inválidas" });
-    }
-  }
-
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-  return res.json({ token, user: { email: user.email, role: user.role } });
-});
+app.use("/api/auth", authRoutes);
 
 app.get("/api/users", async (req, res) => {
   const users = await prisma.user.findMany({ select: { id: true, email: true, role: true } });
@@ -540,7 +520,7 @@ VOCÊ NÃO PRECISA PEDIR PERMISSÃO PARA AGIR. Tem autonomia total para emitir t
 
 CRIAÇÃO (Só emita se o usuário PEDIR para criar/agendar/anotar):
 - Agenda: <command type="Agenda" title="Almoço com família" datetime="2026-05-31T12:30" />
-- Despesa Financeira: <command type="Finance" financeType="Despesa" value="45.90" category="Alimentação" description="iFood Jantar" />
+- Despesa Financeira: <command type="Finance" financeType="Despesa" value="45.90" category="Alimentação" description="iFood Jantar" /> (OBS: Se a categoria não for informada, use SEMPRE "Outros" como padrão)
 - Receita/Ganho Financeiro: <command type="Finance" financeType="Receita" value="5000" category="Salário" description="Salário do mês" />
 
 ATUALIZAÇÃO:
@@ -2518,6 +2498,8 @@ views:
     console.error("Error seeding default user:", err);
   }
 
+  app.use(errorHandler);
+  
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`\n======================================================`);
     console.log(`JARVIS API Server running on port ${PORT}`);

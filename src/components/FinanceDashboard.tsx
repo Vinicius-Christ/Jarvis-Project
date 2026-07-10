@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DollarSign, Copy, Trash2, Info, ChevronRight, PieChart as PieChartIcon, Edit2, TrendingUp, TrendingDown, Wallet, Target } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ComposedChart, Area, PieChart, Pie, Legend } from 'recharts';
 import { fetchAutenticado } from '../lib/api';
@@ -306,8 +306,8 @@ export default function FinanceDashboard({
                                     onChange={(e) => setFinanceForm({ ...financeForm, type: e.target.value })}
                                     className="w-full bg-white/10 border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] transition-colors"
                                 >
-                                    <option value="Receita">Receita</option>
-                                    <option value="Despesa">Despesa</option>
+                                    <option className="bg-black text-white" value="Receita">Receita</option>
+                                    <option className="bg-black text-white" value="Despesa">Despesa</option>
                                 </select>
                             </div>
                         </div>
@@ -319,24 +319,24 @@ export default function FinanceDashboard({
                                     onChange={(e) => setFinanceForm({ ...financeForm, category: e.target.value })}
                                     className="w-full bg-white/10 border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[var(--brand-border)] transition-colors"
                                 >
-                                    <option value="ServiÃ§os">ServiÃ§os</option>
-                                    <option value="EducaÃ§Ã£o">EducaÃ§Ã£o</option>
-                                    <option value="Lazer">Lazer</option>
-                                    <option value="AlimentaÃ§Ã£o">AlimentaÃ§Ã£o</option>
-                                    <option value="SaÃºde">SaÃºde</option>
-                                    <option value="Moradia">Moradia</option>
-                                    <option value="Transporte">Transporte</option>
-                                    <option value="Outros">Outros</option>
+                                    <option className="bg-black text-white" value="Serviços">Serviços</option>
+                                    <option className="bg-black text-white" value="Educação">Educação</option>
+                                    <option className="bg-black text-white" value="Lazer">Lazer</option>
+                                    <option className="bg-black text-white" value="Alimentação">Alimentação</option>
+                                    <option className="bg-black text-white" value="Saúde">Saúde</option>
+                                    <option className="bg-black text-white" value="Moradia">Moradia</option>
+                                    <option className="bg-black text-white" value="Transporte">Transporte</option>
+                                    <option className="bg-black text-white" value="Outros">Outros</option>
                                 </select>
                             </div>
                         )}
                         <button type="submit" className="w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-light)] text-black font-bold rounded-lg py-3 text-xs font-mono uppercase tracking-wider transition-all shadow-[0_0_15px_var(--brand-glow)]">
-                            {financeForm.id ? "Salvar AlteraÃ§Ã£o" : "LanÃ§ar Registro"}
+                            {financeForm.id ? "Salvar Alteração" : "Lançar Registro"}
                         </button>
                         {financeForm.id && (
                             <button
                                 type="button"
-                                onClick={() => setFinanceForm({ id: null, value: "", type: "Despesa", category: "EducaÃ§Ã£o", description: "" })}
+                                onClick={() => setFinanceForm({ id: null, value: "", type: "Despesa", category: "Outros", description: "" })}
                                 className="w-full bg-transparent hover:bg-white/5 border border-white/10 text-zinc-400 rounded-lg py-2 text-xs font-mono uppercase tracking-wider transition-all"
                             >
                                 Cancelar

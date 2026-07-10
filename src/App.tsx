@@ -264,13 +264,14 @@ export default function App() {
             // Wait, the AI tag is <command type="Finance" financeType="Receita" /> ?
             const financeTypeMatch = attributesStr.match(/financeType="([^"]+)"/);
 
-            if (valueMatch && catMatch) {
+            if (valueMatch) {
+              const categoryVal = catMatch ? catMatch[1] : "Outros";
               await fetchAutenticado("/api/update/finance", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   value: parseFloat(valueMatch[1]),
-                  category: catMatch[1],
+                  category: categoryVal,
                   type: financeTypeMatch ? financeTypeMatch[1] : undefined,
                   description: descMatch
                     ? descMatch[1]
@@ -1282,9 +1283,9 @@ export default function App() {
                               }
                               className="w-full bg-black border border-zinc-800/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--brand-border)]"
                             >
-                              <option value="Trabalho">Trabalho</option>
-                              <option value="Pessoal">Pessoal</option>
-                              <option value="Estudos">Estudos</option>
+                              <option className="bg-black text-white" value="Trabalho">Trabalho</option>
+                              <option className="bg-black text-white" value="Pessoal">Pessoal</option>
+                              <option className="bg-black text-white" value="Estudos">Estudos</option>
                             </select>
                           </div>
                           <div>

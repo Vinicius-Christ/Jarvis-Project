@@ -828,10 +828,10 @@ export default function App() {
             <div className="relative">
               <div className="w-10 h-10 rounded-2xl glass-card flex items-center justify-center border border-[var(--brand-primary)]/20">
                 <div className={`w-3 h-3 rounded-full transition-all duration-500 ${systemState?.systemActive
-                    ? systemState?.installer?.status === "installing"
-                      ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]"
-                      : "bg-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow-strong)]"
-                    : "bg-zinc-600"
+                  ? systemState?.installer?.status === "installing"
+                    ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]"
+                    : "bg-[var(--brand-light)] shadow-[0_0_10px_var(--brand-glow-strong)]"
+                  : "bg-zinc-600"
                   }`} />
               </div>
               {systemState?.systemActive && (
@@ -859,7 +859,6 @@ export default function App() {
               {[
                 { href: `http://${window.location.hostname}:5678`, icon: Workflow, title: "n8n" },
                 { href: `http://${window.location.hostname}:8123`, icon: Home, title: "Home Assistant" },
-                { href: systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/", icon: Table, title: "Google Sheets" },
                 { href: "/api-docs", icon: Code, title: "API Docs" },
               ].map(({ href, icon: Icon, title }) => (
                 <a
@@ -905,8 +904,8 @@ export default function App() {
                 } catch (e) { console.error(e); }
               }}
               className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${systemState?.systemActive
-                  ? "magnetic-btn text-zinc-300"
-                  : "liquid-btn text-white"
+                ? "magnetic-btn text-zinc-300"
+                : "liquid-btn text-white"
                 }`}
             >
               {systemState?.systemActive ? "Pausar" : "Iniciar"}
@@ -1455,7 +1454,7 @@ export default function App() {
                             : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
                             }`}
                         >
-                          📊 Google Sheets DB
+                          🧠 Obsidian RAG
                         </button>
                         <button
                           onClick={() => setSettingsTab("mcp")}
@@ -1542,74 +1541,34 @@ export default function App() {
                       )}
 
                       {settingsTab === "obsidian" && (
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 font-mono">
-                          <div className="holographic-card p-4 space-y-3">
-                            <h3 className="text-xs font-bold text-[var(--brand-light)] uppercase tracking-widest pl-2 border-l border-[var(--brand-primary)] mb-4 animate-pulse">
-                              Google Sheets Memória
+                        <div className="grid grid-cols-1 gap-6 font-mono">
+                          <div className="holographic-card p-5 space-y-4">
+                            <h3 className="text-xs font-bold text-[var(--brand-light)] uppercase tracking-widest pl-2 border-l border-[var(--brand-primary)] mb-4">
+                              🧠 Obsidian Vault — Memória RAG
                             </h3>
                             <p className="text-sm text-zinc-400 leading-normal mb-3">
-                              A IA estrutura e armazena os dados através de planilhas.{" "}
-                              <code className="text-xs text-lime-400 font-bold bg-black/20 backdrop-blur-md border border-zinc-900 px-1 rounded">
+                              O JARVIS injeta o conteúdo do seu Obsidian Vault diretamente no contexto do modelo LLM para respostas contextualizadas.
+                              <code className="text-xs text-lime-400 font-bold bg-black/20 backdrop-blur-md border border-zinc-900 px-1 rounded ml-1">
                                 Sync Auto
-                              </code>{" "}
+                              </code>
                             </p>
 
-                            <div className="space-y-1.5 text-xs">
-                              {systemState?.googleSheetsData?.map((sheet: any) => (
+                            <div className="space-y-2 text-xs">
+                              {systemState?.obsidianNotes?.length > 0 ? systemState.obsidianNotes.map((note: any, i: number) => (
                                 <div
-                                  key={sheet.sheet + sheet.spreadsheet}
-                                  className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-black/20 backdrop-blur-md hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-sm cursor-pointer"
+                                  key={i}
+                                  className="w-full text-left p-3 rounded-lg border border-zinc-800/40 bg-black/20 backdrop-blur-md hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] cursor-pointer"
                                 >
-                                  <span className="block font-bold text-white text-xs text-[var(--brand-light)]">
-                                    📊 {sheet.spreadsheet} - {sheet.sheet}
+                                  <span className="block font-bold text-[var(--brand-light)] text-xs">
+                                    📄 {note.path}
                                   </span>
-                                  <span className="block text-xs text-zinc-500 truncate mt-0.5">
-                                    {sheet.rows?.length || 0} Registros
-                                  </span>
+                                  <pre className="text-[10px] text-zinc-500 mt-1 whitespace-pre-wrap">{note.content.substring(0, 200)}{note.content.length > 200 ? "..." : ""}</pre>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="lg:col-span-3 bg-black/20 backdrop-blur-md border border-zinc-800/40 p-5 rounded-2xl flex flex-col justify-between">
-                            <div>
-                              <div className="flex justify-between items-center border-b border-zinc-800/40 pb-3 mb-4">
-                                <div>
-                                  <h3 className="text-xs font-bold text-white uppercase pr-2">
-                                    Visualizando Tabelas Relacionais do Cerebro
-                                  </h3>
-                                  <p className="text-xs text-zinc-500">
-                                    Google Sheets OAuth (Próximo Módulo)
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="space-y-4">
-                                {systemState?.googleSheetsData?.map(
-                                  (sheet: any, index: number) => (
-                                    <div
-                                      key={index}
-                                      className="bg-black/20 backdrop-blur-md border border-zinc-800/40 rounded-xl p-4 group"
-                                    >
-                                      <div className="text-xs font-bold text-[var(--brand-light)] mb-2 font-mono flex items-center justify-between">
-                                        <div className="flex items-center gap-1">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-light)]"></span>
-                                          {sheet.spreadsheet} &gt; {sheet.sheet}
-                                        </div>
-                                      </div>
-                                      <div className="bg-black/20 backdrop-blur-md text-xs font-mono text-zinc-350 p-3 rounded-lg border border-zinc-900 leading-loose overflow-x-auto">
-                                        {sheet.rows?.map((r: string, i: number) => (
-                                          <div key={i} className="border-b border-zinc-800/40 pb-1 mb-1 last:border-0">{r}</div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
+                              )) : <p className="text-zinc-600 text-xs">Nenhuma nota encontrada no vault.</p>}
                             </div>
 
                             <div className="border-t border-zinc-800/40 pt-3 mt-4 text-xs text-zinc-500 leading-normal">
-                              💡 <strong>Dica do JARVIS:</strong> Todas as informações estruturadas (metas, preferências, agendamentos longos) agora são guardadas na API do Sheets. Caso o OAuth não conclua, as informações ficarão apenas na memória do MOCK e sincronizadas com a UI do sistema local.
+                              💡 <strong>Dica do JARVIS:</strong> O vault é lido recursivamente em tempo de boot. Adicione notas com palavras-chave relevantes para que o RAG as encontre automaticamente durante o chat.
                             </div>
                           </div>
                         </div>
@@ -1666,7 +1625,7 @@ export default function App() {
                             3. Inteligência em 100% Cloud (Groq LPU)
                           </strong>
                           <p className="text-zinc-500 mb-2 leading-relaxed">
-                            Esqueça Ollama! Economize energia usando LLMs ultrarrápidos através do Groq Cloud. Vá em <strong>Chaves de APIs</strong> no menu superior e preencha a Groq API Key obtida gratuitamente em <a href="https://console.groq.com" target="_blank" className="text-[var(--brand-light)] underline">console.groq.com</a>. O JARVIS automaticamente mudará o roteamento cognitivo usando <code>llama-3.3-70b-versatile</code> para lhe responder na hora.
+                            Economize energia usando LLMs ultrarrápidos através do Groq Cloud. Vá em <strong>Chaves de APIs</strong> no menu superior e preencha a Groq API Key obtida gratuitamente em <a href="https://console.groq.com" target="_blank" className="text-[var(--brand-light)] underline">console.groq.com</a>. O JARVIS utiliza o modelo <code>llama-3.3-70b-versatile</code> via LPU para respostas instantâneas.
                           </p>
                         </div>
                         <div>
@@ -1779,10 +1738,10 @@ export default function App() {
                             </div>
                             <div className="bg-black/20 backdrop-blur-md p-2.5 rounded border border-zinc-900">
                               <strong className="text-[var(--brand-light)] block mb-0.5">
-                                RAG & Google Sheets / Contexto
+                                RAG & Obsidian Vault / Contexto
                               </strong>
                               O n8n monitora o ecossistema. Qualquer transação ou anotação
-                              é processada e estruturada para sincronização e vetorização.
+                              é processada e estruturada para sincronização e injeção de contexto.
                             </div>
                           </div>
                         </div>
@@ -1863,14 +1822,14 @@ export default function App() {
             </span>
           </div>
         </footer>
-      {/* Modals */}
-      {selectedLight && (
-        <HALightControlModal
-          device={selectedLight}
-          onClose={() => setSelectedLight(null)}
-          serverUrl={getServerUrl()}
-        />
-      )}
+        {/* Modals */}
+        {selectedLight && (
+          <HALightControlModal
+            device={selectedLight}
+            onClose={() => setSelectedLight(null)}
+            serverUrl={getServerUrl()}
+          />
+        )}
       </div>
     </div>
   );

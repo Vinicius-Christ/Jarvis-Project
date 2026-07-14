@@ -11,7 +11,7 @@ Desenvolvemos e estabilizamos a arquitetura para o JARVIS. O cérebro (backend, 
 - ✅ **Base de Conhecimento Obsidian (Windows Vault)**: A ponte `syncNoteToVault` sincroniza fisicamente os cadernos (Markdown) do app JARVIS diretamente para os arquivos do Windows (`C:\jarvis-vault`). Isto automatiza o RAG local, criando grafos de conhecimento estruturados.
 - ✅ **Voz Text-To-Speech (Edge TTS Gratuito)**: Implementação da leitura nativa e gratuita do Microsoft Edge TTS para vozes brasileiras (PT-BR), fornecendo uma resposta vocal ultrarrápida.
 - ✅ **Chat / Assistente Virtual Totalmente Nativo**: Central de chat interativa via Groq Cloud já atrelada ao backend da Web UI. Microfones e saídas de som já homologadas.
-- ✅ **Integração Google Sheets (Opcional)**: Possibilidade de parear a conta Google via OAuth para exportações complementares aos dados base.
+
 - ✅ **Acesso Externo Seguro via Cloudflare**: O Microfone se comporta perfeitamente via navegadores em virtude do SSL (HTTPS) gerido pelos Tunnels da Cloudflare.
 
 ---

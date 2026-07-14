@@ -1,5 +1,5 @@
 import { AI_PERSONAS, isOnlyConsultationQuery, getRelevantVaultContext } from "./src/server/services/aiUtils";
-import { syncToGoogleSheets } from "./src/server/services/googleSheets";
+
 import express from "express";
 import { exec, execSync } from "child_process";
 import cors from "cors";
@@ -201,7 +201,7 @@ export interface DbSchema {
   githubToken: string;
   systemActive: boolean;
   activePersona: string;
-  googleSheetUrl?: string;
+
   containerMockStates: Record<string, string>;
   goal: { limit: number; reason: string };
   conversations: any[];
@@ -768,40 +768,6 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   }
   replyText = (replyText || '').replace(updateRegex, "").trim();
 
-  // 4.b Process Google Sheets Updates
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-
-  const sheetUpdateRegex = /```sheets-update\s*\nspreadsheet:\s*([^\n]+)\nsheet:\s*([^\n]+)\nrows:\s*\n([\s\S]*?)(?:```|$)/g;
-  let sheetMatch;
-  while ((sheetMatch = sheetUpdateRegex.exec(replyText)) !== null) {
-    const spName = sheetMatch[1].trim();
-    const shName = sheetMatch[2].trim();
-    const rowsText = sheetMatch[3].trim();
-
-    const newRows = rowsText.split("\n").map(r => r.replace(/^- /, "").trim());
-
-    if (!jarvisState.googleSheetsData) jarvisState.googleSheetsData = [];
-
-    const existingDoc = jarvisState.googleSheetsData.find((d: any) => d.spreadsheet === spName && d.sheet === shName);
-    if (existingDoc) {
-      existingDoc.rows.push(...newRows);
-    } else {
-      jarvisState.googleSheetsData.push({ spreadsheet: spName, sheet: shName, rows: newRows });
-    }
-
-    // Trigger real Google Sheets sync if user is logged in & has configured spreadsheet URL
-    if (jarvisState.googleSheetUrl) {
-      if (token) {
-        syncToGoogleSheets(jarvisState.googleSheetUrl, shName, newRows, token).catch(e => {
-          console.error("Async Google Sheets sync failed:", e);
-        });
-      } else {
-        console.warn(`[JARVIS] Planilha configurada, mas a alteração para a aba "${shName}" não pôde ser enviada ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.`);
-      }
-    }
-  }
-  replyText = (replyText || '').replace(sheetUpdateRegex, "").trim();
 
   // 4.c Process LocalPC Execution directly from Server by broadcasting to connected Desktop Apps
   const pcCommandRegex = /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
@@ -1599,7 +1565,7 @@ app.post("/api/update/iot", async (req, res) => {
       // =============== MUNDO REAL (WEBSOCKET FIRST, FALLBACK TO WEBHOOK) ===============
       const domain = deviceId.split(".")[0] || "light";
       const service = state === "on" ? "turn_on" : "turn_off";
-      
+
       const serviceData: any = {};
       if (brightness !== undefined) serviceData.brightness_pct = brightness;
       if (color_temp !== undefined) serviceData.color_temp = color_temp;
@@ -2515,7 +2481,7 @@ views:
   }
 
   app.use(errorHandler);
-  
+
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`\n======================================================`);
     console.log(`JARVIS API Server running on port ${PORT}`);

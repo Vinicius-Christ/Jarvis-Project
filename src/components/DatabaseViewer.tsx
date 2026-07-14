@@ -15,7 +15,7 @@ export default function DatabaseViewer({ systemState, fetchSystemState }: Databa
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNotePath || !newNoteContent) return;
-    
+
     try {
       await fetchAutenticado("/api/update/obsidian", {
         method: "POST",
@@ -48,30 +48,30 @@ export default function DatabaseViewer({ systemState, fetchSystemState }: Databa
           <h3 className="text-[var(--brand-light)] font-mono text-[11px] font-bold uppercase tracking-widest flex items-center gap-2">
             <Database className="h-4 w-4" /> Visualizador do Banco de Dados & RAG
           </h3>
-          <span className="text-zinc-500 font-mono text-[10px] mt-1">Acesso direto e emulador do SQLite e Obsidian Vault.</span>
+          <span className="text-zinc-500 font-mono text-[10px] mt-1">Acesso direto e emulador do Banco de Dados e Obsidian Vault.</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Sidebar com tabelas */}
         <div className="md:col-span-1 holographic-card p-4 space-y-2 flex flex-col">
-          <button 
+          <button
             onClick={() => setActiveTab("obsidian")}
             className={`flex items-center gap-2 p-3 w-full rounded-xl transition-all font-mono text-xs text-left ${activeTab === "obsidian" ? "bg-[var(--brand-primary)] text-white" : "text-zinc-400 hover:bg-zinc-800"}`}
           >
             <Folder className="h-4 w-4" /> Obsidian (Vault)
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("finance")}
             className={`flex items-center gap-2 p-3 w-full rounded-xl transition-all font-mono text-xs text-left ${activeTab === "finance" ? "bg-[var(--brand-primary)] text-white" : "text-zinc-400 hover:bg-zinc-800"}`}
           >
-            <Table className="h-4 w-4" /> SQLite: Finance
+            <Table className="h-4 w-4" /> DB: Finance
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("agenda")}
             className={`flex items-center gap-2 p-3 w-full rounded-xl transition-all font-mono text-xs text-left ${activeTab === "agenda" ? "bg-[var(--brand-primary)] text-white" : "text-zinc-400 hover:bg-zinc-800"}`}
           >
-            <Table className="h-4 w-4" /> SQLite: Agenda
+            <Table className="h-4 w-4" /> DB: Agenda
           </button>
         </div>
 
@@ -80,7 +80,7 @@ export default function DatabaseViewer({ systemState, fetchSystemState }: Databa
           {activeTab === "obsidian" && (
             <div className="space-y-4">
               <h4 className="text-[11px] text-[var(--brand-light)] font-mono uppercase tracking-widest border-b border-zinc-800 pb-2">Memória de Longo Prazo (RAG / .md)</h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <h5 className="text-[10px] text-zinc-500 font-mono uppercase">Arquivos no Vault</h5>
@@ -99,15 +99,15 @@ export default function DatabaseViewer({ systemState, fetchSystemState }: Databa
 
                 <form onSubmit={handleCreateNote} className="bg-zinc-950 border border-zinc-900 p-4 rounded-lg space-y-3">
                   <h5 className="text-[10px] text-[var(--brand-primary)] font-mono uppercase">Adicionar Contexto (Nova Nota)</h5>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Ex: /sobre-mim/gostos.md"
                     required
                     value={newNotePath}
                     onChange={e => setNewNotePath(e.target.value)}
                     className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-white"
                   />
-                  <textarea 
+                  <textarea
                     placeholder="Conteúdo em markdown..."
                     required
                     rows={6}

@@ -11,7 +11,7 @@ export const DB_STATE_KEY = "global_state";
 export let jarvisState: any = {
     githubRepo: "",
     githubToken: "",
-    googleSheetUrl: process.env.GOOGLE_SHEETS_URL || "",
+
     systemActive: true,
     activePersona: "friday",
     containerMockStates: {
@@ -56,7 +56,7 @@ export let jarvisState: any = {
         ]
     },
     obsidianNotes: [],
-    googleSheetsData: [],
+
     installer: {
         status: "idle",
         progress: 0,

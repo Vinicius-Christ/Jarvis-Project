@@ -22,6 +22,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma, adapter, jarvisState, loadDB, DB_STATE_KEY } from "./src/server/database";
 import { connectHomeAssistantWS, callHAService, haWS, haMessageId } from "./src/server/homeAssistant";
+import { initVoiceWSS } from "./src/server/services/voiceSession";
 
 dotenv.config();
 
@@ -2506,6 +2507,9 @@ views:
     console.log("[WS Relay] Dispositivo Frontend conectado à malha Cross-Device.");
   });
   (global as any).wssRelay = wssRelay;
+
+  // Attach the Voice WebSocket Server
+  const wssVoice = initVoiceWSS(server);
 
   // Graceful shutdown
   process.on('SIGTERM', () => {

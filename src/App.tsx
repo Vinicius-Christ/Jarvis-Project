@@ -859,7 +859,7 @@ export default function App() {
               {[
                 { href: `http://${window.location.hostname}:5678`, icon: Workflow, title: "n8n" },
                 { href: `http://${window.location.hostname}:8123`, icon: Home, title: "Home Assistant" },
-                { href: systemState?.googleSheetUrl || "https://docs.google.com/spreadsheets/", icon: Table, title: "Google Sheets" },
+
                 { href: "/api-docs", icon: Code, title: "API Docs" },
               ].map(({ href, icon: Icon, title }) => (
                 <a
@@ -1448,15 +1448,7 @@ export default function App() {
                         Workspace & IA
                       </div>
                       <div className="flex flex-col p-2 gap-1 font-mono text-xs">
-                        <button
-                          onClick={() => setSettingsTab("obsidian")}
-                          className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "obsidian"
-                            ? "bg-[var(--brand-glow)] text-[var(--brand-light)] font-bold shadow-[0_0_10px_var(--brand-glow-strong)]"
-                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
-                            }`}
-                        >
-                          📊 Google Sheets DB
-                        </button>
+
                         <button
                           onClick={() => setSettingsTab("mcp")}
                           className={`px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer whitespace-nowrap ${settingsTab === "mcp"
@@ -1541,79 +1533,7 @@ export default function App() {
                         />
                       )}
 
-                      {settingsTab === "obsidian" && (
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 font-mono">
-                          <div className="holographic-card p-4 space-y-3">
-                            <h3 className="text-xs font-bold text-[var(--brand-light)] uppercase tracking-widest pl-2 border-l border-[var(--brand-primary)] mb-4 animate-pulse">
-                              Google Sheets Memória
-                            </h3>
-                            <p className="text-sm text-zinc-400 leading-normal mb-3">
-                              A IA estrutura e armazena os dados através de planilhas.{" "}
-                              <code className="text-xs text-lime-400 font-bold bg-black/20 backdrop-blur-md border border-zinc-900 px-1 rounded">
-                                Sync Auto
-                              </code>{" "}
-                            </p>
 
-                            <div className="space-y-1.5 text-xs">
-                              {systemState?.googleSheetsData?.map((sheet: any) => (
-                                <div
-                                  key={sheet.sheet + sheet.spreadsheet}
-                                  className="w-full text-left p-2.5 rounded-lg border border-zinc-800/40 bg-black/20 backdrop-blur-md hover:bg-zinc-900/80 transition text-zinc-300 block hover:border-[var(--brand-border)] text-sm cursor-pointer"
-                                >
-                                  <span className="block font-bold text-white text-xs text-[var(--brand-light)]">
-                                    📊 {sheet.spreadsheet} - {sheet.sheet}
-                                  </span>
-                                  <span className="block text-xs text-zinc-500 truncate mt-0.5">
-                                    {sheet.rows?.length || 0} Registros
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="lg:col-span-3 bg-black/20 backdrop-blur-md border border-zinc-800/40 p-5 rounded-2xl flex flex-col justify-between">
-                            <div>
-                              <div className="flex justify-between items-center border-b border-zinc-800/40 pb-3 mb-4">
-                                <div>
-                                  <h3 className="text-xs font-bold text-white uppercase pr-2">
-                                    Visualizando Tabelas Relacionais do Cerebro
-                                  </h3>
-                                  <p className="text-xs text-zinc-500">
-                                    Google Sheets OAuth (Próximo Módulo)
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="space-y-4">
-                                {systemState?.googleSheetsData?.map(
-                                  (sheet: any, index: number) => (
-                                    <div
-                                      key={index}
-                                      className="bg-black/20 backdrop-blur-md border border-zinc-800/40 rounded-xl p-4 group"
-                                    >
-                                      <div className="text-xs font-bold text-[var(--brand-light)] mb-2 font-mono flex items-center justify-between">
-                                        <div className="flex items-center gap-1">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-light)]"></span>
-                                          {sheet.spreadsheet} &gt; {sheet.sheet}
-                                        </div>
-                                      </div>
-                                      <div className="bg-black/20 backdrop-blur-md text-xs font-mono text-zinc-350 p-3 rounded-lg border border-zinc-900 leading-loose overflow-x-auto">
-                                        {sheet.rows?.map((r: string, i: number) => (
-                                          <div key={i} className="border-b border-zinc-800/40 pb-1 mb-1 last:border-0">{r}</div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="border-t border-zinc-800/40 pt-3 mt-4 text-xs text-zinc-500 leading-normal">
-                              💡 <strong>Dica do JARVIS:</strong> Todas as informações estruturadas (metas, preferências, agendamentos longos) agora são guardadas na API do Sheets. Caso o OAuth não conclua, as informações ficarão apenas na memória do MOCK e sincronizadas com a UI do sistema local.
-                            </div>
-                          </div>
-                        </div>
-                      )}
 
                       {settingsTab === "mcp" && <MCPSettings />}
 
@@ -1779,10 +1699,10 @@ export default function App() {
                             </div>
                             <div className="bg-black/20 backdrop-blur-md p-2.5 rounded border border-zinc-900">
                               <strong className="text-[var(--brand-light)] block mb-0.5">
-                                RAG & Google Sheets / Contexto
+                                RAG & PostgreSQL / Contexto
                               </strong>
-                              O n8n monitora o ecossistema. Qualquer transação ou anotação
-                              é processada e estruturada para sincronização e vetorização.
+                              O servidor monitora o ecossistema. Qualquer transação ou anotação
+                              é processada e estruturada para sincronização no banco de dados.
                             </div>
                           </div>
                         </div>

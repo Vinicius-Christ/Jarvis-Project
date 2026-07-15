@@ -1,7 +1,12 @@
+---
+title: Arquitetura do Módulo Financeiro
+type: knowledge
+tags: [financeiro, arquitetura, postgres, prisma]
+---
 # Arquitetura do Módulo Financeiro
 
 ## Cálculos e Estado
-- Os dados financeiros são armazenados no banco SQLite via Prisma (tabela `Finance`).
+- Os dados financeiros são armazenados no banco PostgreSQL via Prisma (tabela `Finance`).
 - Os tipos de transações são "Receita" ou "Despesa".
 - O cálculo do saldo guarda-chuva (`guardado`) é feito iterando todas as receitas e subtraindo todas as despesas.
 - Gráficos usam a biblioteca `recharts`.

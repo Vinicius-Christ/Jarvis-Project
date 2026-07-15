@@ -62,6 +62,22 @@ services:
         ipv4_address: 172.25.0.5
     restart: unless-stopped
 
+  # PostgreSQL - Banco de Dados Principal
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=jarvis
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      jarvis_network:
+        ipv4_address: 172.25.0.6
+    restart: unless-stopped
+
 networks:
   jarvis_network:
     driver: bridge
@@ -72,3 +88,4 @@ networks:
 volumes:
   n8n_data:
   ha_config:
+  postgres_data:

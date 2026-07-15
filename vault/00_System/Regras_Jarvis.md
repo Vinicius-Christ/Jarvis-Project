@@ -1,3 +1,8 @@
+---
+title: Regras de Comportamento do JARVIS
+type: system
+tags: [regras, comportamento, jarvis, sistema]
+---
 # Regras de Comportamento do JARVIS
 
 ## 1. Eficiência e Objetividade

@@ -1,3 +1,8 @@
+---
+title: Contexto do Vinicius (Mestre do Jarvis)
+type: knowledge
+tags: [contexto, vinicius, preferencias]
+---
 # Contexto do Vinicius (Mestre do Jarvis)
 
 Este é o arquivo principal de contexto. A Inteligência Artificial (Jarvis) vai ler este arquivo para se lembrar de quem você é, como deve te responder e quais são as suas preferências e regras de negócios.

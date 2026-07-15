@@ -1,5 +1,4 @@
 import { AI_PERSONAS, isOnlyConsultationQuery, getRelevantVaultContext } from "./src/server/services/aiUtils";
-import { syncToGoogleSheets } from "./src/server/services/googleSheets";
 import express from "express";
 import { exec, execSync } from "child_process";
 import cors from "cors";
@@ -768,40 +767,6 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   }
   replyText = (replyText || '').replace(updateRegex, "").trim();
 
-  // 4.b Process Google Sheets Updates
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-
-  const sheetUpdateRegex = /```sheets-update\s*\nspreadsheet:\s*([^\n]+)\nsheet:\s*([^\n]+)\nrows:\s*\n([\s\S]*?)(?:```|$)/g;
-  let sheetMatch;
-  while ((sheetMatch = sheetUpdateRegex.exec(replyText)) !== null) {
-    const spName = sheetMatch[1].trim();
-    const shName = sheetMatch[2].trim();
-    const rowsText = sheetMatch[3].trim();
-
-    const newRows = rowsText.split("\n").map(r => r.replace(/^- /, "").trim());
-
-    if (!jarvisState.googleSheetsData) jarvisState.googleSheetsData = [];
-
-    const existingDoc = jarvisState.googleSheetsData.find((d: any) => d.spreadsheet === spName && d.sheet === shName);
-    if (existingDoc) {
-      existingDoc.rows.push(...newRows);
-    } else {
-      jarvisState.googleSheetsData.push({ spreadsheet: spName, sheet: shName, rows: newRows });
-    }
-
-    // Trigger real Google Sheets sync if user is logged in & has configured spreadsheet URL
-    if (jarvisState.googleSheetUrl) {
-      if (token) {
-        syncToGoogleSheets(jarvisState.googleSheetUrl, shName, newRows, token).catch(e => {
-          console.error("Async Google Sheets sync failed:", e);
-        });
-      } else {
-        console.warn(`[JARVIS] Planilha configurada, mas a alteração para a aba "${shName}" não pôde ser enviada ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.`);
-      }
-    }
-  }
-  replyText = (replyText || '').replace(sheetUpdateRegex, "").trim();
 
   // 4.c Process LocalPC Execution directly from Server by broadcasting to connected Desktop Apps
   const pcCommandRegex = /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
@@ -1213,19 +1178,6 @@ VITE_GOOGLE_CLIENT_ID=${process.env.VITE_GOOGLE_CLIENT_ID || ''}
   res.json({ success: true });
 });
 
-// Endpoint: Google Sheets Global Config
-app.get("/api/settings/googlesheets", (req, res) => {
-  res.json({ googleSheetUrl: jarvisState.googleSheetUrl || "" });
-});
-
-app.post("/api/settings/googlesheets", (req, res) => {
-  const { url } = req.body;
-  if (url !== undefined) {
-    jarvisState.googleSheetUrl = url;
-
-  }
-  res.json({ success: true, googleSheetUrl: jarvisState.googleSheetUrl });
-});
 
 // Endpoint: AI Persona Selector API
 app.get("/api/ai/persona", (_req, res) => {
@@ -1244,7 +1196,7 @@ app.post("/api/ai/persona", (req, res) => {
 });
 
 // Endpoint: Individual Docker Container Control Actions
-const VALID_CONTAINERS = ["n8n", "homeassistant", "redis", "chromadb", "postgres", "ollama"];
+const VALID_CONTAINERS = ["n8n", "homeassistant", "redis", "postgres", "ollama"];
 const VALID_ACTIONS = ["start", "stop", "pause", "unpause", "restart"];
 
 app.post("/api/docker/action", (req, res) => {
@@ -1383,19 +1335,7 @@ app.post("/api/update/finance", async (req, res) => {
     return res.status(500).json({ success: false, error: "Database error" });
   }
 
-  // Sincronização automática para Google Sheets
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-  if (jarvisState.googleSheetUrl) {
-    if (token) {
-      const rowStr = `Data: ${createdRecord.date} | Valor: R$ ${createdRecord.value.toFixed(2)} | Categoria: ${createdRecord.category} | Descrição: ${createdRecord.description}`;
-      syncToGoogleSheets(jarvisState.googleSheetUrl, "Finanças", [rowStr], token).catch(e => {
-        console.error("Auto Google Sheets sync for finance failed:", e);
-      });
-    } else {
-      console.warn("[JARVIS] Planilha configurada, mas a alteração de Finanças não pôde ser enviada ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.");
-    }
-  }
+
 
   res.json({ success: true, item: createdRecord });
 });
@@ -1465,20 +1405,7 @@ app.post("/api/update/agenda", async (req, res) => {
     console.error("Prisma agenda create/update failed", err);
   }
 
-  // Sincronização automática para Google Sheets
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-  if (jarvisState.googleSheetUrl) {
-    if (token) {
-      const dateFormatted = new Date(newItem.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-      const rowStr = `Data/Hora: ${dateFormatted} | Título: ${newItem.title} | Categoria: ${newItem.category} | Notas: ${newItem.notes}`;
-      syncToGoogleSheets(jarvisState.googleSheetUrl, "Agenda", [rowStr], token).catch(e => {
-        console.error("Auto Google Sheets sync for agenda failed:", e);
-      });
-    } else {
-      console.warn("[JARVIS] Planilha configurada, mas o novo compromisso de Agenda não pôde ser enviado ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.");
-    }
-  }
+
 
   res.json({ success: true, item: newItem });
 });

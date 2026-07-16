@@ -350,32 +350,40 @@ export default React.memo(function JarvisAssistant({
       const rec = new SpeechRecognition();
       rec.continuous = false;
       rec.lang = "pt-BR";
-      rec.interimResults = false;
+      rec.interimResults = true;
 
       rec.onstart = () => {
         setAppState("listening");
       };
 
       rec.onresult = async (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript.trim()) {
-          if (isContinuousModeRef.current) {
-            const lower = transcript.toLowerCase();
-            // Checking for common misinterpretations of "Jarvis" in Portuguese
-            if (!lower.includes("jarvis") && !lower.includes("davis") && !lower.includes("chaves") && !lower.includes("charles")) {
-              // Wake word not detected. Stop to restart listener.
-              try { rec.stop(); } catch (e) { }
-              return;
-            }
-          }
+        let interimTranscript = "";
+        let finalTranscript = "";
 
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        // Interrompe o áudio assim que qualquer palavra (interim ou final) é detectada
+        if ((interimTranscript.trim() || finalTranscript.trim()) && isContinuousModeRef.current) {
+          if (audioRef.current && !audioRef.current.paused) {
+            audioRef.current.pause();
+          }
+          window.speechSynthesis.cancel();
+        }
+
+        if (finalTranscript.trim()) {
           setAppState("processing");
 
           // Delegamos o comando "abrir" para a IA agora
 
           const startLlm = Date.now();
           const reply = await onSendMessageRef.current(
-            transcript,
+            finalTranscript,
             undefined,
             "llama-3.3-70b-versatile",
           );
@@ -420,12 +428,12 @@ export default React.memo(function JarvisAssistant({
       rec.onend = () => {
         setAppState((prev) => {
           if (isContinuousModeRef.current) {
-            // Se o modo contínuo estiver ativo e a IA não estiver falando ou processando, reinicie o microfone
-            if (prev === "listening" || prev === "inactive") {
+            // Se o modo contínuo estiver ativo e a IA não estiver processando, reinicie o microfone
+            if (prev === "listening" || prev === "inactive" || prev === "speaking") {
               setTimeout(() => {
                 try { recognitionRef.current?.start(); } catch (e) { }
               }, 50);
-              return "listening";
+              return prev === "speaking" ? "speaking" : "listening";
             }
           } else {
             if (prev === "listening") return "inactive";
@@ -660,6 +668,11 @@ export default React.memo(function JarvisAssistant({
     };
 
     window.speechSynthesis.speak(utterance);
+    
+    // In continuous mode, listen while speaking to allow interruption
+    if (isContinuousModeRef.current) {
+      setTimeout(() => { try { recognitionRef.current?.start(); } catch (e) { } }, 100);
+    }
   };
 
   const speakResponse = async (text: string) => {
@@ -720,6 +733,12 @@ export default React.memo(function JarvisAssistant({
             URL.revokeObjectURL(url);
             speakLocalResponse(cleanText);
           });
+          
+          // In continuous mode, listen while speaking to allow interruption
+          if (isContinuousModeRef.current) {
+            setTimeout(() => { try { recognitionRef.current?.start(); } catch (e) { } }, 100);
+          }
+          
           return;
         }
       }

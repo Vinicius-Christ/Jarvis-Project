@@ -274,6 +274,23 @@ function syncNoteToVault(notePath: string, content: string) {
   }
 }
 
+// Apenda o histórico de interações no Vault
+function appendToVaultHistory(userText: string, aiText: string) {
+  try {
+    const vaultDir = process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault");
+    const historyPath = path.join(vaultDir, "30_Knowledge", "Historico_Interacoes.md");
+    const timestamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const entry = `\n## [${timestamp}]\n**Usuário:** ${userText}\n\n**JARVIS:** ${aiText}\n\n---\n`;
+    
+    const dir = path.dirname(historyPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    
+    fs.appendFileSync(historyPath, entry, "utf8");
+  } catch (e) {
+    console.error("[JARVIS VAULT] Erro ao salvar histórico no vault", e);
+  }
+}
+
 process.on("exit", () => {
   saveDBSync();
   prisma.$disconnect().catch(() => { });
@@ -798,7 +815,8 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
   } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 
-
+  // Salva no Obsidian Vault para Memória de Longo Prazo
+  appendToVaultHistory(displayText, replyText);
 
   return res.json({
     text: replyText,

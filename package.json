@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "Sistema Jarvis Residencial e IA",
-  "author": "Vinícius",
+  "author": "Vin\u00c3\u00adcius",
   "main": "electron-main.cjs",
   "type": "module",
   "scripts": {
@@ -15,34 +15,8 @@
     "clean": "rm -rf dist server.js release",
     "preview": "vite preview",
     "start": "node dist/server.cjs",
-    "desktop": "npm run build && electron .",
-    "dist": "npm run build && electron-builder",
     "lint": "tsc --noEmit",
     "type-check": "tsc --noEmit"
-  },
-  "build": {
-    "appId": "com.jarvis.desktop.suite",
-    "productName": "JARVIS Suite",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "electron-main.cjs",
-      "electron-preload.cjs",
-      "package.json",
-      "node_modules/**/*"
-    ],
-    "win": {
-      "target": "nsis"
-    },
-    "asar": true,
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    }
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.8.0",
@@ -87,8 +61,6 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^10.0.3",
-    "electron": "^33.4.11",
-    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
     "eslint": "^9.14.0",
     "eslint-plugin-react": "^7.37.5",

@@ -1,0 +1,44 @@
+{
+    "build": {
+        "beforeDevCommand": "npm run dev",
+        "beforeBuildCommand": "npm run build:frontend",
+        "devPath": "http://localhost:5173",
+        "distDir": "../dist"
+    },
+    "package": {
+        "productName": "Jarvis Tauri Overlay",
+        "version": "1.0.0"
+    },
+    "tauri": {
+        "allowlist": {
+            "all": true,
+            "globalShortcut": {
+                "all": true
+            },
+            "window": {
+                "all": true,
+                "create": true
+            }
+        },
+        "bundle": {
+            "active": true,
+            "identifier": "com.jarvis.tauri",
+            "icon": []
+        },
+        "windows": [
+            {
+                "fullscreen": false,
+                "height": 550,
+                "width": 780,
+                "resizable": false,
+                "transparent": true,
+                "decorations": false,
+                "alwaysOnTop": true,
+                "label": "main",
+                "title": "Jarvis Spotlight",
+                "visible": false,
+                "center": true
+            }
+        ]
+    }
+}

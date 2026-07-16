@@ -169,6 +169,16 @@ app.use(async (req, res, next) => {
 // Custom In-Memory Rate Limiter to prevent API abuse without adding heavy external dependencies
 const ipLimits = new Map<string, { count: number, resetTime: number }>();
 
+// Garbage Collector: Autocleans expired IP blocks routinely preventing infinite V8 Memory Leak (OOM)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of ipLimits.entries()) {
+    if (now > data.resetTime) {
+      ipLimits.delete(ip);
+    }
+  }
+}, 60000 * 5); // 5 Minutes Sweeping Cycle
+
 function rateLimiter(requestsPerMinute: number = 15) {
   return (req: any, res: any, next: any) => {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
@@ -301,20 +311,28 @@ process.on("SIGTERM", async () => {
 
 // Speech-to-Text configuration is handled client-side via Web Speech API.
 // TTS via ElevenLabs or OpenAI if keys are provided
-// Health Check and Hardware Stats
+// Health Check and Hardware Stats (Cache-enabled to prevent OS CPU Polling leaks)
+let _cachedHealthData: any = null;
+let _lastHealthFetch: number = 0;
+
 app.get('/api/health', async (_req, res) => {
   try {
+    const now = Date.now();
+    // Cache valid for 30 seconds blocking OS C++ Shell Spam
+    if (_cachedHealthData && (now - _lastHealthFetch) < 30000) {
+      return res.status(200).json(_cachedHealthData);
+    }
+
     const cpuLoad = await si.currentLoad();
     const cpuData = await si.cpu();
     const graphics = await si.graphics();
 
-    // Simulate ping to groq and docker if needed
-    let groqLatency = 42; // static or implement real ping
+    let groqLatency = 42;
     let dockerLatency = 7;
 
     const gpu = graphics.controllers && graphics.controllers.length > 0 ? graphics.controllers[0] : null;
 
-    res.status(200).json({
+    _cachedHealthData = {
       status: 'ok',
       docker: { status: "online", latency: dockerLatency },
       groq: { status: "online", latency: groqLatency },
@@ -330,9 +348,31 @@ app.get('/api/health', async (_req, res) => {
       uptime: process.uptime(),
       environment: process.env.NODE_ENV,
       version: '1.0.0'
-    });
+    };
+    _lastHealthFetch = now;
+
+    res.status(200).json(_cachedHealthData);
   } catch (err) {
     res.status(500).json({ error: "Failed to get health stats" });
+  }
+});
+
+app.get("/api/evals", async (req, res) => {
+  try {
+    const evalsDir = path.join(process.cwd(), ".evals");
+    if (!fs.existsSync(evalsDir)) {
+      return res.json([]);
+    }
+    const files = fs.readdirSync(evalsDir).filter(f => f.endsWith(".json"));
+    const data = [];
+    for (const f of files) {
+      const p = path.join(evalsDir, f);
+      const content = fs.readFileSync(p, "utf-8");
+      data.push(JSON.parse(content));
+    }
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to read evals" });
   }
 });
 
@@ -599,7 +639,7 @@ IMPORTANTE: Se for uma MERA CONSULTA ("quais meus gastos?"), responda em linguag
 
       if (!groqRes.ok) {
         let errorBody = "";
-        try { errorBody = await groqRes.text(); } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
+        try { errorBody = await groqRes.text(); } catch (e) { console.error("[Network API] Failed to parse Groq error body:", e); }
         throw new Error(`Groq failed with status: ${groqRes.status}. Details: ${errorBody}`);
       }
 
@@ -792,7 +832,7 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
   try {
     await prisma.conversation.create({ data: { sender: "User", text: displayText } });
   } catch (e) {
-    console.error("[Silent Try-Catch in server.ts]:", e);
+    console.error("[Database Persistence Critical Error - saving User Msg]:", e);
   }
 
 

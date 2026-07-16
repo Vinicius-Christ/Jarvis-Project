@@ -18,6 +18,9 @@ export default defineConfig(() => {
       },
     },
     server: {
+      watch: {
+        ignored: ['**/vault/**']
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:3000',

@@ -70,9 +70,35 @@ export function isOnlyConsultationQuery(userMessage: string): boolean {
 }
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+function parseFrontmatter(content: string) {
+    const match = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!match) return { attributes: {}, body: content };
+    
+    const lines = match[1].split('\n');
+    const attributes: Record<string, string | string[]> = {};
+    for (const line of lines) {
+        const [key, ...values] = line.split(':');
+        if (key && values.length > 0) {
+            let val = values.join(':').trim();
+            if (val.startsWith('[') && val.endsWith(']')) {
+                attributes[key.trim()] = val.slice(1, -1).split(',').map(s => s.trim().replace(/['"]/g, ''));
+            } else {
+                attributes[key.trim()] = val.replace(/['"]/g, '');
+            }
+        }
+    }
+    const body = content.slice(match[0].length).trim();
+    return { attributes, body };
+}
+
 export function getRelevantVaultContext(notes: any[], userMessage: string, maxTokens = 1500): string {
-    const coreNotes = notes.filter(n =>
-        n.path.toLowerCase().includes("contexto") || n.path.toLowerCase().includes("regras")
+    const parsedNotes = notes.map(n => {
+        const { attributes, body } = parseFrontmatter(n.content || "");
+        return { ...n, attributes, body };
+    });
+
+    const coreNotes = parsedNotes.filter(n =>
+        n.attributes.type === 'system' || n.path.toLowerCase().includes("00_system") || n.path.toLowerCase().includes("contexto") || n.path.toLowerCase().includes("regras")
     );
 
     const lowerMsg = userMessage.toLowerCase();
@@ -82,13 +108,15 @@ export function getRelevantVaultContext(notes: any[], userMessage: string, maxTo
         .map(w => w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))
         .filter(w => w.length > 4 && !stopwords.includes(w));
 
-    const relatedNotes = notes.filter(n => {
-        const noteName = n.path.toLowerCase();
-        const isCore = noteName.includes("contexto") || noteName.includes("regras");
+    const relatedNotes = parsedNotes.filter(n => {
+        const isCore = n.attributes.type === 'system' || n.path.toLowerCase().includes("00_system") || n.path.toLowerCase().includes("contexto") || n.path.toLowerCase().includes("regras");
         if (isCore) return false;
 
-        return keywords.some(kw => noteName.includes(kw) || n.content.toLowerCase().includes(kw)) ||
-            lowerMsg.includes(noteName.replace(".md", ""));
+        const noteTags = Array.isArray(n.attributes.tags) ? n.attributes.tags : [];
+        const matchTag = keywords.some(kw => noteTags.includes(kw));
+        
+        return matchTag || keywords.some(kw => n.path.toLowerCase().includes(kw) || n.body.toLowerCase().includes(kw)) ||
+            lowerMsg.includes(n.path.toLowerCase().replace(".md", "").split("/").pop() || "");
     }).slice(0, 3); // Max 3 related notes
 
     const selectedNotes = [...coreNotes, ...relatedNotes];
@@ -96,11 +124,12 @@ export function getRelevantVaultContext(notes: any[], userMessage: string, maxTo
     let totalLength = 0;
 
     for (const note of selectedNotes) {
-        const content = note.content.length > 500
-            ? note.content.slice(0, 500) + "\n*(conteúdo truncado para otimização de contexto)*"
-            : note.content;
+        const content = note.body.length > 500
+            ? note.body.slice(0, 500) + "\n*(conteúdo truncado para otimização de contexto)*"
+            : note.body;
 
-        const formattedNote = `--- ${note.path} ---\n${content}\n\n`;
+        const title = note.attributes.title || note.path;
+        const formattedNote = `--- ${title} ---\n${content}\n\n`;
         if ((totalLength + formattedNote.length) / 4 > maxTokens) {
             break;
         }

@@ -1,5 +1,4 @@
 import { AI_PERSONAS, isOnlyConsultationQuery, getRelevantVaultContext } from "./src/server/services/aiUtils";
-
 import express from "express";
 import { exec, execSync } from "child_process";
 import cors from "cors";
@@ -283,6 +282,23 @@ function syncNoteToVault(notePath: string, content: string) {
     console.log(`[JARVIS VAULT] File physical sync saved: ${fullPath}`);
   } catch (e: any) {
     console.log(`[JARVIS VAULT] Failed to sync physical file: ${e.message}`);
+  }
+}
+
+// Apenda o histórico de interações no Vault
+function appendToVaultHistory(userText: string, aiText: string) {
+  try {
+    const vaultDir = process.env.OBSIDIAN_VAULT_PATH || path.join(process.cwd(), "vault");
+    const historyPath = path.join(vaultDir, "30_Knowledge", "Historico_Interacoes.md");
+    const timestamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const entry = `\n## [${timestamp}]\n**Usuário:** ${userText}\n\n**JARVIS:** ${aiText}\n\n---\n`;
+
+    const dir = path.dirname(historyPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    fs.appendFileSync(historyPath, entry, "utf8");
+  } catch (e) {
+    console.error("[JARVIS VAULT] Erro ao salvar histórico no vault", e);
   }
 }
 
@@ -840,7 +856,8 @@ A meta foi salva no banco local do Obsidian com sucesso, mestre.`;
     await prisma.conversation.create({ data: { sender: "JARVIS", text: replyText } });
   } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
 
-
+  // Salva no Obsidian Vault para Memória de Longo Prazo
+  appendToVaultHistory(displayText, replyText);
 
   return res.json({
     text: replyText,
@@ -1220,19 +1237,6 @@ VITE_GOOGLE_CLIENT_ID=${process.env.VITE_GOOGLE_CLIENT_ID || ''}
   res.json({ success: true });
 });
 
-// Endpoint: Google Sheets Global Config
-app.get("/api/settings/googlesheets", (req, res) => {
-  res.json({ googleSheetUrl: jarvisState.googleSheetUrl || "" });
-});
-
-app.post("/api/settings/googlesheets", (req, res) => {
-  const { url } = req.body;
-  if (url !== undefined) {
-    jarvisState.googleSheetUrl = url;
-
-  }
-  res.json({ success: true, googleSheetUrl: jarvisState.googleSheetUrl });
-});
 
 // Endpoint: AI Persona Selector API
 app.get("/api/ai/persona", (_req, res) => {
@@ -1251,7 +1255,7 @@ app.post("/api/ai/persona", (req, res) => {
 });
 
 // Endpoint: Individual Docker Container Control Actions
-const VALID_CONTAINERS = ["n8n", "homeassistant", "redis", "chromadb", "postgres", "ollama"];
+const VALID_CONTAINERS = ["n8n", "homeassistant", "redis", "postgres", "ollama"];
 const VALID_ACTIONS = ["start", "stop", "pause", "unpause", "restart"];
 
 app.post("/api/docker/action", (req, res) => {
@@ -1390,19 +1394,7 @@ app.post("/api/update/finance", async (req, res) => {
     return res.status(500).json({ success: false, error: "Database error" });
   }
 
-  // Sincronização automática para Google Sheets
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-  if (jarvisState.googleSheetUrl) {
-    if (token) {
-      const rowStr = `Data: ${createdRecord.date} | Valor: R$ ${createdRecord.value.toFixed(2)} | Categoria: ${createdRecord.category} | Descrição: ${createdRecord.description}`;
-      syncToGoogleSheets(jarvisState.googleSheetUrl, "Finanças", [rowStr], token).catch(e => {
-        console.error("Auto Google Sheets sync for finance failed:", e);
-      });
-    } else {
-      console.warn("[JARVIS] Planilha configurada, mas a alteração de Finanças não pôde ser enviada ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.");
-    }
-  }
+
 
   res.json({ success: true, item: createdRecord });
 });
@@ -1472,20 +1464,7 @@ app.post("/api/update/agenda", async (req, res) => {
     console.error("Prisma agenda create/update failed", err);
   }
 
-  // Sincronização automática para Google Sheets
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-  if (jarvisState.googleSheetUrl) {
-    if (token) {
-      const dateFormatted = new Date(newItem.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-      const rowStr = `Data/Hora: ${dateFormatted} | Título: ${newItem.title} | Categoria: ${newItem.category} | Notas: ${newItem.notes}`;
-      syncToGoogleSheets(jarvisState.googleSheetUrl, "Agenda", [rowStr], token).catch(e => {
-        console.error("Auto Google Sheets sync for agenda failed:", e);
-      });
-    } else {
-      console.warn("[JARVIS] Planilha configurada, mas o novo compromisso de Agenda não pôde ser enviado ao Google Sheets pois o Token de autorização do Google está ausente. Certifique-se de realizar o login na conta Google.");
-    }
-  }
+
 
   res.json({ success: true, item: newItem });
 });

@@ -1,7 +1,6 @@
 import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect } from "react";
 import { Plus, Wifi, Save, ArrowUpRight, Cpu, ShieldCheck, Palette } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
 
 interface DeviceConfigProps {
   devices: any[];
@@ -103,41 +102,6 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
     "Modo Noturno": { brightness: 5, color: "#FF8F00", temp: 24 }
   });
   const [savingHA, setSavingHA] = useState(false);
-
-  const [isGoogleConnected, setIsGoogleConnected] = useState(!!localStorage.getItem("google_token"));
-  const [googleEmail, setGoogleEmail] = useState<string | null>(localStorage.getItem("google_user_email"));
-
-  const loginGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        if (!tokenResponse.access_token) return;
-        localStorage.setItem("google_token", tokenResponse.access_token);
-
-        // Fetch profile
-        const checkRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-        });
-        if (checkRes.ok) {
-          const profile = await checkRes.json();
-          if (profile.email) {
-            localStorage.setItem("google_user_email", profile.email);
-            setGoogleEmail(profile.email);
-          }
-        }
-        setIsGoogleConnected(true);
-      } catch (err) {
-        console.error("Failed to connect google account", err);
-      }
-    },
-    onError: () => console.error("Google authentication failed")
-  });
-
-  const handleDisconnectGoogle = () => {
-    localStorage.removeItem("google_token");
-    localStorage.removeItem("google_user_email");
-    setIsGoogleConnected(false);
-    setGoogleEmail(null);
-  };
 
   useEffect(() => {
     fetch(getServerUrl() + "/api/ai/persona")

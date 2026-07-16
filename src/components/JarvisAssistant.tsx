@@ -19,6 +19,7 @@ import {
   Paperclip,
   X,
   Camera,
+  ScanEye,
   Monitor,
   Image as ImageIcon,
   Sliders,
@@ -76,6 +77,7 @@ export default React.memo(function JarvisAssistant({
   serverUrl = "",
 }: JarvisAssistantProps) {
   const [inputText, setInputText] = useState("");
+  const [isVisionMode, setIsVisionMode] = useState(false);
   const [appState, setAppState] = useState<
     "inactive" | "listening" | "processing" | "speaking"
   >("inactive");
@@ -746,6 +748,27 @@ export default React.memo(function JarvisAssistant({
     setAttachedFile(null);
     setAppState("processing");
 
+    if (isVisionMode) {
+      try {
+        const res = await fetch(getServerUrl() + "/api/vision/interact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ goal: query })
+        });
+        const data = await res.json();
+        if (data.success) {
+          speakResponse("Alvo extraído com sucesso. Ação coordenada finalizada pelo Desktop Inteface.");
+        } else {
+          speakResponse("Ocorreu uma falha no processamento Vison via LLM. Erro de API retornado.");
+        }
+      } catch (e) { }
+
+      isProcessingRef.current = false;
+      setAppState("inactive");
+      setIsVisionMode(false);
+      return;
+    }
+
     // Delegamos o comando "abrir" para a IA agora
 
     const startLlm = Date.now();
@@ -1077,6 +1100,9 @@ export default React.memo(function JarvisAssistant({
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" />
             <button type="button" onClick={() => fileInputRef.current?.click()} className="magnetic-btn p-3 rounded-xl border border-white/10 bg-white/10 text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer shrink-0">
               <Paperclip className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => setIsVisionMode(!isVisionMode)} title="Visão Computacional Groq" className={`magnetic-btn p-3 rounded-xl border ${isVisionMode ? "bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border-[var(--brand-primary)]/50 shadow-[0_0_10px_var(--brand-glow)] animate-pulse" : "bg-white/10 text-zinc-400 hover:text-[var(--brand-light)] border-white/10"} transition-all cursor-pointer shrink-0`}>
+              <ScanEye className="h-4 w-4" />
             </button>
             <input
               type="text"

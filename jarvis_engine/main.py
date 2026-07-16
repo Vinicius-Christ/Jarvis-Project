@@ -15,7 +15,7 @@ def run_ondemand(task: str):
 
 def main():
     parser = argparse.ArgumentParser(description="Jarvis Intelligence Backend Engine")
-    parser.add_argument("--mode", choices=["daemon", "schedule", "on-demand", "doctor"], default="on-demand", help="Execution mode for the AI agent loop.")
+    parser.add_argument("--mode", choices=["daemon", "schedule", "on-demand", "doctor", "vision"], default="on-demand", help="Execution mode for the AI agent loop.")
     parser.add_argument("--task", type=str, help="Specify task content for on-demand mode", default="general")
     
     args = parser.parse_args()
@@ -29,6 +29,11 @@ def main():
     elif args.mode == "doctor":
         from jarvis_engine.doctor import run_doctor
         run_doctor()
+    elif args.mode == "vision":
+        from jarvis_engine.skills.screen_interactor.agent import ScreenInteractorAgent
+        agent = ScreenInteractorAgent()
+        result = agent.execute_goal(args.task)
+        print(f"Vision Execution Result: {result}")
     else:
         print("Modo de execução inválido.")
         sys.exit(1)

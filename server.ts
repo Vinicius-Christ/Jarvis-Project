@@ -1351,6 +1351,27 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Endpoint seguro para invocar a visão e operação GUI via Python
+app.post("/api/vision/interact", (req, res) => {
+  const { goal } = req.body;
+  if (!goal) return res.status(400).json({ error: "Falta argumento goal." });
+
+  console.log(`[Vision API] Iniciando análise de tela para tarefa: ${goal}`);
+  try {
+    const safeGoal = goal.replace(/"/g, '\\"');
+    const cmd = `python jarvis_engine/main.py --mode vision --task "${safeGoal}"`;
+    exec(cmd, { cwd: process.cwd(), timeout: 20000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error("[Vision Node Err]:", stderr || error.message);
+        return res.status(500).json({ error: stderr || error.message });
+      }
+      res.json({ success: true, result: stdout });
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
 // Endpoint: Dynamic operations on agenda, finances & Home Device modifications
 app.post("/api/update/finance", async (req, res) => {
   const { id, value, category, description, date, type } = req.body;

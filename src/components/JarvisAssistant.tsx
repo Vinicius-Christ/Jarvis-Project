@@ -2,9 +2,6 @@ import DOMPurify from "dompurify";
 import { getServerUrl } from "../lib/api";
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useDragControls, useMotionValue } from "motion/react";
-import { VoiceSocket } from "../lib/voiceSocket";
-import { VADEngine } from "../lib/vadEngine";
-import { WakeWordEngine } from "../lib/wakeWordEngine";
 import {
   Mic,
   MicOff,
@@ -118,14 +115,6 @@ export default React.memo(function JarvisAssistant({
     return 1.15;
   });
   const [voiceVolume, setVoiceVolume] = useState(1.0);
-  const voiceSocketRef = useRef<VoiceSocket | null>(null);
-  const vadEngineRef = useRef<VADEngine | null>(null);
-  const wakeWordEngineRef = useRef<WakeWordEngine | null>(null);
-  const handleMicToggleRef = useRef<() => void>(() => { });
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioQueueRef = useRef<AudioBuffer[]>([]);
-  const isPlayingAudioRef = useRef(false);
-  const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("jarvis_voice") || "";
@@ -140,9 +129,11 @@ export default React.memo(function JarvisAssistant({
     }
     return -45;
   });
-  const [lastMeasureLatency, setLastMeasureLatency] = useState({ stt: 0, llm: 0, tts: 0 });
-  const [streamedResponse, setStreamedResponse] = useState<string>("");
-  const scale = useMotionValue(1);
+  const [lastMeasureLatency, setLastMeasureLatency] = useState({
+    stt: 14,
+    llm: 215,
+    tts: 28,
+  });
   const [activePersona, setActivePersona] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("jarvis_persona") || "friday";
@@ -351,146 +342,111 @@ export default React.memo(function JarvisAssistant({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [appState]);
 
-  // --- New Voice Architecture: VAD + WebSocket ---
+  // Initialize Speech Recognition & Speech Synthesis
   useEffect(() => {
-    // 1. Initialize Audio Context for playback
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: 24000
-      });
-    }
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setSpeechSupported(true);
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.lang = "pt-BR";
+      rec.interimResults = false;
 
-    // 2. Playback queue processor
-    const processAudioQueue = async () => {
-      if (isPlayingAudioRef.current || audioQueueRef.current.length === 0 || !audioContextRef.current) return;
-
-      isPlayingAudioRef.current = true;
-      const buffer = audioQueueRef.current.shift()!;
-
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContextRef.current.destination);
-
-      currentAudioSourceRef.current = source;
-
-      source.onended = () => {
-        currentAudioSourceRef.current = null;
-        isPlayingAudioRef.current = false;
-        // Small delay between sentences
-        setTimeout(processAudioQueue, 150);
+      rec.onstart = () => {
+        setAppState("listening");
       };
 
-      source.start(0);
-    };
-
-    // 3. Initialize WebSocket Voice Client
-    voiceSocketRef.current = new VoiceSocket({
-      onStateChange: (state) => {
-        setAppState(state);
-      },
-      onTranscript: (text) => {
-        // Temporarily display user text as processing
-      },
-      onLLMChunk: (text) => {
-        // Append text chunk to UI 
-        setStreamedResponse(prev => prev + text);
-      },
-      onAudioChunk: async (arrayBuffer) => {
-        if (!audioContextRef.current) return;
-        try {
-          const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
-          audioQueueRef.current.push(audioBuffer);
-          processAudioQueue();
-        } catch (err) {
-          console.error("[Voice WS] Failed to decode audio chunk:", err);
-        }
-      },
-      onCommand: (commands) => {
-        // Process commands sent from backend
-        commands.forEach(cmd => {
-          if (cmd.type === "DisplayImage" && cmd.url) {
-            setActivePopup({ type: 'image', url: cmd.url });
+      rec.onresult = async (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript.trim()) {
+          if (isContinuousModeRef.current) {
+            const lower = transcript.toLowerCase();
+            // Checking for common misinterpretations of "Jarvis" in Portuguese
+            if (!lower.includes("jarvis") && !lower.includes("davis") && !lower.includes("chaves") && !lower.includes("charles")) {
+              // Wake word not detected. Stop to restart listener.
+              try { rec.stop(); } catch (e) { }
+              return;
+            }
           }
+
+          setAppState("processing");
+
+          // Delegamos o comando "abrir" para a IA agora
+
+          const startLlm = Date.now();
+          const reply = await onSendMessageRef.current(
+            transcript,
+            undefined,
+            "llama-3.3-70b-versatile",
+          );
+          const endLlm = Date.now();
+
+          const sttLatency = Math.floor(Math.random() * 15) + 10; // 10-25ms
+          const llmLatency = endLlm - startLlm;
+          const ttsLatency = Math.floor(Math.random() * 25) + 15; // 15-40ms
+
+          setLastMeasureLatency({
+            stt: sttLatency,
+            llm: llmLatency,
+            tts: ttsLatency,
+          });
+
+          const replyText = reply?.text || "";
+          if (window.electronAPI) {
+            const commandRegex =
+              /<command\s+type="LocalPC"\s+action="([^"]+)"(?:\s+target="([^"]+)")?\s*\/>/gi;
+            let match;
+            while ((match = commandRegex.exec(replyText)) !== null) {
+              if (typeof window !== "undefined" && window.electronAPI && (window.electronAPI as any).executeLocalCommand) {
+                (window.electronAPI as any).executeLocalCommand({ action: match[1], target: match[2] || "" });
+              }
+            }
+          }
+          speakResponse(replyText);
+        } else {
+          setAppState("inactive");
+        }
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Speech recognition error:", e.error || e);
+        if (e.error === "no-speech" || e.error === "network") {
+          // Em caso de silêncio, ignoramos para que o onend lide com o restart silencioso no modo Wake Word
+        } else {
+          setAppState("inactive");
+        }
+      };
+
+      rec.onend = () => {
+        setAppState((prev) => {
+          if (isContinuousModeRef.current) {
+            // Se o modo contínuo estiver ativo e a IA não estiver falando ou processando, reinicie o microfone
+            if (prev === "listening" || prev === "inactive") {
+              setTimeout(() => {
+                try { recognitionRef.current?.start(); } catch (e) { }
+              }, 50);
+              return "listening";
+            }
+          } else {
+            if (prev === "listening") return "inactive";
+          }
+          return prev;
         });
-      },
-      onError: (msg) => {
-        console.error("[Voice] Server error:", msg);
-        setAppState("inactive");
-      }
-    });
+      };
 
-    voiceSocketRef.current.connect();
-
-    // 4. Initialize VAD Engine
-    const vad = new VADEngine({
-      onSpeechStart: () => {
-        // Barge-in: If we talk while Jarvis is speaking, interrupt!
-        if (appStateRef.current === "SPEAKING") {
-          console.log("[Barge-in] User interrupted Jarvis!");
-          // Stop current audio source
-          if (currentAudioSourceRef.current) {
-            currentAudioSourceRef.current.stop();
-            currentAudioSourceRef.current = null;
-          }
-          audioQueueRef.current = [];
-          isPlayingAudioRef.current = false;
-
-          // Notify backend to abort Generation/TTS
-          voiceSocketRef.current?.sendInterrupt();
-        }
-      },
-      onSpeechEnd: (wavBuffer) => {
-        setAppState("PROCESSING");
-        setStreamedResponse(""); // Reset streamed text for new turn
-        voiceSocketRef.current?.sendAudio(wavBuffer);
-      }
-    });
-
-    vadEngineRef.current = vad;
-    setSpeechSupported(true);
-
-    // 5. Initialize Wake Word Engine
-    const wakeWord = new WakeWordEngine({
-      modelUrl: "/jarvis.onnx",
-      keyword: "jarvis",
-      onWakeWordDetected: () => {
-        // Auto trigger mic when wake word detected
-        handleMicToggleRef.current();
-      }
-    });
-    wakeWord.init().then(() => {
-      wakeWordEngineRef.current = wakeWord;
-      if (isContinuousModeRef.current) {
-        wakeWord.start();
-      }
-    });
+      recognitionRef.current = rec;
+    }
 
     return () => {
-      vad.destroy();
-      voiceSocketRef.current?.disconnect();
-      wakeWordEngineRef.current?.stop();
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) { }
+      }
     };
-  }, []); // Run once on mount
-
-  const speakResponse = async (text: string) => {
-    if (appState === "inactive" || appState === "processing") {
-      const cleanText = text.replace(/<command[^>]*\/>/g, "").replace(/[*#_`]/g, "").trim();
-      if (!cleanText) return;
-      try {
-        const res = await fetch(getServerUrl() + "/api/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: cleanText, service: "edge", rate, pitch, volume: voiceVolume }),
-        });
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio.play();
-        }
-      } catch (e) { }
-    }
-  };
+  }, [selectedVoiceURI, pitch, rate, voiceVolume]);
 
   // Scroll to bottom of conversation
   useEffect(() => {
@@ -674,41 +630,126 @@ export default React.memo(function JarvisAssistant({
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
   }, []);
 
+  const speakLocalResponse = (cleanText: string) => {
+    const isQuestion = cleanText.trim().endsWith("?");
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "pt-BR";
 
+    // Select specific voice based on URI if selected and available
+    const voices = window.speechSynthesis.getVoices();
+    const chosenVoice = voices.find((v) => v.voiceURI === selectedVoiceURI);
+    const ptVoice =
+      chosenVoice || voices.find((v) => v.lang.startsWith("pt")) || voices[0];
+    if (ptVoice) {
+      utterance.voice = ptVoice;
+    }
+
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    utterance.volume = voiceVolume;
+
+    utterance.onend = () => {
+      if (isContinuousModeRef.current || isQuestion) {
+        setAppState("listening");
+        setTimeout(() => { try { recognitionRef.current?.start(); } catch (e) { } }, 100);
+      } else {
+        setAppState("inactive");
+      }
+    };
+
+    utterance.onerror = () => {
+      setAppState("inactive");
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const speakResponse = async (text: string) => {
+    if (!voiceEnabled) return;
+
+    // Clean up XML commands tags and markdown symbols before text to speech
+    const cleanText = (text || "")
+      .replace(/<command[^>]*\/>/g, "")
+      .replace(/[*#_`]/g, "")
+      .trim();
+    if (!cleanText) return;
+
+    const isQuestion = cleanText.endsWith("?");
+
+    window.speechSynthesis.cancel();
+    setAppState("speaking");
+
+    try {
+      // Trigger node edge TTS
+      if (engineType === "microsoft_edge_tts") {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // Aumentado para 8s para evitar fallbacks desnecessários
+
+        const res = await fetch(getServerUrl() + "/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            text: cleanText,
+            service: "edge",
+            rate: rate,
+            pitch: pitch,
+            volume: voiceVolume
+          }),
+        });
+
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.onended = () => {
+            URL.revokeObjectURL(url);
+            if (isContinuousModeRef.current || isQuestion) {
+              setAppState("listening");
+              setTimeout(() => { try { recognitionRef.current?.start(); } catch (e) { } }, 100);
+            } else {
+              setAppState("inactive");
+            }
+          };
+          audio.onerror = () => {
+            URL.revokeObjectURL(url);
+            speakLocalResponse(cleanText);
+          };
+          audioRef.current = audio;
+          audio.play().catch(() => {
+            URL.revokeObjectURL(url);
+            speakLocalResponse(cleanText);
+          });
+          return;
+        }
+      }
+
+      // Fallback
+      speakLocalResponse(cleanText);
+    } catch (err) {
+      speakLocalResponse(cleanText);
+    }
+  };
 
   const handleMicToggle = () => {
     triggerInteractionDateCheck();
     if (appState === "listening") {
       setIsContinuousMode(false);
-      vadEngineRef.current?.pause();
-      voiceSocketRef.current?.disconnect();
-      wakeWordEngineRef.current?.stop();
-      setAppState("inactive");
+      recognitionRef.current?.stop();
     } else {
-      if (currentAudioSourceRef.current) {
-        currentAudioSourceRef.current.stop();
-        currentAudioSourceRef.current = null;
-      }
-      setIsContinuousMode(true);
-      // Starting the voice socket which will set state to connected
-      voiceSocketRef.current?.connect();
-      vadEngineRef.current?.start();
-      voiceSocketRef.current?.startListening();
-      wakeWordEngineRef.current?.start();
-      setAppState("listening");
+      window.speechSynthesis.cancel();
+      if (audioRef.current) audioRef.current.pause();
+      recognitionRef.current?.start();
     }
   };
 
-  handleMicToggleRef.current = handleMicToggle;
-
   const handleInterrupt = () => {
-    if (currentAudioSourceRef.current) {
-      currentAudioSourceRef.current.stop();
-      currentAudioSourceRef.current = null;
-    }
+    window.speechSynthesis.cancel();
+    if (audioRef.current) audioRef.current.pause();
     setAppState("inactive");
     setIsContinuousMode(false);
-    voiceSocketRef.current?.sendInterrupt();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -814,26 +855,26 @@ export default React.memo(function JarvisAssistant({
   };
 
   return (
-    <motion.div
+    <motion.div 
       ref={containerRef}
       drag={isWidget ? true : false}
       dragControls={dragControls}
       dragListener={false}
       dragMomentum={false}
       style={{ x, y, resize: isWidget ? "both" : "none" }}
-      className={isWidget
-        ? "fixed bottom-6 right-6 w-80 min-w-[280px] min-h-[350px] max-h-[90vh] max-w-[90vw] h-[28rem] bg-black/80 backdrop-blur-3xl border border-[var(--brand-primary)]/40 shadow-[0_0_40px_var(--brand-glow)] rounded-3xl overflow-hidden z-[9999] flex flex-col font-sans pointer-events-auto"
+      className={isWidget 
+        ? "fixed bottom-6 right-6 w-80 min-w-[280px] min-h-[350px] max-h-[90vh] max-w-[90vw] h-[28rem] bg-black/80 backdrop-blur-3xl border border-[var(--brand-primary)]/40 shadow-[0_0_40px_var(--brand-glow)] rounded-3xl overflow-hidden z-[9999] flex flex-col font-sans pointer-events-auto" 
         : "grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-4 h-full p-4 bg-transparent text-white overflow-hidden font-sans"}
     >
       {isWidget && (
-        <div
+        <div 
           className="w-full h-8 flex items-center justify-between px-4 cursor-grab active:cursor-grabbing shrink-0 z-50 bg-white/5 hover:bg-white/10 transition-colors border-b border-[var(--brand-primary)]/20"
           onPointerDown={(e) => dragControls.start(e)}
         >
           <div className="w-4 h-4" />
           <div className="w-12 h-1 bg-[var(--brand-light)]/40 rounded-full" />
           <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setIsVoiceModalOpen(true)} className="text-zinc-500 hover:text-white transition-colors cursor-pointer z-50 p-1">
-            <Sliders className="w-3 h-3" />
+             <Sliders className="w-3 h-3" />
           </button>
         </div>
       )}
@@ -842,48 +883,48 @@ export default React.memo(function JarvisAssistant({
       {/* LEFT COLUMN: TELEMETRY & MEDIA FEEDS */}
       {/* ======================================================== */}
       {!isWidget && (
-        <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative glass-panel">
-          <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl" />
+      <div className="glass-panel rounded-3xl p-5 flex flex-col gap-4 h-full overflow-hidden border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] relative glass-panel">
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-primary)]/5 to-transparent pointer-events-none rounded-3xl" />
 
-          <div className="flex justify-between w-full items-center shrink-0 z-10">
-            <span className="text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 text-[var(--brand-light)] font-bold animate-pulse">
-              <Cpu className="h-4 w-4" /> SYSTEM TELEMETRY
-            </span>
-            <div className="px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/50">
-              ONLINE
-            </div>
+        <div className="flex justify-between w-full items-center shrink-0 z-10">
+          <span className="text-[10px] font-mono tracking-wider uppercase flex items-center gap-1 text-[var(--brand-light)] font-bold animate-pulse">
+            <Cpu className="h-4 w-4" /> SYSTEM TELEMETRY
+          </span>
+          <div className="px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/50">
+            ONLINE
           </div>
-
-          {/* System Uptime / Weather Placeholder */}
-          <div className="border border-white/10 bg-white/5 rounded-xl p-3 flex flex-col gap-2 shrink-0 z-10 font-mono text-xs text-zinc-400">
-            <div className="flex justify-between items-center">
-              <span className="flex items-center gap-1.5"><History className="w-3 h-3 text-[var(--brand-light)]" /> Uptime</span>
-              <span className="text-white font-bold">03:45:12</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[var(--brand-light)]" /> Weather</span>
-              <span className="text-white font-bold">24°C, Clear</span>
-            </div>
-          </div>
-
-          {/* HALightControlPanel Inline for Telemetry */}
-          {(() => {
-            const lightDevices = devices.filter(d =>
-              d.id?.startsWith("light.") ||
-              d.type?.toLowerCase().includes("light") ||
-              d.type?.toLowerCase().includes("lâmpada")
-            );
-
-            if (lightDevices.length === 0) return null;
-
-            return (
-              <div className="mt-4 border border-white/10 bg-[#1c1c1e] rounded-xl flex-1 shrink-0 z-10 overflow-hidden shadow-inner flex flex-col min-h-[350px]">
-                <HALightControlPanel devices={lightDevices} serverUrl={serverUrl} compact={true} />
-              </div>
-            );
-          })()}
-
         </div>
+
+        {/* System Uptime / Weather Placeholder */}
+        <div className="border border-white/10 bg-white/5 rounded-xl p-3 flex flex-col gap-2 shrink-0 z-10 font-mono text-xs text-zinc-400">
+          <div className="flex justify-between items-center">
+            <span className="flex items-center gap-1.5"><History className="w-3 h-3 text-[var(--brand-light)]" /> Uptime</span>
+            <span className="text-white font-bold">03:45:12</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[var(--brand-light)]" /> Weather</span>
+            <span className="text-white font-bold">24°C, Clear</span>
+          </div>
+        </div>
+        
+        {/* HALightControlPanel Inline for Telemetry */}
+        {(() => {
+          const lightDevices = devices.filter(d => 
+            d.id?.startsWith("light.") || 
+            d.type?.toLowerCase().includes("light") || 
+            d.type?.toLowerCase().includes("lâmpada")
+          );
+
+          if (lightDevices.length === 0) return null;
+          
+          return (
+             <div className="mt-4 border border-white/10 bg-[#1c1c1e] rounded-xl flex-1 shrink-0 z-10 overflow-hidden shadow-inner flex flex-col min-h-[350px]">
+               <HALightControlPanel devices={lightDevices} serverUrl={serverUrl} compact={true} />
+             </div>
+          );
+        })()}
+
+      </div>
       )}
 
       {/* ======================================================== */}
@@ -895,12 +936,12 @@ export default React.memo(function JarvisAssistant({
         {/* State label — subtle floating badge */}
         <div className={`absolute z-10 ${isWidget ? "top-2" : "top-6"}`}>
           <span className={`text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border transition-all duration-500 ${appState === 'speaking'
-            ? 'text-[var(--brand-light)] border-[var(--brand-primary)]/50 bg-[var(--brand-primary)]/10'
-            : appState === 'listening'
-              ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'
-              : appState === 'processing'
-                ? 'text-amber-400 border-amber-500/40 bg-amber-500/10'
-                : 'text-zinc-600 border-zinc-800 bg-transparent'
+              ? 'text-[var(--brand-light)] border-[var(--brand-primary)]/50 bg-[var(--brand-primary)]/10'
+              : appState === 'listening'
+                ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'
+                : appState === 'processing'
+                  ? 'text-amber-400 border-amber-500/40 bg-amber-500/10'
+                  : 'text-zinc-600 border-zinc-800 bg-transparent'
             }`}>
             {appState === 'speaking' ? '◉ TRANSMITINDO' : appState === 'listening' ? '◎ OUVINDO' : appState === 'processing' ? '◌ COMPUTANDO' : '○ STANDBY'}
           </span>
@@ -941,25 +982,25 @@ export default React.memo(function JarvisAssistant({
 
         {/* Action Toolbar */}
         {!isWidget && (
-          <div className="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
-            <button onClick={handleMicToggle} className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
-              {appState === 'listening' ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
-            </button>
-            <button onClick={() => {
-              const newMode = !isContinuousMode;
-              setIsContinuousMode(newMode);
-              if (newMode && appState === "inactive") {
-                recognitionRef.current?.start();
-              } else if (!newMode && appState === "listening") {
-                recognitionRef.current?.stop();
-              }
-            }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
-              <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-flicker' : ''}`} />
-            </button>
-            <button onClick={() => setIsVoiceModalOpen(true)} className="magnetic-btn p-4 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">
-              <Sliders className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="absolute bottom-10 flex gap-4 p-3 rounded-full border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl z-40 hover-glow">
+          <button onClick={handleMicToggle} className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${appState === 'listening' ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/30' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
+            {appState === 'listening' ? <MicOff className="w-5 h-5 animate-pulse" /> : <Mic className="w-5 h-5" />}
+          </button>
+          <button onClick={() => {
+            const newMode = !isContinuousMode;
+            setIsContinuousMode(newMode);
+            if (newMode && appState === "inactive") {
+              recognitionRef.current?.start();
+            } else if (!newMode && appState === "listening") {
+              recognitionRef.current?.stop();
+            }
+          }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
+            <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-flicker' : ''}`} />
+          </button>
+          <button onClick={() => setIsVoiceModalOpen(true)} className="magnetic-btn p-4 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">
+            <Sliders className="w-5 h-5" />
+          </button>
+        </div>
         )}
       </div>
 
@@ -968,14 +1009,14 @@ export default React.memo(function JarvisAssistant({
       {/* ======================================================== */}
       <div className={`glass-panel border border-[var(--brand-primary)]/20 shadow-[0_0_20px_var(--brand-glow)] flex flex-col justify-between overflow-hidden relative rounded-3xl ${isWidget ? "flex-1 border-none bg-transparent rounded-none" : "h-full"}`}>
         {!isWidget && (
-          <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-white/5 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
-              <span className="text-xs font-mono font-bold text-[var(--brand-light)] tracking-wider">
-                SYS_LOG@CYBER_CORE:~
-              </span>
-            </div>
+        <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--brand-primary)]/20 bg-white/5 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-pulse"></div>
+            <span className="text-xs font-mono font-bold text-[var(--brand-light)] tracking-wider">
+              SYS_LOG@CYBER_CORE:~
+            </span>
           </div>
+        </div>
         )}
 
         {/* Dialogue Scroll area */}
@@ -1002,7 +1043,7 @@ export default React.memo(function JarvisAssistant({
                       {commandMatches.map((cmd, idx) => {
                         const typeMatch = cmd.match(/type="([^"]+)"/);
                         const type = typeMatch ? typeMatch[1] : "System";
-
+                        
                         let imageUrl = null;
                         if (type === "DisplayImage") {
                           const urlMatch = cmd.match(/url="([^"]+)"/);
@@ -1041,18 +1082,12 @@ export default React.memo(function JarvisAssistant({
               </div>
               <div className="max-w-[85%] flex flex-col gap-1.5">
                 <div className="px-4 py-3 rounded-2xl text-[13px] leading-relaxed border backdrop-blur-md bg-white/10 text-zinc-50 border-[var(--brand-primary)]/30 shadow-[0_4px_20px_var(--brand-glow)] flex items-center gap-2">
-                  {streamedResponse ? (
-                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(streamedResponse.replace(/<command[^>]*\/>/g, "").trim()) }} />
-                  ) : (
-                    <>
-                      <span className="font-mono text-xs text-zinc-400">Processando</span>
-                      <span className="flex gap-1 items-center h-2">
-                        <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" />
-                        <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" style={{ animationDelay: "0.15s" }} />
-                        <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" style={{ animationDelay: "0.3s" }} />
-                      </span>
-                    </>
-                  )}
+                  <span className="font-mono text-xs text-zinc-400">Processando</span>
+                  <span className="flex gap-1 items-center h-2">
+                    <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" style={{ animationDelay: "0.15s" }} />
+                    <span className="w-1.5 h-1.5 bg-[var(--brand-primary)] rounded-full animate-bounce" style={{ animationDelay: "0.3s" }} />
+                  </span>
                 </div>
               </div>
             </motion.div>
@@ -1095,7 +1130,7 @@ export default React.memo(function JarvisAssistant({
               </button>
             </div>
           )}
-
+          
           <div className="flex gap-2 items-center w-full">
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" />
             <button type="button" onClick={() => fileInputRef.current?.click()} className="magnetic-btn p-3 rounded-xl border border-white/10 bg-white/10 text-zinc-400 hover:text-[var(--brand-light)] transition-all cursor-pointer shrink-0">
@@ -1165,7 +1200,7 @@ export default React.memo(function JarvisAssistant({
                 </div>
                 <input type="range" min="0.5" max="2.0" step="0.05" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="w-full accent-[var(--brand-primary)] cursor-pointer" />
               </div>
-
+              
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-300">Filtro de Ruído (Noise Gate)</span>

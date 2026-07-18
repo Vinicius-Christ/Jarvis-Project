@@ -1,6 +1,10 @@
 import argparse
 import sys
+import os
 import logging
+
+# Ensure the parent directory is in sys.path so 'jarvis_engine.*' absolute imports work
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from jarvis_engine.memory import JarvisMemory
 from jarvis_engine.daemon import run_daemon

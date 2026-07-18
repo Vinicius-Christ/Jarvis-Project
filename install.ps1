@@ -18,14 +18,25 @@ $IsServer = ($InstallMode -eq "1")
 if ($IsServer) {
     Write-Host "`n>> MODO SERVIDOR SELECIONADO <<" -ForegroundColor Green
     Write-Host "[...] Instalando Node.js via Winget"
-    if (-not (node -v 2>$null)) { winget install OpenJS.NodeJS -e --silent }
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install OpenJS.NodeJS -e --silent }
     Write-Host "[...] Instalando Python 3.11 via Winget"
-    if (-not (python --version 2>$null)) { winget install Python.Python.3.11 -e --silent }
+    if (-not (Get-Command python -ErrorAction SilentlyContinue)) { 
+        winget install Python.Python.3.11 -e --silent
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    }
+    
+    Write-Host "[...] Instalando Visual C++ Build Tools (Obrigatório para dependências)"
+    winget install Microsoft.VisualStudio.2022.BuildTools -e --silent --override "--wait --quiet --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+
+    Write-Host "[...] Instalando Rust Compiler (Obrigatório pro Desktop e Tauri)"
+    if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) { 
+        winget install Rustlang.Rustup -e --silent
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    }
 
     Write-Host "[...] Criando Sandbox Local (.venv) e Instalando Requirements"
     if (-not (Test-Path ".venv")) { python -m venv .venv }
-    & .venv\Scripts\Activate.ps1
-    pip install -r requirements.txt
+    .venv\Scripts\python.exe -m pip install -r requirements.txt
 
     Write-Host "[...] Instalando Pacotes Base NPM"
     npm install
@@ -49,10 +60,16 @@ if ($IsServer) {
 } else {
     Write-Host "`n>> MODO DESKTOP / PC PESSOAL SELECIONADO <<" -ForegroundColor Green
     Write-Host "[...] Testando binários NodeJS"
-    if (-not (node -v 2>$null)) { winget install OpenJS.NodeJS -e --silent }
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { winget install OpenJS.NodeJS -e --silent }
     
-    Write-Host "[...] Validando Rust Compiler (Obrigatório pro Desktop Nativo)"
-    if (-not (rustc --version 2>$null)) { Write-Host "⚠️ Rust Ausente! Acesse rustup.rs e baixe ANTES de tentar rodar a interface UI!" -ForegroundColor Red }
+    Write-Host "[...] Instalando Visual C++ Build Tools (Obrigatório para compilar dependências)"
+    winget install Microsoft.VisualStudio.2022.BuildTools -e --silent --override "--wait --quiet --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+
+    Write-Host "[...] Instalando Rust Compiler (Obrigatório pro Desktop Nativo)"
+    if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) { 
+        winget install Rustlang.Rustup -e --silent 
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    }
 
     Write-Host "[...] Baixando apenas módulos essenciais do NPM Frontend"
     npm install

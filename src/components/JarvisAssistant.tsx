@@ -361,16 +361,6 @@ export default React.memo(function JarvisAssistant({
       rec.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
         if (transcript.trim()) {
-          if (isContinuousModeRef.current) {
-            const lower = transcript.toLowerCase();
-            // Checking for common misinterpretations of "Jarvis" in Portuguese
-            if (!lower.includes("jarvis") && !lower.includes("davis") && !lower.includes("chaves") && !lower.includes("charles")) {
-              // Wake word not detected. Stop to restart listener.
-              try { rec.stop(); } catch (e) { }
-              return;
-            }
-          }
-
           setAppState("processing");
 
           // Delegamos o comando "abrir" para a IA agora
@@ -994,7 +984,7 @@ export default React.memo(function JarvisAssistant({
             } else if (!newMode && appState === "listening") {
               recognitionRef.current?.stop();
             }
-          }} title="Modo Wake Word (Diga 'Jarvis' para ativar)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
+          }} title="Modo Conversação (Talk-to-Jarvis contínuo)" className={`magnetic-btn p-4 rounded-full flex items-center justify-center cursor-pointer ${isContinuousMode ? 'bg-[var(--brand-primary)]/20 text-[var(--brand-light)] border border-[var(--brand-primary)]/40' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'}`}>
             <Radio className={`w-5 h-5 ${isContinuousMode ? 'animate-flicker' : ''}`} />
           </button>
           <button onClick={() => setIsVoiceModalOpen(true)} className="magnetic-btn p-4 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 hover:text-white border border-white/10 cursor-pointer">

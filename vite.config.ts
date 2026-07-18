@@ -19,7 +19,7 @@ export default defineConfig(() => {
     },
     server: {
       watch: {
-        ignored: ['**/vault/**']
+        ignored: ['**/vault/**', '**/src-tauri/**']
       },
       proxy: {
         '/api': {

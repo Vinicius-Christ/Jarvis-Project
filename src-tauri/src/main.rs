@@ -3,67 +3,68 @@
     windows_subsystem = "windows"
 )]
 
-use tauri::{Manager, GlobalShortcutManager, SystemTray, SystemTrayEvent, CustomMenuItem, SystemTrayMenu, SystemTrayMenuItem};
+use tauri::{Manager, GlobalShortcutManager};
 
 fn main() {
-    let quit = CustomMenuItem::new("quit".to_string(), "Sair");
-    let toggle = CustomMenuItem::new("toggle".to_string(), "Ocultar/Mostrar Overlay");
-    let tray_menu = SystemTrayMenu::new()
-        .add_item(toggle)
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(quit);
+    // Força o WebView2 a usar um diretório de dados dedicado e limpo,
+    // evitando o erro 0x800700AA ("Recurso solicitado em uso")
+    std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", "C:\\temp-jarvis-webview2");
+    
+    println!("[JARVIS] Iniciando aplicação Tauri...");
+    println!("[JARVIS] WebView2 data folder: C:\\temp-jarvis-webview2");
 
-    let tray = SystemTray::new().with_menu(tray_menu);
+    let result = tauri::Builder::default()
+        .setup(|app| {
+            println!("[JARVIS] Setup executado com sucesso!");
+            let app_handle = app.handle();
+            
+            // Verifica se a janela principal existe
+            match app.get_window("main") {
+                Some(win) => {
+                    println!("[JARVIS] Janela 'main' encontrada!");
+                    // Garante que a janela está visível
+                    win.show().unwrap_or_else(|e| eprintln!("[JARVIS] Erro ao mostrar janela: {}", e));
+                    win.set_focus().unwrap_or_else(|e| eprintln!("[JARVIS] Erro ao focar janela: {}", e));
+                    println!("[JARVIS] Janela mostrada e em foco!");
+                },
+                None => {
+                    eprintln!("[JARVIS] ERRO: Janela 'main' não encontrada!");
+                }
+            }
 
-    tauri::Builder::default()
-        .system_tray(tray)
-        .on_system_tray_event(|app, event| match event {
-            SystemTrayEvent::MenuItemClick { id, .. } => {
-                match id.as_str() {
-                    "quit" => {
-                        std::process::exit(0);
-                    }
-                    "toggle" => {
-                        let window = app.get_window("main").unwrap();
-                        if window.is_visible().unwrap() {
-                            window.hide().unwrap();
+            // Registra o atalho Ctrl+Space para mostrar/ocultar
+            let mut shortcut_manager = app_handle.global_shortcut_manager();
+            let handle_clone = app_handle.clone();
+            shortcut_manager
+                .register("Ctrl+Space", move || {
+                    if let Some(window) = handle_clone.get_window("main") {
+                        if window.is_visible().unwrap_or(false) {
+                            window.hide().unwrap_or_default();
                         } else {
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
+                            window.show().unwrap_or_default();
+                            window.set_focus().unwrap_or_default();
                         }
                     }
-                    _ => {}
-                }
-            }
-            SystemTrayEvent::LeftClick { .. } => {
-                let window = app.get_window("main").unwrap();
-                if window.is_visible().unwrap() {
-                    window.hide().unwrap();
-                } else {
-                    window.show().unwrap();
-                    window.set_focus().unwrap();
-                }
-            }
-            _ => {}
-        })
-        .setup(|app| {
-            let app_handle = app.handle();
-            let mut shortcut_manager = app_handle.global_shortcut_manager();
+                })
+                .unwrap_or_else(|e| eprintln!("[JARVIS] Erro ao registrar shortcut: {}", e));
 
-            // Shortcut Spotlight Like
-            let handle_clone = app_handle.clone();
-            shortcut_manager.register("Ctrl+Space", move || {
-                let window = handle_clone.get_window("main").unwrap();
-                if window.is_visible().unwrap() {
-                    window.hide().unwrap();
-                } else {
-                    window.show().unwrap();
-                    window.set_focus().unwrap();
-                }
-            }).unwrap();
-
+            println!("[JARVIS] Atalho Ctrl+Space registrado.");
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!());
+
+    match result {
+        Ok(app) => {
+            println!("[JARVIS] App construído com sucesso, iniciando loop de eventos...");
+            app.run(|_app_handle, event| {
+                if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                    api.prevent_exit();
+                }
+            });
+        }
+        Err(e) => {
+            eprintln!("[JARVIS] ERRO CRÍTICO ao construir app: {:?}", e);
+            std::process::exit(1);
+        }
+    }
 }

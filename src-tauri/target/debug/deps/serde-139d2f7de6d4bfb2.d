@@ -1,0 +1,14 @@
+C:\Users\vinic\OneDrive\Documentos\Jarvis-Project\src-tauri\target\debug\deps\serde-139d2f7de6d4bfb2.d: C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\vinic\OneDrive\Documentos\Jarvis-Project\src-tauri\target\debug\build\serde-952ed7eea10cbfbb\out/private.rs
+
+C:\Users\vinic\OneDrive\Documentos\Jarvis-Project\src-tauri\target\debug\deps\libserde-139d2f7de6d4bfb2.rlib: C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\vinic\OneDrive\Documentos\Jarvis-Project\src-tauri\target\debug\build\serde-952ed7eea10cbfbb\out/private.rs
+
+C:\Users\vinic\OneDrive\Documentos\Jarvis-Project\src-tauri\target\debug\deps\libserde-139d2f7de6d4bfb2.rmeta: C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\vinic\OneDrive\Documentos\Jarvis-Project\src-tauri\target\debug\build\serde-952ed7eea10cbfbb\out/private.rs
+
+C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\vinic\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Users\vinic\OneDrive\Documentos\Jarvis-Project\src-tauri\target\debug\build\serde-952ed7eea10cbfbb\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\vinic\\OneDrive\\Documentos\\Jarvis-Project\\src-tauri\\target\\debug\\build\\serde-952ed7eea10cbfbb\\out

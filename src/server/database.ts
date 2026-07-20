@@ -31,8 +31,8 @@ export let jarvisState: any = {
         ambientPreset: "",
         ac: { state: "off", temp: 24 },
         devices: [] as any[],
-        ip: "",
-        token: process.env.HA_TOKEN || "",
+        ip: process.env.HOME_ASSISTANT_IP || "",
+        token: process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN || "",
         wsStatus: "disconnected",
         hiddenDevices: [] as string[],
         modesConfig: {
@@ -94,8 +94,8 @@ export async function loadDB() {
 
         const ha = await prisma.homeAssistantState.findFirst();
         if (ha) {
-            jarvisState.homeAssistant.ip = ha.ip;
-            jarvisState.homeAssistant.token = ha.token;
+            if (ha.ip) jarvisState.homeAssistant.ip = ha.ip;
+            if (ha.token) jarvisState.homeAssistant.token = ha.token;
             jarvisState.homeAssistant.ambientPreset = ha.ambientPreset;
             jarvisState.homeAssistant.wsStatus = ha.wsStatus;
             if (ha.lights) jarvisState.homeAssistant.lights = JSON.parse(ha.lights);
@@ -103,6 +103,12 @@ export async function loadDB() {
             if (ha.devices) jarvisState.homeAssistant.devices = JSON.parse(ha.devices);
             if (ha.hiddenDevices) jarvisState.homeAssistant.hiddenDevices = JSON.parse(ha.hiddenDevices);
             if (ha.modesConfig) jarvisState.homeAssistant.modesConfig = JSON.parse(ha.modesConfig);
+        }
+        if (!jarvisState.homeAssistant.ip && process.env.HOME_ASSISTANT_IP) {
+            jarvisState.homeAssistant.ip = process.env.HOME_ASSISTANT_IP;
+        }
+        if (!jarvisState.homeAssistant.token && (process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN)) {
+            jarvisState.homeAssistant.token = process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN;
         }
     } catch (e: any) {
         console.error("[Database Load Error]: Fallback memory sync failed.", e?.message || e);

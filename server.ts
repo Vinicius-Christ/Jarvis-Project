@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import { AI_PERSONAS, isOnlyConsultationQuery, getRelevantVaultContext } from "./src/server/services/aiUtils";
 import express from "express";
 import { exec, execSync } from "child_process";
@@ -14,15 +17,12 @@ import WebSocket, { WebSocketServer } from "ws";
 import authRoutes from "./src/server/routes/auth.routes";
 import { EdgeTTS } from "node-edge-tts";
 import os from "os";
-import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
 import { prisma, adapter, jarvisState, loadDB, DB_STATE_KEY } from "./src/server/database";
 import { connectHomeAssistantWS, callHAService, haWS, haMessageId } from "./src/server/homeAssistant";
-
-dotenv.config();
 
 // Ensure localhost/ipv4 works nicely
 dns.setDefaultResultOrder("ipv4first");
@@ -1608,7 +1608,7 @@ app.post("/api/update/iot", async (req, res) => {
 
       const serviceData: any = {};
       if (brightness !== undefined) serviceData.brightness_pct = brightness;
-      if (color_temp !== undefined) serviceData.color_temp = color_temp;
+      
       if (color !== undefined && color.startsWith("#")) {
         const hex = color.replace("#", "");
         if (hex.length === 6) {
@@ -1617,7 +1617,22 @@ app.post("/api/update/iot", async (req, res) => {
           const b = parseInt(hex.substring(4, 6), 16);
           serviceData.rgb_color = [r, g, b];
         }
+      } else {
+        if (req.body.color_temp_kelvin !== undefined) {
+          serviceData.color_temp_kelvin = Math.round(req.body.color_temp_kelvin);
+        }
+        if (color_temp !== undefined) {
+          serviceData.color_temp = Math.round(color_temp);
+        } else if (req.body.color_temp_kelvin !== undefined) {
+          serviceData.color_temp = Math.round(1000000 / req.body.color_temp_kelvin);
+        }
+        if (req.body.force_white && serviceData.color_temp === undefined && serviceData.color_temp_kelvin === undefined) {
+          serviceData.color_temp_kelvin = 3500;
+          serviceData.color_temp = 286;
+        }
       }
+
+      console.log(`[MUNDO REAL] IoT Light '${dev.name}' (${deviceId}) -> Service: ${service}, Data:`, JSON.stringify(serviceData));
 
       // If serviceData is completely empty, send undefined so callHAService doesn't get an empty object 
       // (though an empty object is fine, undefined is safer based on existing code).
@@ -1625,13 +1640,22 @@ app.post("/api/update/iot", async (req, res) => {
 
       if (!wsSuccessful) {
         try {
-          console.log(`[MUNDO REAL] Fallback: Alterando '${dev.name}' para estado: ${dev.state} local em ${HOME_ASSISTANT_IP}`);
-          const realTargetUrl = dev.targetUrl.replace(/192\.168\.\d+\.\d+/g, HOME_ASSISTANT_IP);
-          await fetch(`${realTargetUrl}/api/webhook/action_${dev.id}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ state: dev.state, brightness: dev.brightness })
-          }).catch(() => { });
+          const targetIp = jarvisState.homeAssistant.ip || process.env.HOME_ASSISTANT_IP;
+          const targetToken = process.env.HOME_ASSISTANT_TOKEN || jarvisState.homeAssistant.token;
+          console.log(`[MUNDO REAL] Fallback REST: Alterando '${dev.name}' (${deviceId}) via HTTP em ${targetIp}`);
+          if (targetIp && targetToken) {
+            await fetch(`http://${targetIp}:8123/api/services/${domain}/${service}`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${targetToken}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                entity_id: deviceId,
+                ...serviceData
+              })
+            }).catch(e => console.error("[HA REST Fallback Error]:", e?.message || e));
+          }
         } catch (e) { console.error("[Silent Try-Catch in server.ts]:", e); }
       }
       // ==============================================================

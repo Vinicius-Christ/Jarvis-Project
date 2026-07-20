@@ -16,8 +16,10 @@ export function connectHomeAssistantWS() {
         reconnectTimeout = null;
     }
 
-    const ip = jarvisState.homeAssistant.ip || "";
-    const token = jarvisState.homeAssistant.token || "COLOQUE_SEU_TOKEN_AQUI";
+    const ip = jarvisState.homeAssistant.ip || process.env.HOME_ASSISTANT_IP || "";
+    const token = process.env.HOME_ASSISTANT_TOKEN || jarvisState.homeAssistant.token || process.env.HA_TOKEN || "";
+    jarvisState.homeAssistant.ip = ip;
+    jarvisState.homeAssistant.token = token;
 
     console.log(`[HA WS] Tentando conectar ao Home Assistant em ws://${ip}:8123/api/websocket`);
 

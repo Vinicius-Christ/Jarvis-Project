@@ -32,7 +32,7 @@ function hsvToHex(h: number, s: number, v: number): string {
   r = Math.round((r + m) * 255);
   g = Math.round((g + m) * 255);
   b = Math.round((b + m) * 255);
-  return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+  return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
 }
 
 export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ devices, serverUrl, compact = false }) => {
@@ -48,8 +48,9 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
   });
   
   const [power, setPower] = useState(isAnyOn);
-  const [activeMode, setActiveMode] = useState<"brightness" | "color" | "temp">("brightness");
+  const [activeMode, setActiveMode] = useState<"white" | "color">("white");
   const [color, setColor] = useState("#ffffff");
+  const [colorPos, setColorPos] = useState({ x: 0, y: 0 });
   const [temperature, setTemperature] = useState(50); // 0-100%
 
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -86,26 +87,32 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
     setPower(newState);
     sendCommand({ state: newState ? "on" : "off" });
   };
-
-  const updateBrightness = (newVal: number) => {
-    setBrightness(newVal);
-    sendCommand({ brightness: newVal, state: "on" });
-    if (!power) setPower(true);
-  };
   
   const updateTemperature = (newVal: number) => {
     setTemperature(newVal);
-    // map 0-100 to mireds approx 153 to 500
-    // 100% (top) = 500 mireds (warm)
-    // 0% (bottom) = 153 mireds (cool)
-    const mireds = 153 + (newVal / 100) * (500 - 153);
-    sendCommand({ color_temp: Math.round(mireds), state: "on" });
+    const kelvin = Math.round(6500 - (newVal / 100) * (6500 - 2700));
+    const mireds = Math.round(1000000 / kelvin);
+    sendCommand({ color_temp: mireds, color_temp_kelvin: kelvin, state: "on", force_white: true });
     if (!power) setPower(true);
   };
 
   const handleColorClick = (c: string) => {
     setColor(c);
+    setColorPos({ x: 0, y: 0 }); // Reset visually to center for presets
     sendCommand({ color: c, state: "on" });
+    if (!power) setPower(true);
+  };
+
+  const applyCurrentWhiteMode = () => {
+    // Positivo / Tuya range: 6500K (Cool/Frio at 0%) to 2700K (Warm/Quente at 100%)
+    const kelvin = Math.round(6500 - (temperature / 100) * (6500 - 2700));
+    const mireds = Math.round(1000000 / kelvin);
+    sendCommand({ color_temp_kelvin: kelvin, color_temp: mireds, state: "on", force_white: true });
+    if (!power) setPower(true);
+  };
+
+  const applyCurrentColorMode = () => {
+    sendCommand({ color: color, state: "on" });
     if (!power) setPower(true);
   };
 
@@ -119,7 +126,7 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
     }
   };
 
-  // --- Brightness ---
+  // --- Horizontal Brightness ---
   const isDraggingBright = useRef(false);
   const updateBrightFromEvent = (ev: React.PointerEvent, isFinal = false) => {
     const slider = sliderRef.current;
@@ -127,9 +134,9 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
     const rect = slider.getBoundingClientRect();
     const zoom = parseFloat(document.documentElement.style.zoom) || 1;
     
-    // Some browsers scale clientY, some don't. Using rect is usually consistent.
-    const y = Math.max(0, Math.min(rect.height, (ev.clientY - rect.top) / (rect.height > 0 ? 1 : zoom)));
-    const percentage = 100 - (y / rect.height) * 100;
+    // Horizontal calculation
+    const x = Math.max(0, Math.min(rect.width, (ev.clientX - rect.left) / (rect.width > 0 ? 1 : zoom)));
+    const percentage = (x / rect.width) * 100;
     const val = Math.round(percentage);
     
     setBrightness(val);
@@ -152,21 +159,25 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
     updateBrightFromEvent(e, true);
   };
 
-  // --- Temperature ---
+  // --- Horizontal Temperature ---
   const isDraggingTemp = useRef(false);
   const updateTempFromEvent = (ev: React.PointerEvent, isFinal = false) => {
     const slider = tempRef.current;
     if (!slider) return;
     const rect = slider.getBoundingClientRect();
-    const y = Math.max(0, Math.min(rect.height, ev.clientY - rect.top));
-    const percentage = 100 - (y / rect.height) * 100;
+    const zoom = parseFloat(document.documentElement.style.zoom) || 1;
+
+    // Horizontal calculation
+    const x = Math.max(0, Math.min(rect.width, (ev.clientX - rect.left) / (rect.width > 0 ? 1 : zoom)));
+    const percentage = (x / rect.width) * 100;
     const val = Math.round(percentage);
     
     setTemperature(val);
     if (!power) setPower(true);
     
-    const mireds = 153 + (val / 100) * (500 - 153);
-    throttledSend({ color_temp: Math.round(mireds), state: "on" }, isFinal);
+    const kelvin = Math.round(6500 - (val / 100) * (6500 - 2700));
+    const mireds = Math.round(1000000 / kelvin);
+    throttledSend({ color_temp_kelvin: kelvin, color_temp: mireds, state: "on" }, isFinal);
   };
 
   const handleTempDown = (e: React.PointerEvent) => {
@@ -190,10 +201,12 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
     const wheel = wheelRef.current;
     if (!wheel) return;
     const rect = wheel.getBoundingClientRect();
+    const zoom = parseFloat(document.documentElement.style.zoom) || 1;
+
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const x = ev.clientX - cx;
-    const y = ev.clientY - cy;
+    const x = (ev.clientX - cx) / zoom;
+    const y = (ev.clientY - cy) / zoom;
 
     let angle = Math.atan2(y, x) * (180 / Math.PI);
     if (angle < 0) angle += 360;
@@ -201,6 +214,10 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
     const radius = rect.width / 2;
     const distance = Math.min(radius, Math.sqrt(x*x + y*y));
     const saturation = distance / radius; 
+    
+    const nx = distance === 0 ? 0 : (x / distance) * saturation;
+    const ny = distance === 0 ? 0 : (y / distance) * saturation;
+    setColorPos({ x: nx, y: ny });
 
     const hexColor = hsvToHex(angle, saturation, 1);
     setColor(hexColor);
@@ -226,143 +243,151 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
   if (!devices || devices.length === 0) return null;
 
   return (
-    <div className={`flex-1 flex flex-col items-center justify-center ${compact ? 'p-2 gap-4' : 'p-6 gap-8'}`}>
+    <div className={`flex-1 flex flex-col items-center justify-between ${compact ? 'p-2' : 'p-6'} w-full h-full`}>
       
-      {compact && (
-        <div className="text-center w-full pb-2 border-b border-white/5">
-           <span className="text-[9px] font-mono tracking-wider text-[var(--brand-light)] uppercase flex items-center justify-center gap-1">
-              GRUPO DE LUZES ({devices.length})
-           </span>
-        </div>
-      )}
-
-      <div className="text-center space-y-1">
-        <h2 className={`${compact ? 'text-2xl' : 'text-4xl'} font-light text-white`}>{power ? brightness + "%" : "Desligado"}</h2>
-        {!compact && <p className="text-sm font-medium text-white/50">{power ? "Em 7 segundos" : "Offline"}</p>}
-      </div>
-
-      <div className={`flex justify-center items-center ${compact ? 'h-[200px]' : 'h-[340px]'} w-full`}>
-        {/* Brightness Slider */}
-        {activeMode === "brightness" && (
-          <div 
-            ref={sliderRef}
-            onPointerDown={handleBrightDown}
-            onPointerMove={handleBrightMove}
-            onPointerUp={handleBrightUp}
-            className={`${compact ? 'w-24 h-full' : 'w-32 h-full'} bg-[#2c2c2e] rounded-[3rem] relative overflow-hidden cursor-pointer shadow-inner touch-none`}
-          >
-            <div 
-              className="absolute bottom-0 w-full transition-all duration-75 rounded-[3rem]"
-              style={{ 
-                height: power ? `${brightness}%` : '0%',
-                backgroundColor: "#e5e5ea",
-                opacity: power ? 1 : 0
-              }}
-            >
-              {brightness > 5 && power && (
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-8 h-1 bg-black/20 rounded-full" />
-              )}
-            </div>
+      {/* Top Header */}
+      <div className="w-full">
+        {compact && (
+          <div className="text-center w-full pb-2 border-b border-white/5 mb-2">
+             <span className="text-[9px] font-mono tracking-wider text-[var(--brand-light)] uppercase flex items-center justify-center gap-1">
+                GRUPO DE LUZES ({devices.length})
+             </span>
           </div>
         )}
 
-        {/* Color Wheel */}
-        {activeMode === "color" && (
+        <div className="text-center space-y-1 mb-4">
+          <h2 className={`${compact ? 'text-2xl' : 'text-3xl'} font-light text-white`}>{power ? brightness + "%" : "Desligado"}</h2>
+          {!compact && <p className="text-sm font-medium text-white/50">{power ? "Em 7 segundos" : "Offline"}</p>}
+        </div>
+
+        {/* Mode Tabs (Tuya Style) */}
+        <div className="flex bg-[#2c2c2e] rounded-full p-1 justify-between w-full max-w-[280px] mx-auto mb-6 shadow-inner">
+          <button 
+            onClick={() => {
+              setActiveMode("white");
+              applyCurrentWhiteMode();
+            }}
+            className={`flex-1 ${compact ? 'h-8 text-xs' : 'h-10 text-sm'} rounded-full flex items-center justify-center transition-all cursor-pointer font-medium ${activeMode === 'white' && power ? 'bg-[#4c4c4e] text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+          >
+            Branco
+          </button>
+          
+          <button 
+            onClick={() => {
+              setActiveMode("color");
+              applyCurrentColorMode();
+            }}
+            className={`flex-1 ${compact ? 'h-8 text-xs' : 'h-10 text-sm'} rounded-full flex items-center justify-center transition-all cursor-pointer font-medium ${activeMode === 'color' && power ? 'bg-[#4c4c4e] text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+          >
+            Colorido
+          </button>
+        </div>
+      </div>
+
+      {/* Main Visualizer Area */}
+      <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+        {activeMode === "color" ? (
           <div className="relative">
+            {/* Color Wheel */}
             <div 
               ref={wheelRef}
               onPointerDown={handleColorDown}
               onPointerMove={handleColorMove}
               onPointerUp={handleColorUp}
-              className={`${compact ? 'w-[200px] h-[200px]' : 'w-[300px] h-[300px]'} rounded-full cursor-pointer touch-none shadow-lg relative`}
+              className={`${compact ? 'w-[160px] h-[160px]' : 'w-[240px] h-[240px]'} rounded-full cursor-pointer touch-none shadow-lg relative`}
               style={{
                 background: 'radial-gradient(circle, white 0%, transparent 80%), conic-gradient(from 90deg, red, yellow, lime, cyan, blue, magenta, red)'
               }}
             >
               {/* Center thumb indicator */}
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                 <div className="w-8 h-8 rounded-full border-2 border-white/50 shadow-md" style={{ backgroundColor: color }} />
+              <div className="absolute inset-0 pointer-events-none">
+                 <div 
+                   className="absolute w-8 h-8 -ml-4 -mt-4 rounded-full border-2 border-white shadow-md transition-transform duration-75"
+                   style={{ 
+                     backgroundColor: color,
+                     left: `calc(50% + ${colorPos.x * 50}%)`,
+                     top: `calc(50% + ${colorPos.y * 50}%)`
+                   }} 
+                 />
               </div>
             </div>
             {!compact && (
-              <div className="absolute top-2 right-2 text-white/70 hover:text-white cursor-pointer">
-                <Pipette className="w-5 h-5" />
+              <div className="absolute -top-4 -right-4 text-white/70 hover:text-white cursor-pointer p-2 bg-[#2c2c2e] rounded-full shadow-md">
+                <Pipette className="w-4 h-4" />
               </div>
             )}
           </div>
-        )}
-
-        {/* Temperature Slider */}
-        {activeMode === "temp" && (
-          <div 
-            ref={tempRef}
-            onPointerDown={handleTempDown}
-            onPointerMove={handleTempMove}
-            onPointerUp={handleTempUp}
-            className={`${compact ? 'w-24 h-full' : 'w-32 h-full'} rounded-[3rem] relative overflow-hidden cursor-pointer shadow-inner touch-none`}
-            style={{ background: 'linear-gradient(to bottom, #ff8c00, #ffcc80, #ffffff, #82b1ff)' }}
-          >
-            {/* Overlay to dim when off */}
-            {!power && <div className="absolute inset-0 bg-black/50" />}
-            
-            {/* Handle */}
-            {power && (
+        ) : (
+          <div className="w-full max-w-[280px] flex flex-col justify-center items-center px-4">
+            {/* Temperature Slider (White Mode) */}
+            <div className="w-full relative mb-8">
+              <div className="flex justify-between text-white/50 text-[10px] uppercase font-bold tracking-wider mb-3 px-2">
+                <span>Frio</span>
+                <span>Quente</span>
+              </div>
               <div 
-                className="absolute left-1/2 -translate-x-1/2 w-10 h-1.5 bg-white/80 rounded-full shadow-sm pointer-events-none"
-                style={{ top: `${100 - temperature}%`, marginTop: '-3px' }}
-              />
-            )}
+                ref={tempRef}
+                onPointerDown={handleTempDown}
+                onPointerMove={handleTempMove}
+                onPointerUp={handleTempUp}
+                className={`w-full ${compact ? 'h-10' : 'h-12'} rounded-full relative cursor-pointer touch-none shadow-inner overflow-hidden`}
+                style={{ background: 'linear-gradient(to right, #82b1ff, #ffffff, #ffcc80, #ff8c00)' }}
+              >
+                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+                <div 
+                  className={`absolute top-1/2 -translate-y-1/2 ${compact ? 'w-8 h-8' : 'w-10 h-10'} bg-white rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.3)] pointer-events-none transition-transform`}
+                  style={{ left: `calc(${temperature}% - ${compact ? 16 : 20}px)` }} 
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Controls */}
-      <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-8'} w-full max-w-[280px]`}>
-        
-        {/* Mode row */}
-        <div className="flex bg-[#2c2c2e] rounded-full p-1 justify-between w-full">
-          <button 
-            onClick={togglePower}
-            className={`flex-1 ${compact ? 'h-10' : 'h-12'} rounded-full flex items-center justify-center transition-all cursor-pointer ${!power ? 'bg-[#3a3a3c] text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
-          >
-            <Power className={`${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
-          </button>
-          
-          <button 
-            onClick={() => setActiveMode("brightness")}
-            className={`flex-1 ${compact ? 'h-10' : 'h-12'} rounded-full flex items-center justify-center transition-all cursor-pointer ${activeMode === 'brightness' && power ? 'bg-[#4c4c4e] text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
-          >
-            <Sun className={`${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
-          </button>
-          
-          <button 
-            onClick={() => setActiveMode("color")}
-            className={`flex-1 ${compact ? 'h-10' : 'h-12'} rounded-full flex items-center justify-center transition-all cursor-pointer ${activeMode === 'color' && power ? 'bg-[#4c4c4e] text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
-          >
-            <div className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} rounded-full bg-gradient-to-tr from-blue-500 via-green-400 to-red-500`} />
-          </button>
+      {/* Bottom Universal Controls */}
+      <div className="w-full max-w-[280px] mt-6 px-4">
+         {/* Brightness Slider (Always visible) */}
+         <div className="w-full relative mb-8">
+           <div className="flex justify-between text-white/50 text-[10px] uppercase font-bold tracking-wider mb-3 px-2">
+             <div className="flex items-center gap-1"><Sun className="w-3 h-3" /> Brilho</div>
+             <span>{brightness}%</span>
+           </div>
+           <div 
+             ref={sliderRef}
+             onPointerDown={handleBrightDown}
+             onPointerMove={handleBrightMove}
+             onPointerUp={handleBrightUp}
+             className={`w-full ${compact ? 'h-10' : 'h-12'} rounded-full bg-[#1c1c1e] relative cursor-pointer touch-none shadow-inner overflow-hidden border border-white/5`}
+           >
+              <div 
+                className="absolute left-0 h-full bg-[#e5e5ea] pointer-events-none shadow-[0_0_15px_rgba(255,255,255,0.2)]" 
+                style={{ width: `${power ? brightness : 0}%`, opacity: power ? 1 : 0.2 }}
+              />
+           </div>
+         </div>
 
-          <button 
-            onClick={() => setActiveMode("temp")}
-            className={`flex-1 ${compact ? 'h-10' : 'h-12'} rounded-full flex items-center justify-center transition-all cursor-pointer ${activeMode === 'temp' && power ? 'bg-[#4c4c4e] text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
-          >
-            <div className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} rounded-full bg-gradient-to-t from-blue-100 to-orange-400`} />
-          </button>
-        </div>
-
-        {/* Presets */}
-        <div className={`grid grid-cols-4 ${compact ? 'gap-x-2 gap-y-3' : 'gap-x-4 gap-y-6'} justify-items-center px-2`}>
-          {PRESET_COLORS.map(c => (
-            <button
-              key={c}
-              onClick={() => handleColorClick(c)}
-              className={`${compact ? 'w-8 h-8 border-2' : 'w-12 h-12 border-[3px]'} rounded-full cursor-pointer transition-transform hover:scale-105 active:scale-95 ${color === c && power ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'border-transparent shadow-sm'}`}
-              style={{ backgroundColor: c }}
-            />
-          ))}
-        </div>
-
+         {/* Bottom Action Row */}
+         <div className="flex justify-between items-center px-2">
+           <div className={`grid grid-cols-4 ${compact ? 'gap-2' : 'gap-3'} flex-1 mr-4`}>
+             {PRESET_COLORS.slice(0, 4).map(c => (
+               <button
+                 key={c}
+                 onClick={() => handleColorClick(c)}
+                 className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} rounded-full cursor-pointer transition-transform hover:scale-110 active:scale-95 ${color === c && power ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1c1c1e]' : 'border border-white/10'}`}
+                 style={{ backgroundColor: c }}
+               />
+             ))}
+           </div>
+           
+           <button 
+             onClick={togglePower}
+             className={`flex-shrink-0 ${compact ? 'w-12 h-12' : 'w-14 h-14'} rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg ${!power ? 'bg-[#2c2c2e] text-white' : 'bg-white text-black hover:scale-105'}`}
+           >
+             <Power className={`${compact ? 'w-5 h-5' : 'w-6 h-6'}`} />
+           </button>
+         </div>
       </div>
+
     </div>
   );
 };

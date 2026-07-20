@@ -109,98 +109,118 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
     if (!power) setPower(true);
   };
 
-  const handleBrightnessPointerDown = (e: React.PointerEvent) => {
+  const lastSendTime = useRef(0);
+
+  const throttledSend = (updates: any, isFinal: boolean = false) => {
+    const now = Date.now();
+    if (isFinal || now - lastSendTime.current > 200) {
+      lastSendTime.current = now;
+      sendCommand(updates);
+    }
+  };
+
+  // --- Brightness ---
+  const isDraggingBright = useRef(false);
+  const updateBrightFromEvent = (ev: React.PointerEvent, isFinal = false) => {
     const slider = sliderRef.current;
     if (!slider) return;
-
-    const updateFromEvent = (ev: PointerEvent) => {
-      const rect = slider.getBoundingClientRect();
-      const y = Math.max(0, Math.min(rect.height, ev.clientY - rect.top));
-      const percentage = 100 - (y / rect.height) * 100;
-      updateBrightness(Math.round(percentage));
-    };
-
-    updateFromEvent(e as any);
-
-    const onPointerMove = (ev: PointerEvent) => {
-      ev.preventDefault();
-      updateFromEvent(ev);
-    };
-
-    const onPointerUp = () => {
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerup", onPointerUp);
-    };
-
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp);
+    const rect = slider.getBoundingClientRect();
+    const zoom = parseFloat(document.documentElement.style.zoom) || 1;
+    
+    // Some browsers scale clientY, some don't. Using rect is usually consistent.
+    const y = Math.max(0, Math.min(rect.height, (ev.clientY - rect.top) / (rect.height > 0 ? 1 : zoom)));
+    const percentage = 100 - (y / rect.height) * 100;
+    const val = Math.round(percentage);
+    
+    setBrightness(val);
+    if (!power) setPower(true);
+    throttledSend({ brightness: val, state: "on" }, isFinal);
   };
 
-  const handleTempPointerDown = (e: React.PointerEvent) => {
+  const handleBrightDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDraggingBright.current = true;
+    updateBrightFromEvent(e);
+  };
+  const handleBrightMove = (e: React.PointerEvent) => {
+    if (isDraggingBright.current) updateBrightFromEvent(e);
+  };
+  const handleBrightUp = (e: React.PointerEvent) => {
+    if (!isDraggingBright.current) return;
+    isDraggingBright.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    updateBrightFromEvent(e, true);
+  };
+
+  // --- Temperature ---
+  const isDraggingTemp = useRef(false);
+  const updateTempFromEvent = (ev: React.PointerEvent, isFinal = false) => {
     const slider = tempRef.current;
     if (!slider) return;
-
-    const updateFromEvent = (ev: PointerEvent) => {
-      const rect = slider.getBoundingClientRect();
-      const y = Math.max(0, Math.min(rect.height, ev.clientY - rect.top));
-      const percentage = 100 - (y / rect.height) * 100;
-      updateTemperature(Math.round(percentage));
-    };
-
-    updateFromEvent(e as any);
-
-    const onPointerMove = (ev: PointerEvent) => {
-      ev.preventDefault();
-      updateFromEvent(ev);
-    };
-
-    const onPointerUp = () => {
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerup", onPointerUp);
-    };
-
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp);
+    const rect = slider.getBoundingClientRect();
+    const y = Math.max(0, Math.min(rect.height, ev.clientY - rect.top));
+    const percentage = 100 - (y / rect.height) * 100;
+    const val = Math.round(percentage);
+    
+    setTemperature(val);
+    if (!power) setPower(true);
+    
+    const mireds = 153 + (val / 100) * (500 - 153);
+    throttledSend({ color_temp: Math.round(mireds), state: "on" }, isFinal);
   };
 
-  const handleWheelPointerDown = (e: React.PointerEvent) => {
+  const handleTempDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDraggingTemp.current = true;
+    updateTempFromEvent(e);
+  };
+  const handleTempMove = (e: React.PointerEvent) => {
+    if (isDraggingTemp.current) updateTempFromEvent(e);
+  };
+  const handleTempUp = (e: React.PointerEvent) => {
+    if (!isDraggingTemp.current) return;
+    isDraggingTemp.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    updateTempFromEvent(e, true);
+  };
+
+  // --- Color Wheel ---
+  const isDraggingColor = useRef(false);
+  const updateColorFromEvent = (ev: React.PointerEvent, isFinal = false) => {
     const wheel = wheelRef.current;
     if (!wheel) return;
+    const rect = wheel.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const x = ev.clientX - cx;
+    const y = ev.clientY - cy;
 
-    const updateFromEvent = (ev: PointerEvent) => {
-      const rect = wheel.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const x = ev.clientX - cx;
-      const y = ev.clientY - cy;
+    let angle = Math.atan2(y, x) * (180 / Math.PI);
+    if (angle < 0) angle += 360;
 
-      let angle = Math.atan2(y, x) * (180 / Math.PI);
-      if (angle < 0) angle += 360;
+    const radius = rect.width / 2;
+    const distance = Math.min(radius, Math.sqrt(x*x + y*y));
+    const saturation = distance / radius; 
 
-      const radius = rect.width / 2;
-      const distance = Math.min(radius, Math.sqrt(x*x + y*y));
-      const saturation = distance / radius; 
+    const hexColor = hsvToHex(angle, saturation, 1);
+    setColor(hexColor);
+    if (!power) setPower(true);
+    throttledSend({ color: hexColor, state: "on" }, isFinal);
+  };
 
-      const hexColor = hsvToHex(angle, saturation, 1);
-      setColor(hexColor);
-      sendCommand({ color: hexColor, state: "on" });
-      if (!power) setPower(true);
-    };
-
-    updateFromEvent(e as any);
-
-    const onPointerMove = (ev: PointerEvent) => {
-      ev.preventDefault();
-      updateFromEvent(ev);
-    };
-
-    const onPointerUp = () => {
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerup", onPointerUp);
-    };
-
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp);
+  const handleColorDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDraggingColor.current = true;
+    updateColorFromEvent(e);
+  };
+  const handleColorMove = (e: React.PointerEvent) => {
+    if (isDraggingColor.current) updateColorFromEvent(e);
+  };
+  const handleColorUp = (e: React.PointerEvent) => {
+    if (!isDraggingColor.current) return;
+    isDraggingColor.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    updateColorFromEvent(e, true);
   };
 
   if (!devices || devices.length === 0) return null;
@@ -226,7 +246,9 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
         {activeMode === "brightness" && (
           <div 
             ref={sliderRef}
-            onPointerDown={handleBrightnessPointerDown}
+            onPointerDown={handleBrightDown}
+            onPointerMove={handleBrightMove}
+            onPointerUp={handleBrightUp}
             className={`${compact ? 'w-24 h-full' : 'w-32 h-full'} bg-[#2c2c2e] rounded-[3rem] relative overflow-hidden cursor-pointer shadow-inner touch-none`}
           >
             <div 
@@ -249,7 +271,9 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
           <div className="relative">
             <div 
               ref={wheelRef}
-              onPointerDown={handleWheelPointerDown}
+              onPointerDown={handleColorDown}
+              onPointerMove={handleColorMove}
+              onPointerUp={handleColorUp}
               className={`${compact ? 'w-[200px] h-[200px]' : 'w-[300px] h-[300px]'} rounded-full cursor-pointer touch-none shadow-lg relative`}
               style={{
                 background: 'radial-gradient(circle, white 0%, transparent 80%), conic-gradient(from 90deg, red, yellow, lime, cyan, blue, magenta, red)'
@@ -272,7 +296,9 @@ export const HALightControlPanel: React.FC<HALightControlPanelProps> = ({ device
         {activeMode === "temp" && (
           <div 
             ref={tempRef}
-            onPointerDown={handleTempPointerDown}
+            onPointerDown={handleTempDown}
+            onPointerMove={handleTempMove}
+            onPointerUp={handleTempUp}
             className={`${compact ? 'w-24 h-full' : 'w-32 h-full'} rounded-[3rem] relative overflow-hidden cursor-pointer shadow-inner touch-none`}
             style={{ background: 'linear-gradient(to bottom, #ff8c00, #ffcc80, #ffffff, #82b1ff)' }}
           >

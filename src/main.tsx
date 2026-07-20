@@ -5,6 +5,87 @@ import './index.css';
 import { ShieldAlert, Key, Loader2 } from "lucide-react";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
+// ─── Zoom Control (Ctrl+ / Ctrl- / Ctrl+0) ───────────────────────────────────
+let currentZoom = parseFloat(localStorage.getItem('jarvis_zoom') || '1');
+
+function applyZoom(zoom: number) {
+  // Revert back to WebKit's native zoom, which properly scales the layout grid.
+  // The only reason it broke previously was because of the '100dvh' unit which ignored zoom scale.
+  // Now that App uses 'h-full', CSS zoom will perfectly scale the app without breaking mouse coords or layout.
+  document.documentElement.style.zoom = String(zoom);
+  
+  // Clean up the transform hacks on root and body
+  const root = document.getElementById('root');
+  if (root) {
+    root.style.position = '';
+    root.style.top = '';
+    root.style.left = '';
+    root.style.transform = '';
+    root.style.transformOrigin = '';
+    root.style.width = '100%';
+    root.style.height = '100%';
+    root.style.overflow = '';
+  }
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+  document.body.style.width = '100%';
+  document.body.style.height = '100%';
+}
+
+function showZoomToast(level: number) {
+  let el = document.getElementById('zoom-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'zoom-toast';
+    el.style.cssText = `
+      position:fixed;bottom:24px;right:24px;z-index:99999;
+      background:rgba(30,20,60,0.92);color:#a78bfa;
+      padding:8px 18px;border-radius:10px;font-size:14px;
+      font-family:monospace;border:1px solid rgba(139,92,246,0.4);
+      box-shadow:0 4px 24px rgba(0,0,0,0.5);transition:opacity 0.3s;
+      pointer-events:none;
+    `;
+    document.body.appendChild(el);
+  }
+  el.textContent = `Zoom: ${Math.round(level * 100)}%`;
+  el.style.opacity = '1';
+  clearTimeout((el as any)._t);
+  (el as any)._t = setTimeout(() => { if (el) el.style.opacity = '0'; }, 1500);
+}
+
+// Apply saved zoom as soon as DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => applyZoom(currentZoom));
+} else {
+  // Already loaded — apply after a microtask so React has mounted #root
+  Promise.resolve().then(() => applyZoom(currentZoom));
+}
+
+// Reapply on window resize so height compensation stays accurate
+window.addEventListener('resize', () => applyZoom(currentZoom));
+
+window.addEventListener('keydown', (e) => {
+  if (!e.ctrlKey) return;
+  const step = 0.1;
+  if (e.key === '=' || e.key === '+') {
+    e.preventDefault();
+    currentZoom = Math.min(3, parseFloat((currentZoom + step).toFixed(1)));
+  } else if (e.key === '-') {
+    e.preventDefault();
+    currentZoom = Math.max(0.3, parseFloat((currentZoom - step).toFixed(1)));
+  } else if (e.key === '0') {
+    e.preventDefault();
+    currentZoom = 1;
+  } else return;
+  applyZoom(currentZoom);
+  localStorage.setItem('jarvis_zoom', String(currentZoom));
+  showZoomToast(currentZoom);
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+
+
 // Override Global Fetch
 const originalFetch = window.fetch;
 Object.defineProperty(window, "fetch", {

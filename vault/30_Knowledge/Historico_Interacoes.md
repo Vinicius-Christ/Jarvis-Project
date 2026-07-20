@@ -207,3 +207,66 @@ A fórmula de Bhaskara é uma ferramenta poderosa para resolver equações quadr
 **JARVIS:** Estou aqui e pronto para ajudar, como posso ser útil para você agora, quero ajudar da melhor forma possível sempre!
 
 ---
+
+## [17/07/2026, 22:17:38]
+**Usuário:** eai beleza?
+
+**JARVIS:** Tudo bem! Como posso ajudar você agora?
+
+---
+
+## [17/07/2026, 22:17:57]
+**Usuário:** E aí, Jarvis, tudo bem?
+
+**JARVIS:** Tudo bem! Estou funcionando corretamente e pronto para ajudar. Você não mencionou nada específico, então estou à disposição para qualquer coisa que precise. Quer conversar sobre algo em particular ou precisa de ajuda com algo?
+
+---
+
+## [17/07/2026, 22:18:17]
+**Usuário:** Então, mas depois eu vou tomar, agora não vou.
+
+**JARVIS:** Entendi, você não vai tomar agora, mas vai mais tarde. Estou aqui se precisar de algo, mas parece que você só queria me informar sobre seus planos. Se mudar de ideia ou precisar de ajuda, é só me chamar!
+
+---
+
+## [17/07/2026, 22:18:25]
+**Usuário:** Você não vai tomar agora, mas vai mais tarde.
+
+**JARVIS:** Entendi, você não vai tomar agora, mas vai mais tarde. Se mudar de ideia ou precisar de ajuda, estou aqui!
+
+---
+
+## [17/07/2026, 22:21:10]
+**Usuário:** Oi, tudo bem?
+
+**JARVIS:** Tudo bem! Estou aqui e pronto para ajudar. Como posso ser útil para você agora?
+
+---
+
+## [17/07/2026, 22:32:10]
+**Usuário:** E aí, beleza?
+
+**JARVIS:** Tudo bem! Como posso ajudar você agora?
+
+---
+
+## [17/07/2026, 22:41:10]
+**Usuário:** E aí, tudo bem?
+
+**JARVIS:** Tudo bem! Estou aqui e pronto para ajudar. Como posso ser útil para você agora?
+
+---
+
+## [17/07/2026, 23:16:48]
+**Usuário:** Chaves desliga as lâmpadas
+
+**JARVIS:** Vou desligar as lâmpadas. <command type="IoT" action="Desligar Lâmpadas" />
+
+---
+
+## [17/07/2026, 23:16:59]
+**Usuário:** liga as lâmpadas
+
+**JARVIS:** Vou ligar as lâmpadas. <command type="IoT" action="Ligar Lâmpadas" />
+
+---

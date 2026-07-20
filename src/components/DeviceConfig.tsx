@@ -442,26 +442,30 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-zinc-500 block text-[9px] uppercase mb-1">Token de Acesso de Longa Duração (Long-Lived Token)</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="Seu token dente das configurações de perfil do Home Assistant"
-                      value={haToken}
-                      onChange={(e) => setHaToken(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 text-zinc-300 font-mono text-xs px-2 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)]"
-                    />
-                  </div>
+                  {haWsStatus !== "connected" && haWsStatus !== "connecting" && (
+                    <>
+                      <div>
+                        <label className="text-zinc-500 block text-[9px] uppercase mb-1">Token de Acesso de Longa Duração (Long-Lived Token)</label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="Seu token dente das configurações de perfil do Home Assistant"
+                          value={haToken}
+                          onChange={(e) => setHaToken(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 text-zinc-300 font-mono text-xs px-2 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)]"
+                        />
+                      </div>
 
-                  <button
-                    type="submit"
-                    disabled={savingHA}
-                    className="w-full py-1.5 bg-white/10 border border-white/10 hover:border-white/10 text-[var(--brand-light)] hover:text-white font-mono font-bold tracking-wider rounded uppercase hover:bg-zinc-850 transition flex items-center justify-center gap-1.5 cursor-pointer text-[10px] disabled:opacity-50"
-                  >
-                    <Wifi className="h-3.5 w-3.5" />
-                    {savingHA ? "REINICIANDO AMBIENTE SOCKET..." : "SALVAR E CONECTAR VIA WEBSOCKET"}
-                  </button>
+                      <button
+                        type="submit"
+                        disabled={savingHA}
+                        className="w-full py-1.5 bg-white/10 border border-white/10 hover:border-white/10 text-[var(--brand-light)] hover:text-white font-mono font-bold tracking-wider rounded uppercase hover:bg-zinc-850 transition flex items-center justify-center gap-1.5 cursor-pointer text-[10px] disabled:opacity-50"
+                      >
+                        <Wifi className="h-3.5 w-3.5" />
+                        {savingHA ? "REINICIANDO AMBIENTE SOCKET..." : "SALVAR E CONECTAR VIA WEBSOCKET"}
+                      </button>
+                    </>
+                  )}
                 </form>
               </div>
 

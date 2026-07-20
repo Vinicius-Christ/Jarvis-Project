@@ -702,7 +702,7 @@ export default function App() {
   return (
     <div
       style={themeStyles}
-      className={`w-full h-[100dvh] flex font-sans overflow-hidden select-none transition-colors duration-700 text-zinc-100 relative`}
+      className={`w-full h-full flex font-sans overflow-hidden select-none transition-colors duration-700 text-zinc-100 relative`}
     >
       {/* SVG Displacement Map — invisible, enables liquid refraction via CSS filter: url(#liquid-glass-filter) */}
       <svg style={{ display: 'none' }} aria-hidden="true">

@@ -94,6 +94,7 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
   const [haIp, setHaIp] = useState("");
   const [haToken, setHaToken] = useState("");
   const [haWsStatus, setHaWsStatus] = useState("disconnected");
+  const [haIpUserModified, setHaIpUserModified] = useState(false);
 
   const [hiddenDevices, setHiddenDevices] = useState<string[]>([]);
   const [modesConfig, setModesConfig] = useState<Record<string, any>>({
@@ -119,8 +120,8 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
         .then(data => {
 
           if (data.homeAssistant) {
-            setHaIp(data.homeAssistant.ip || (typeof window !== 'undefined' ? window.location.hostname : ""));
-            setHaToken(data.homeAssistant.token || "");
+            setHaIp(prev => (haIpUserModified ? prev : (data.homeAssistant.ip || (typeof window !== 'undefined' ? window.location.hostname : ""))));
+            setHaToken(prev => (prev || data.homeAssistant.token || ""));
             setHaWsStatus(data.homeAssistant.wsStatus || "disconnected");
             if (data.homeAssistant.hiddenDevices) setHiddenDevices(data.homeAssistant.hiddenDevices);
             if (data.homeAssistant.modesConfig) setModesConfig(data.homeAssistant.modesConfig);
@@ -425,48 +426,33 @@ export default React.memo(function DeviceConfig({ devices, onRefresh, currentThe
                   Consuma dados reais de sensores de temperatura, iluminação e interruptores da sua residência (IP: <code className="text-[var(--brand-light)] font-mono">{haIp}</code>) conectando-se diretamente ao barramento de eventos do Home Assistant.
                 </p>
 
-                <form onSubmit={handleSaveHAConfig} className="space-y-3 font-mono text-xs p-3.5 bg-white/5 border border-white/10 rounded-xl">
+                <div className="space-y-3 font-mono text-xs p-3.5 bg-white/5 border border-white/10 rounded-xl">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-zinc-500 block text-[9px] uppercase mb-1">Servidor IP / Local Host</label>
-                      <div className="w-full bg-white/10 border border-white/10 text-zinc-400 font-mono text-xs px-2 py-1.5 rounded select-none cursor-not-allowed">
-                        {haIp || "Auto-detected"}
+                      <label className="text-zinc-500 block text-[9px] uppercase mb-1">Servidor / Host</label>
+                      <div className="bg-white/10 border border-white/10 text-zinc-300 font-mono text-xs px-2.5 py-1.5 rounded flex items-center gap-1.5 select-none">
+                        <span className="text-[11px] text-[var(--brand-light)]">ws://{haIp || 'localhost'}:8123/api/websocket</span>
                       </div>
                     </div>
                     <div>
                       <label className="text-zinc-500 block text-[9px] uppercase mb-1">Status de Conectividade</label>
-                      <div className="bg-white/10 border border-white/10 text-zinc-400 font-mono text-xs p-1.5 rounded flex items-center gap-1.5 h-[32px] select-none">
-                        <span className={`h-2 w-2 rounded-full shrink-0 ${haWsStatus === "connected" ? "bg-emerald-400 " : haWsStatus === "connecting" || haWsStatus === "authenticating" ? "bg-amber-400 animate-pulse" : "bg-red-400"}`}></span>
-                        <span className="text-[10px] uppercase font-bold tracking-widest">{haWsStatus}</span>
+                      <div className="bg-white/10 border border-white/10 text-zinc-300 font-mono text-xs px-2.5 py-1.5 rounded flex items-center gap-2 h-[32px] select-none">
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${haWsStatus === "connected" ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" : haWsStatus === "connecting" || haWsStatus === "authenticating" ? "bg-amber-400 animate-pulse" : "bg-red-400"}`}></span>
+                        <span className="text-[10px] uppercase font-bold tracking-widest">{haWsStatus === "connected" ? "CONECTADO LIVE" : haWsStatus === "connecting" ? "CONECTANDO..." : haWsStatus === "authenticating" ? "AUTENTICANDO..." : "DESCONECTADO"}</span>
                       </div>
                     </div>
                   </div>
 
-                  {haWsStatus !== "connected" && haWsStatus !== "connecting" && (
-                    <>
-                      <div>
-                        <label className="text-zinc-500 block text-[9px] uppercase mb-1">Token de Acesso de Longa Duração (Long-Lived Token)</label>
-                        <input
-                          type="password"
-                          required
-                          placeholder="Seu token dente das configurações de perfil do Home Assistant"
-                          value={haToken}
-                          onChange={(e) => setHaToken(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 text-zinc-300 font-mono text-xs px-2 py-1.5 rounded focus:outline-none focus:border-[var(--brand-primary)]"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={savingHA}
-                        className="w-full py-1.5 bg-white/10 border border-white/10 hover:border-white/10 text-[var(--brand-light)] hover:text-white font-mono font-bold tracking-wider rounded uppercase hover:bg-zinc-850 transition flex items-center justify-center gap-1.5 cursor-pointer text-[10px] disabled:opacity-50"
-                      >
-                        <Wifi className="h-3.5 w-3.5" />
-                        {savingHA ? "REINICIANDO AMBIENTE SOCKET..." : "SALVAR E CONECTAR VIA WEBSOCKET"}
-                      </button>
-                    </>
-                  )}
-                </form>
+                  <div className="mt-2 pt-2.5 border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-400">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      {haToken ? "Autenticação (.env automatizado)" : "Aguardando Token em .env"}
+                    </span>
+                    <span className="text-zinc-500 font-mono">
+                      {haWsStatus === "connected" ? "Sincronização Ativa" : "Reconexão Automática Ativa"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Column 1 Card 2: Groq Cloud Configuration & Verification Tutorials */}

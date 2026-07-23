@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import WebSocket from "ws";
 import { jarvisState } from "./database";
 
@@ -16,24 +19,35 @@ export function connectHomeAssistantWS() {
         reconnectTimeout = null;
     }
 
-    const ip = jarvisState.homeAssistant.ip || process.env.HOME_ASSISTANT_IP || "";
-    const token = process.env.HOME_ASSISTANT_TOKEN || jarvisState.homeAssistant.token || process.env.HA_TOKEN || "";
-    jarvisState.homeAssistant.ip = ip;
+    // Priorize variáveis de ambiente (.env) em vez do banco de dados para automação completa
+    const rawIp = process.env.HOME_ASSISTANT_IP || process.env.HA_IP || jarvisState.homeAssistant.ip || "localhost";
+    const token = process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN || jarvisState.homeAssistant.token || "";
+
+    // Sanitizar IP / Host
+    let cleanIp = rawIp.trim().replace(/^https?:\/\//i, "").replace(/^wss?:\/\//i, "").replace(/\/.*$/, "");
+    let port = "8123";
+    if (cleanIp.includes(":")) {
+        const parts = cleanIp.split(":");
+        cleanIp = parts[0];
+        port = parts[1] || "8123";
+    }
+
+    // Atualiza o estado apenas para log/visualização no front
+    jarvisState.homeAssistant.ip = cleanIp;
     jarvisState.homeAssistant.token = token;
 
-    console.log(`[HA WS] Tentando conectar ao Home Assistant em ws://${ip}:8123/api/websocket`);
+    // Safety check for empty or placeholder token/ip
+    if (!cleanIp || cleanIp.includes("COLOQUE_SEU") || !token || token.includes("COLOQUE_SEU")) {
+        console.warn("[HA WS] IP ou Token do Home Assistant não parecem estar configurados no .env. Aguardando...");
+        jarvisState.homeAssistant.wsStatus = "disconnected";
+        return;
+    }
+
+    const wsUrl = `ws://${cleanIp}:${port}/api/websocket`;
+    console.log(`[HA WS] Tentando conectar ao Home Assistant em ${wsUrl}`);
 
     try {
         jarvisState.homeAssistant.wsStatus = "connecting";
-        const wsUrl = `ws://${ip}:8123/api/websocket`;
-
-        // Safety check for empty or placeholder token/ip
-        if (!ip || ip.includes("COLOQUE_SEU") || !token || token.includes("COLOQUE_SEU")) {
-            console.warn("[HA WS] IP ou Token do Home Assistant não parecem estar configurados. Aguardando configuração via painel.");
-            jarvisState.homeAssistant.wsStatus = "disconnected";
-            return;
-        }
-
         haWS = new WebSocket(wsUrl);
 
         haWS.on("open", () => {
@@ -107,7 +121,12 @@ export function connectHomeAssistantWS() {
         haWS.on("error", (err: any) => {
             console.error("[HA WS] Erro na transmissão de dados do socket:", err?.message || err);
             jarvisState.homeAssistant.wsStatus = "error";
-            // O evento close será acionado em seguida
+            
+            // Fallback automático para localhost se o IP de rede falhar com ECONNREFUSED
+            if ((err?.code === "ECONNREFUSED" || err?.message?.includes("ECONNREFUSED")) && cleanIp !== "localhost" && cleanIp !== "127.0.0.1") {
+                console.warn("[HA WS] Conexão recusada no IP configurado. Tentando fallback automático para 'localhost'...");
+                jarvisState.homeAssistant.ip = "localhost";
+            }
         });
 
     } catch (err: any) {

@@ -872,15 +872,22 @@ app.get("/api/db", async (_req, res) => {
   jarvisState.conversations = await prisma.conversation.findMany();
   const haState = await prisma.homeAssistantState.findFirst();
   if (haState) {
-    jarvisState.homeAssistant.ip = haState.ip;
-    jarvisState.homeAssistant.token = haState.token;
+    jarvisState.homeAssistant.ip = process.env.HOME_ASSISTANT_IP || haState.ip || "localhost";
+    jarvisState.homeAssistant.token = process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN || haState.token || "";
     jarvisState.homeAssistant.ambientPreset = haState.ambientPreset;
-    jarvisState.homeAssistant.wsStatus = haState.wsStatus;
-    if (haState.lights) jarvisState.homeAssistant.lights = JSON.parse(haState.lights);
-    if (haState.ac) jarvisState.homeAssistant.ac = JSON.parse(haState.ac);
-    if (haState.devices) jarvisState.homeAssistant.devices = JSON.parse(haState.devices);
+    // NÃO SOBRESCREVA O STATUS LOCAL! O WS gerencia wsStatus, lights, ac e devices em memória.
+    // jarvisState.homeAssistant.wsStatus = haState.wsStatus; 
+    // if (haState.lights) jarvisState.homeAssistant.lights = JSON.parse(haState.lights);
+    // if (haState.ac) jarvisState.homeAssistant.ac = JSON.parse(haState.ac);
+    // if (haState.devices) jarvisState.homeAssistant.devices = JSON.parse(haState.devices); 
     if (haState.hiddenDevices) jarvisState.homeAssistant.hiddenDevices = JSON.parse(haState.hiddenDevices);
     if (haState.modesConfig) jarvisState.homeAssistant.modesConfig = JSON.parse(haState.modesConfig);
+  }
+  if (!jarvisState.homeAssistant.ip) {
+    jarvisState.homeAssistant.ip = process.env.HOME_ASSISTANT_IP || "localhost";
+  }
+  if (!jarvisState.homeAssistant.token) {
+    jarvisState.homeAssistant.token = process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN || "";
   }
   res.json(jarvisState);
 });
@@ -1671,13 +1678,48 @@ app.post("/api/update/iot", async (req, res) => {
   res.json({ success: true, homeState: jarvisState.homeAssistant });
 });
 
-app.post("/api/homeassistant/config", (req, res) => {
+app.post("/api/homeassistant/config", async (req, res) => {
   const { ip, token, hiddenDevices, modesConfig } = req.body;
   if (ip !== undefined) jarvisState.homeAssistant.ip = ip;
   if (token !== undefined) jarvisState.homeAssistant.token = token;
   if (hiddenDevices !== undefined) jarvisState.homeAssistant.hiddenDevices = hiddenDevices;
   if (modesConfig !== undefined) jarvisState.homeAssistant.modesConfig = { ...jarvisState.homeAssistant.modesConfig, ...modesConfig };
 
+  const envUpdates: Record<string, string> = {};
+  if (ip !== undefined) envUpdates["HOME_ASSISTANT_IP"] = ip;
+  if (token !== undefined) envUpdates["HOME_ASSISTANT_TOKEN"] = token;
+  if (Object.keys(envUpdates).length > 0) updateEnv(envUpdates);
+
+  try {
+    const existing = await prisma.homeAssistantState.findFirst();
+    if (existing) {
+      await prisma.homeAssistantState.update({
+        where: { id: existing.id },
+        data: {
+          ip: jarvisState.homeAssistant.ip,
+          token: jarvisState.homeAssistant.token,
+          hiddenDevices: JSON.stringify(jarvisState.homeAssistant.hiddenDevices),
+          modesConfig: JSON.stringify(jarvisState.homeAssistant.modesConfig)
+        }
+      });
+    } else {
+      await prisma.homeAssistantState.create({
+        data: {
+          ip: jarvisState.homeAssistant.ip,
+          token: jarvisState.homeAssistant.token,
+          ambientPreset: jarvisState.homeAssistant.ambientPreset || "",
+          wsStatus: jarvisState.homeAssistant.wsStatus || "disconnected",
+          lights: JSON.stringify(jarvisState.homeAssistant.lights || {}),
+          ac: JSON.stringify(jarvisState.homeAssistant.ac || {}),
+          devices: JSON.stringify(jarvisState.homeAssistant.devices || []),
+          hiddenDevices: JSON.stringify(jarvisState.homeAssistant.hiddenDevices || []),
+          modesConfig: JSON.stringify(jarvisState.homeAssistant.modesConfig || {})
+        }
+      });
+    }
+  } catch (err) {
+    console.error("[HA Config DB Save Error]:", err);
+  }
 
   // Reset socket connection on config change if IP/token changed
   if ((ip !== undefined || token !== undefined) && haWS) {

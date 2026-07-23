@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import fs from 'fs';
@@ -94,8 +97,8 @@ export async function loadDB() {
 
         const ha = await prisma.homeAssistantState.findFirst();
         if (ha) {
-            if (ha.ip) jarvisState.homeAssistant.ip = ha.ip;
-            if (ha.token) jarvisState.homeAssistant.token = ha.token;
+            jarvisState.homeAssistant.ip = process.env.HOME_ASSISTANT_IP || ha.ip || "localhost";
+            jarvisState.homeAssistant.token = process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN || ha.token || "";
             jarvisState.homeAssistant.ambientPreset = ha.ambientPreset;
             jarvisState.homeAssistant.wsStatus = ha.wsStatus;
             if (ha.lights) jarvisState.homeAssistant.lights = JSON.parse(ha.lights);
@@ -104,11 +107,11 @@ export async function loadDB() {
             if (ha.hiddenDevices) jarvisState.homeAssistant.hiddenDevices = JSON.parse(ha.hiddenDevices);
             if (ha.modesConfig) jarvisState.homeAssistant.modesConfig = JSON.parse(ha.modesConfig);
         }
-        if (!jarvisState.homeAssistant.ip && process.env.HOME_ASSISTANT_IP) {
-            jarvisState.homeAssistant.ip = process.env.HOME_ASSISTANT_IP;
+        if (!jarvisState.homeAssistant.ip) {
+            jarvisState.homeAssistant.ip = process.env.HOME_ASSISTANT_IP || "localhost";
         }
-        if (!jarvisState.homeAssistant.token && (process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN)) {
-            jarvisState.homeAssistant.token = process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN;
+        if (!jarvisState.homeAssistant.token) {
+            jarvisState.homeAssistant.token = process.env.HOME_ASSISTANT_TOKEN || process.env.HA_TOKEN || "";
         }
     } catch (e: any) {
         console.error("[Database Load Error]: Fallback memory sync failed.", e?.message || e);
